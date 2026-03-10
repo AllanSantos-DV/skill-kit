@@ -55,6 +55,7 @@ Break the subject/task into the following axes. For each axis, ask at least 2 cr
 - Is the required knowledge in my training data or does it need external consultation?
 - Does the data involved change frequently? If so, when was my last reliable source?
 - Is there official documentation that should be consulted before proceeding?
+- **Active Research Gate**: For each factual claim identified in axes 1.1-1.3, ask: *Can I verify this right now using available tools?* If yes, **do it** — don't defer. Fetch the doc, search the repo, read the spec. A claim you CAN verify but DON'T is an unforced error.
 
 #### 1.5 Failure Modes — *"How can this go wrong and what am I not seeing?"*
 - What do I (LLM) probably **not know** about this subject?
@@ -77,8 +78,8 @@ For each axis, classify your confidence level:
 | Level | Meaning | Action |
 |-------|---------|--------|
 | 🟢 High | I have reliable, up-to-date data | Proceed |
-| 🟡 Medium | I have partial or possibly outdated knowledge | Flag and seek validation |
-| 🔴 Low | I lack sufficient data or know it's outdated | Stop and seek external source (RAG/docs/human) |
+| 🟡 Medium | I have partial or possibly outdated knowledge | **Research actively**: use available tools (fetch docs, search repos, read specs) to upgrade to 🟢. If tools exhausted and still 🟡, flag for human validation. |
+| 🔴 Low | I lack sufficient data or know it's outdated | **Stop. Research actively** using every available tool before proceeding. Fetch official docs. Search repos. Read specs. Query APIs. Only after exhausting available research paths: escalate to human. Declaring "unknown" without research effort is a failure mode, not an answer. |
 
 ### Phase 3 — Action Plan
 
@@ -86,7 +87,7 @@ Based on the analysis, generate:
 
 1. **Questions for the user** (MANDATORY) — list questions that need human answers before proceeding. Every analysis MUST generate at least 1 question. If there are no questions, the analysis was probably shallow.
 2. **What can be answered now** — with high confidence
-3. **What needs consultation** — specify where to look (docs, APIs, internal knowledge base)
+3. **What needs consultation** — specify where to look (docs, APIs, internal knowledge base). **If the source is reachable with available tools, consult it NOW** — don't list it as "needs consultation" when you can resolve it in this session.
 4. **What needs human validation** — decisions the model should not make alone
 5. **What should NOT be done** — actions that would be premature without more context
 
@@ -121,9 +122,11 @@ After delivering the analysis and the user acts on it, record the learning:
 - **NEVER** jump straight to the solution without going through Phases 1-3
 - **NEVER** say "not necessary" without justifying with evidence
 - **NEVER** classify all axes as 🟢 — if everything seems safe, question whether you're being overconfident
+- **NEVER** declare something as unknown, non-existent, or unavailable when you have tools that could verify it — research first, declare after
 - **ALWAYS** flag when your knowledge may be outdated
 - **ALWAYS** generate at least 1 question for the user in Phase 3 (if there are no questions, the analysis was shallow)
 - **ALWAYS** ask the user when ambiguity is high
+- **ALWAYS** attempt active research (fetch, search, read) before classifying an axis as 🔴 — the tool exists to be used
 - If the user asks for speed, flag the risks but respect the decision
 
 ## Quality Checklist (self-validation)
@@ -136,6 +139,7 @@ Before delivering the analysis, verify:
 - [ ] Questions are context-specific (not generic)?
 - [ ] Each risk has a concrete consequence (not just "could cause problems")?
 - [ ] Explicitly declared what you don't know?
+- [ ] For every 🟡/🔴 classification: did you attempt active research with available tools before accepting it?
 
 If any item fails, refine the analysis before delivering. Consult [good vs. bad analysis examples](./references/examples.md) to calibrate.
 

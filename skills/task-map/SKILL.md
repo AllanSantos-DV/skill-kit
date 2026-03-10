@@ -38,9 +38,11 @@ Related: [link to previous map if this continues earlier work]
 - FOR WHOM: [who receives the solution]
 
 ### Key Decisions
-| Decision | Why this over alternatives |
-|----------|--------------------------|
-| ...      | ...                      |
+| Decision | Why this over alternatives | Verified? |
+|----------|--------------------------|:---------:|
+| ...      | ...                      | ✅/⚠️    |
+
+> Mark each decision: ✅ = based on verified facts (docs read, code checked, spec confirmed). ⚠️ = based on assumption or memory — flag for future verification.
 
 ### Done When
 - [ ] [concrete, verifiable criterion derived from intent]
@@ -79,8 +81,10 @@ Without the chain, Map #3 might propose a Redis-heavy solution that conflicts wi
 
 - **ALWAYS** link to previous maps when they exist (Related field)
 - **ALWAYS** write the For Next section for high-impact tasks — this is the chain
+- **ALWAYS** mark Key Decisions as ✅ or ⚠️ — the next agent needs to know which decisions rest on verified ground and which on assumptions
 - **NEVER** produce a map that takes longer to write than the task itself
 - **NEVER** leave Key Decisions without reasoning — "decided X" without "because Y" is useless
+- **NEVER** record a decision as ✅ verified unless you actually checked the source — claiming verification without doing it poisons the chain for every future task
 - The map is for the NEXT agent/session, not the current one — write for someone with zero context
 
 ## Companion Skills

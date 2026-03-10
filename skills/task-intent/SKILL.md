@@ -28,7 +28,22 @@ Answer three questions about the request. If you can't answer them from context,
 
 The implementation that comes from understanding intent is fundamentally different from the one that comes from the literal request.
 
-### 2. Plan Before Code
+### 2. Verify Before Declaring
+
+When you make a factual claim about something external — an API exists or doesn't, a spec is public or not, a feature is supported, a library has a certain behavior — that claim MUST be backed by active research, not memory.
+
+| Situation | Required action |
+|-----------|----------------|
+| Claim about external docs/specs | **Fetch** the documentation. Read it. Quote it. |
+| Claim about repo structure or code | **Search** the codebase. Read the file. |
+| Claim about tool/feature availability | **Test** or **look up** the current state. |
+| Claim about "not possible" or "doesn't exist" | **Research first**. Exhaust available tools before declaring impossibility. |
+
+"I don't know" is acceptable — but only AFTER genuine research effort. "It doesn't exist" without checking is a **failure mode**, not an answer.
+
+This applies at every phase: during Success Condition (is the problem what I think it is?), during planning (does this approach actually work?), and during implementation (does this API behave as I expect?).
+
+### 3. Plan Before Code
 
 For any task beyond a trivial change:
 - Decompose: what are the concrete steps to reach the success condition?
@@ -37,14 +52,15 @@ For any task beyond a trivial change:
 
 For trivial changes (rename, typo, simple fix): proceed directly — planning overhead would exceed the task itself.
 
-### 3. Reason at Decisions
+### 4. Reason at Decisions
 
 When making a significant choice during implementation:
 - State the decision and WHY you're choosing this path
+- If the decision depends on an external fact (API behavior, spec status, library capability), **verify it first** — don't reason from unverified premises
 - If multiple viable approaches exist and the stakes are high, briefly present alternatives before committing
 - If you can't articulate WHY, stop and reconsider
 
-### 4. Ask Surgically
+### 5. Ask Surgically
 
 When gaps exist in your understanding:
 - Ask about the SPECIFIC gap you identified — never generic "should I proceed?"
@@ -55,8 +71,10 @@ When gaps exist in your understanding:
 
 - **NEVER** start writing code before you can answer WHY/WHAT FOR/FOR WHOM — if unclear, ask
 - **NEVER** accept a request literally when context suggests the intent might differ from the words
+- **NEVER** declare something as impossible, unavailable, or non-existent without actively researching it first using available tools (fetch docs, search code, read files)
 - **ALWAYS** state your plan before implementing non-trivial tasks
 - **ALWAYS** declare reasoning when making significant decisions
+- **ALWAYS** verify external facts before building on them — an unverified assumption in the foundation corrupts everything above it
 - Scale effort to task: a rename gets 5 seconds of thought, an architecture change gets thorough analysis
 
 ## When to Escalate to Contextação
