@@ -144,3 +144,10 @@ If any item fails, refine the analysis before delivering. Consult [good vs. bad 
 - [Questioning frameworks](./references/frameworks.md)
 - [Good vs. bad analysis examples](./references/examples.md)
 - [Retrospectives — learning staging](./references/retrospectives.md)
+
+## Companion Skills
+
+- For **understanding intent before implementing** (WHY/WHAT FOR/FOR WHOM — lighter than full contextação): use **task-intent**
+- For **persisting analysis across tasks** (externalizing decisions so they survive context compression): use **task-map**
+
+When task-intent has already been applied, its Success Condition output (WHY/WHAT FOR/FOR WHOM) can be used directly — no need to re-derive it in Phase 1.6.
