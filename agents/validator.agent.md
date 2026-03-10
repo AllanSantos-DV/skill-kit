@@ -2,20 +2,13 @@
 name: validator
 description: "Structured context analysis and validation. Analyzes assumptions, classifies confidence, performs active research on gaps. Read-only — cannot edit files or run commands."
 tools:
-  - codebase
-  - fetch
-  - textSearch
-  - fileSearch
-  - readFile
-  - listDirectory
-  - changes
-  - problems
-  - usages
-  - githubRepo
-  - selection
-  - terminalLastCommand
-  - terminalSelection
-  - searchResults
+  # Read-only built-in tool sets
+  - search        # codebase, usages, textSearch, fileSearch, searchResults, changes
+  - read          # readFile, problems, listDirectory, selection, terminalLastCommand, terminalSelection
+  - web           # fetch, githubRepo, openSimpleBrowser
+  - todo          # todos — track validation progress
+  # MCP servers — add your servers below using <server>/* syntax
+  # - my-mcp-server/*
 agents: []
 handoffs:
   - label: "Implement →"
@@ -104,6 +97,20 @@ Before delivering, verify:
 - [ ] For every 🟡/🔴: attempted active research before accepting?
 
 If any item fails, refine before delivering.
+
+## MCP Integration
+
+This agent supports MCP tools for extended validation capabilities. To add MCP servers, edit the `tools` list in the frontmatter:
+
+```yaml
+tools:
+  # ... existing tool sets ...
+  - atlassian-mcp/*    # Jira/Confluence context
+  - context7/*         # library documentation
+  - my-custom-mcp/*    # your custom server
+```
+
+Use `<server-name>/*` to include all tools from an MCP server.
 
 ## Output Format
 

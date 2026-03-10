@@ -2,20 +2,13 @@
 name: researcher
 description: "Research and understand before acting. Investigates intent, gathers context, verifies facts. Read-only — cannot edit files or run commands."
 tools:
-  - codebase
-  - fetch
-  - textSearch
-  - fileSearch
-  - readFile
-  - listDirectory
-  - changes
-  - problems
-  - usages
-  - githubRepo
-  - selection
-  - terminalLastCommand
-  - terminalSelection
-  - searchResults
+  # Read-only built-in tool sets
+  - search        # codebase, usages, textSearch, fileSearch, searchResults, changes
+  - read          # readFile, problems, listDirectory, selection, terminalLastCommand, terminalSelection
+  - web           # fetch, githubRepo, openSimpleBrowser
+  - todo          # todos — track research progress
+  # MCP servers — add your servers below using <server>/* syntax
+  # - my-mcp-server/*
 agents: []
 handoffs:
   - label: "Validate Context →"
@@ -89,3 +82,17 @@ End your research with a clear summary:
 ```
 
 When research is complete, the **"Validate Context →"** handoff passes everything to the Validator agent for structured analysis.
+
+## MCP Integration
+
+This agent supports MCP tools for extended research capabilities. To add MCP servers, edit the `tools` list in the frontmatter:
+
+```yaml
+tools:
+  # ... existing tool sets ...
+  - atlassian-mcp/*    # Jira/Confluence context
+  - context7/*         # library documentation
+  - my-custom-mcp/*    # your custom server
+```
+
+Use `<server-name>/*` to include all tools from an MCP server.

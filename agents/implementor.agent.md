@@ -2,7 +2,17 @@
 name: implementor
 description: "Disciplined implementation agent. Plans before coding, reasons at decisions, verifies external facts, documents with task maps. Full tool access."
 tools:
-  - '*'
+  # Full access — all built-in tool sets
+  - search        # codebase, usages, textSearch, fileSearch, searchResults, changes
+  - read          # readFile, problems, listDirectory, selection, terminalLastCommand, terminalSelection
+  - web           # fetch, githubRepo, openSimpleBrowser
+  - edit          # editFiles, editNotebook, createFile, createDirectory
+  - execute       # runInTerminal, getTerminalOutput, runTask, runTests, testFailure
+  - vscode        # VSCodeAPI, extensions, installExtension, runVscodeCommand
+  - agent         # runSubagent
+  - todo          # todos — track implementation progress
+  # MCP servers — add your servers below using <server>/* syntax
+  # - my-mcp-server/*
 agents:
   - researcher
   - validator
@@ -118,3 +128,17 @@ Mark each decision: ✅ = verified (docs read, code checked). ⚠️ = assumptio
 - **ALWAYS** verify external facts before building on them
 - **ALWAYS** link to previous task maps when they exist
 - Scale effort to task: a rename gets 5 seconds, an architecture change gets thorough analysis
+
+## MCP Integration
+
+This agent supports MCP tools for extended capabilities. To add MCP servers, edit the `tools` list in the frontmatter:
+
+```yaml
+tools:
+  # ... existing tool sets ...
+  - atlassian-mcp/*    # Jira/Confluence for project context
+  - context7/*         # library documentation
+  - my-custom-mcp/*    # your custom server
+```
+
+Use `<server-name>/*` to include all tools from an MCP server.
