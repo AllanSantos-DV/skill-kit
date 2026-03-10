@@ -6,6 +6,7 @@ A collection of skills for the **Skill Manager for Copilot** VS Code extension.
 
 | Skill | Description |
 |-------|-------------|
+| [skill-creator](skills/skill-creator/) | Create complete, well-structured Copilot skills from scratch |
 | [skill-manager-guide](skills/skill-manager-guide/) | How to use the Skill Manager extension |
 
 ## Usage
