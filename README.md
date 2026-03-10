@@ -1,8 +1,62 @@
 # Skill Kit
 
-Coleção de skills para a extensão **Skill Manager for Copilot** no VS Code.
+Coleção de **skills** e **agents** para o **GitHub Copilot** no VS Code.
 
-> **Convenção de idioma**: Os arquivos `SKILL.md` e `references/` são escritos em **inglês** — o leitor é o agente de IA, treinado predominantemente em inglês. Os `README.md` são em **português** — o leitor é o desenvolvedor humano.
+> **Convenção de idioma**: Os arquivos `SKILL.md`, `.agent.md` e `references/` são escritos em **inglês** — o leitor é o agente de IA, treinado predominantemente em inglês. Os `README.md` são em **português** — o leitor é o desenvolvedor humano.
+
+## Agents
+
+Agents são **personas determinísticas** que controlam como o Copilot opera. Cada agent restringe as tools disponíveis e injeta instruções especializadas. Selecione-os no dropdown de agents do Chat.
+
+| Agent | Escopo | Tools | Propósito |
+|-------|--------|-------|-----------|
+| [researcher](agents/researcher.agent.md) | Read-only | Busca, leitura, fetch | Entender intent, pesquisar, verificar fatos. Não edita nada. |
+| [validator](agents/validator.agent.md) | Read-only | Busca, leitura, fetch | Análise estruturada dos 6 eixos, classificar confiança, pesquisa ativa. Não edita nada. |
+| [implementor](agents/implementor.agent.md) | Full | Todas | Implementar com disciplina — planeja, raciocina, documenta decisões. |
+
+### Cadeia de Agents (Handoffs)
+
+Os agents formam um workflow guiado com transições automáticas:
+
+```
+┌─────────────┐   Validate →   ┌─────────────┐   Implement →   ┌─────────────┐
+│  Researcher │ ───────────────▶│  Validator   │───────────────▶│ Implementor │
+│             │                 │              │                 │             │
+│ ENTENDE     │                 │ ANALISA      │                 │ EXECUTA     │
+│ Pesquisa    │                 │ 6 eixos      │                 │ Plano →     │
+│ Verifica    │                 │ Confiança    │                 │ Código →    │
+│ Pergunta    │                 │ Pesquisa     │                 │ Task Map    │
+│             │                 │ ativa        │                 │             │
+│ 🔒 Read-only│                 │ 🔒 Read-only │                 │ 🔓 Full     │
+└─────────────┘                 └──────────────┘                 └─────────────┘
+                                                                       │
+                                                                 ← Research More
+                                                                       │
+                                                                 (volta pro Researcher
+                                                                  se descobrir gaps)
+```
+
+**O workflow é guiado, não forçado.** Você pode:
+- Seguir a cadeia completa: Researcher → Validator → Implementor
+- Pular etapas: selecionar Implementor direto pra tarefas simples
+- Voltar atrás: o Implementor tem handoff de volta pro Researcher se descobrir que precisa de mais pesquisa
+
+### Por que isso funciona
+
+| Sem agents | Com agents |
+|------------|-----------|
+| Agente edita código na hora sem pensar | Researcher **não consegue** editar — só pesquisa |
+| "A spec não é pública" (sem checar) | Researcher/Validator **verificam ativamente** com fetch antes de declarar |
+| Validação depende de boa vontade do LLM | Tools do Validator são **fisicamente** restritas a leitura |
+| Uma persona faz tudo (mal) | Cada agent faz **uma coisa bem** |
+
+### Instalação dos Agents
+
+Para **uso direto** (sem extensão): copie a pasta `agents/` para `~/.copilot/agents/`.
+
+Para **uso por projeto**: copie para `.github/agents/` no repositório.
+
+Os agents aparecem automaticamente no dropdown do Chat no VS Code.
 
 ## Skills
 
@@ -61,16 +115,30 @@ As três skills de disciplina (**task-intent**, **task-map**, **contextação**)
 
 ## Como Usar
 
+### Skills (via extensão)
+
 1. Instale a extensão [Skill Manager for Copilot](https://marketplace.visualstudio.com/items?itemName=allansantos-dv.copilot-skill-manager)
 2. No VS Code → `Ctrl+Shift+P` → `Skills: Add Repository`
 3. Cole: `https://github.com/AllanSantos-DV/skill-kit.git`
 4. Execute `Skills: Pull All`
 
-Ou adicione como repositório oficial direto pelo prompt de primeiro uso da extensão.
+### Agents (manual)
+
+1. Clone ou baixe este repositório
+2. Copie a pasta `agents/` para:
+   - **Global**: `~/.copilot/agents/` (disponível em todos os workspaces)
+   - **Por projeto**: `.github/agents/` (compartilhado com o time)
+3. Os agents aparecem no dropdown de agents do Chat no VS Code
+
+### Tudo junto
+
+Skills + Agents formam o ecossistema completo. Os agents consomem a disciplina das skills e garantem que ela seja aplicada via restrições determinísticas de tools.
 
 ## Contribuindo
 
-Quer adicionar uma skill? Crie uma pasta em `skills/` com um `SKILL.md`:
+### Skills
+
+Crie uma pasta em `skills/` com um `SKILL.md`:
 
 ```
 skills/
@@ -84,6 +152,17 @@ Use a skill **skill-creator** para orientação completa:
 ```
 /skill-creator Descreva o domínio ou tópico da nova skill
 ```
+
+### Agents
+
+Crie um arquivo `.agent.md` em `agents/`:
+
+```
+agents/
+  nome-do-agent.agent.md   ← Em inglês (leitor = LLM)
+```
+
+Consulte a [documentação de custom agents](https://code.visualstudio.com/docs/copilot/customization/custom-agents) do VS Code.
 
 ## Licença
 
