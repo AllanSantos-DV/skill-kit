@@ -14,9 +14,7 @@ Create `skills/my-skill/SKILL.md`:
 ```markdown
 ---
 name: my-skill
-version: 1.0.0
 description: What this skill teaches
-author: your-name
 ---
 
 # My Skill

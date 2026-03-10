@@ -1,8 +1,6 @@
 ---
 name: skill-manager-guide
-version: 1.0.0
 description: How to use the Skill Manager for Copilot extension — install, configure, sync and manage skills
-author: AllanSantos-DV
 ---
 
 # Skill Manager for Copilot — User Guide
@@ -80,11 +78,11 @@ skills/
 ```yaml
 ---
 name: my-skill
-version: 1.0.0
 description: What this skill teaches
-author: creator-name
 ---
 ```
+
+Supported attributes: `name`, `description`, `argument-hint`, `compatibility`, `disable-model-invocation`, `license`, `metadata`, `user-invocable`.
 
 ### Version Convention
 
