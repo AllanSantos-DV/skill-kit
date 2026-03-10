@@ -1,38 +1,43 @@
 # Skill Kit
 
-A collection of skills for the **Skill Manager for Copilot** VS Code extension.
+Coleção de skills para a extensão **Skill Manager for Copilot** no VS Code.
+
+> **Convenção de idioma**: Os arquivos `SKILL.md` e `references/` são escritos em **inglês** — o leitor é o agente de IA, treinado predominantemente em inglês. Os `README.md` são em **português** — o leitor é o desenvolvedor humano.
 
 ## Skills
 
-| Skill | Description |
-|-------|-------------|
-| [contextacao](skills/contextacao/) | Análise estruturada de contexto antes de agir — questionar premissas, levantar dependências, identificar pontos cegos |
-| [skill-creator](skills/skill-creator/) | Create complete, well-structured Copilot skills from scratch |
-| [skill-manager-guide](skills/skill-manager-guide/) | How to use the Skill Manager extension |
+| Skill | Descrição |
+|-------|-----------|
+| [contextacao](skills/contextacao/) | Análise estruturada de contexto antes de agir — questionar premissas, dependências e pontos cegos |
+| [skill-creator](skills/skill-creator/) | Guia completo para criar skills bem estruturadas do zero |
+| [skill-manager-guide](skills/skill-manager-guide/) | Como usar a extensão Skill Manager for Copilot |
 
-## Usage
+## Como Usar
 
-1. Install the [Skill Manager for Copilot](https://marketplace.visualstudio.com/items?itemName=allansantos-dv.copilot-skill-manager) extension
-2. Open VS Code → `Ctrl+Shift+P` → `Skills: Add Repository`
-3. Paste: `https://github.com/AllanSantos-DV/skill-kit.git`
-4. Run `Skills: Pull All`
+1. Instale a extensão [Skill Manager for Copilot](https://marketplace.visualstudio.com/items?itemName=allansantos-dv.copilot-skill-manager)
+2. No VS Code → `Ctrl+Shift+P` → `Skills: Add Repository`
+3. Cole: `https://github.com/AllanSantos-DV/skill-kit.git`
+4. Execute `Skills: Pull All`
 
-Or add it as the official repo directly from the extension's first-run prompt.
+Ou adicione como repositório oficial direto pelo prompt de primeiro uso da extensão.
 
-## Contributing
+## Contribuindo
 
-Want to add a skill? Create a folder under `skills/` with a `SKILL.md`:
+Quer adicionar uma skill? Crie uma pasta em `skills/` com um `SKILL.md`:
 
 ```
 skills/
-  your-skill-name/
-    SKILL.md        ← Required
-    FEEDBACK.md     ← Optional
-    references/     ← Optional
+  nome-da-skill/
+    SKILL.md        ← Obrigatório (em inglês)
+    FEEDBACK.md     ← Opcional
+    references/     ← Opcional (em inglês)
 ```
 
-See [Creating Skills](skills/skill-manager-guide/references/creating-skills.md) for details.
+Use a skill **skill-creator** para orientação completa:
+```
+/skill-creator Descreva o domínio ou tópico da nova skill
+```
 
-## License
+## Licença
 
 MIT

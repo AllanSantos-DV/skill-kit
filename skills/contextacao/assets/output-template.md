@@ -1,102 +1,102 @@
 # Contextação — Output
 
-## Assunto Analisado
-> [descrever o assunto/tarefa]
+## Subject Analyzed
+> [describe the subject/task]
 
-## Fase 0 — Triagem
-**Complexidade**: Simples / Média / Complexa
-**Justificativa**: [critérios objetivos que levaram à classificação]
+## Phase 0 — Triage
+**Complexity**: Simple / Medium / Complex
+**Justification**: [objective criteria that led to the classification]
 
 ---
 
-## Fase 1 — Decomposição
+## Phase 1 — Decomposition
 
-### Premissas — *"O que estou tratando como fato sem evidência?"*
-| # | Premissa assumida | Verificada? | Risco se falsa |
-|---|-------------------|-------------|----------------|
+### Assumptions — *"What am I treating as fact without evidence?"*
+| # | Assumed premise | Verified? | Risk if false |
+|---|-----------------|-----------|---------------|
 | 1 | | | |
 
-### Escopo — *"O que está dentro, fora e indefinido?"*
-- **Incluído**: 
-- **Excluído**: 
-- **Ambíguo**: 
+### Scope — *"What is in, out, and undefined?"*
+- **Included**: 
+- **Excluded**: 
+- **Ambiguous**: 
 
-### Dependências — *"O que precisa existir para a solução funcionar?"*
-| Dependência | Tipo | Versão/Estado | Risco de defasagem |
-|-------------|------|---------------|-------------------|
+### Dependencies — *"What needs to exist for the solution to work?"*
+| Dependency | Type | Version/State | Staleness risk |
+|------------|------|---------------|----------------|
 | | | | |
 
-### Fontes de Verdade — *"De onde vem o conhecimento e ele é confiável?"*
-| Conhecimento necessário | Fonte | Confiança | Ação |
-|------------------------|-------|-----------|------|
+### Sources of Truth — *"Where does the knowledge come from and is it reliable?"*
+| Required knowledge | Source | Confidence | Action |
+|-------------------|--------|------------|--------|
 | | | 🟢/🟡/🔴 | |
 
-### Modos de Falha — *"Como isso pode dar errado e o que eu não enxergo?"*
-| # | Modo de falha | Probabilidade | Impacto | Mitigação |
-|---|--------------------|---------------|---------|-----------|
+### Failure Modes — *"How can this go wrong and what am I not seeing?"*
+| # | Failure mode | Probability | Impact | Mitigation |
+|---|-------------|-------------|--------|------------|
 | 1 | | | | |
 
-### Stakeholders — *"Quem é afetado e quem decide?"*
-| Quem | Papel | Precisa validar? |
-|------|-------|-------------------|
+### Stakeholders — *"Who is affected and who decides?"*
+| Who | Role | Needs to validate? |
+|-----|------|--------------------|
 | | | |
 
 ---
 
-## Fase 2 — Classificação de Confiança
+## Phase 2 — Confidence Classification
 
-> ⚠️ Estimativa do modelo. LLMs tendem a ser overconfident. Sempre valide com humano antes de decisões de impacto.
+> ⚠️ Model estimate. LLMs tend to be overconfident. Always validate with a human before high-impact decisions.
 
-| Eixo | Confiança | Justificativa |
-|------|-----------|---------------|
-| Premissas | 🟢/🟡/🔴 | |
-| Escopo | 🟢/🟡/🔴 | |
-| Dependências | 🟢/🟡/🔴 | |
-| Fontes de Verdade | 🟢/🟡/🔴 | |
-| Modos de Falha | 🟢/🟡/🔴 | |
+| Axis | Confidence | Justification |
+|------|------------|---------------|
+| Assumptions | 🟢/🟡/🔴 | |
+| Scope | 🟢/🟡/🔴 | |
+| Dependencies | 🟢/🟡/🔴 | |
+| Sources of Truth | 🟢/🟡/🔴 | |
+| Failure Modes | 🟢/🟡/🔴 | |
 | Stakeholders | 🟢/🟡/🔴 | |
 
-**Confiança geral**: 🟢/🟡/🔴
+**Overall confidence**: 🟢/🟡/🔴
 
 ---
 
-## Fase 3 — Plano de Ação
+## Phase 3 — Action Plan
 
-### Perguntas ao Usuário (OBRIGATÓRIO)
-> Toda análise DEVE gerar pelo menos 1 pergunta. Se não há perguntas, a análise foi superficial.
+### Questions for the User (MANDATORY)
+> Every analysis MUST generate at least 1 question. If there are no questions, the analysis was shallow.
 
 1. 
 
-### Pode ser feito agora (confiança alta)
+### Can be done now (high confidence)
 - 
 
-### Precisa de consulta externa
-| O quê | Onde buscar |
-|-------|------------|
+### Needs external consultation
+| What | Where to look |
+|------|--------------|
 | | |
 
-### Precisa de validação humana
+### Needs human validation
 - 
 
-### NÃO fazer ainda
-- 
-
----
-
-## Fase 4 — Transparência
-
-**Premissas não verificadas**:
-- 
-
-**Limitações desta análise**:
-- 
-
-**O que ficou de fora e por quê**:
+### Do NOT do yet
 - 
 
 ---
 
-## Auto-validação
+## Phase 4 — Transparency
+
+**Unverified assumptions**:
+- 
+
+**Limitations of this analysis**:
+- 
+
+**What was left out and why**:
+- 
+
+---
+
+## Self-validation
 
 - [ ] Pelo menos 1 premissa que, se falsa, invalida a abordagem?
 - [ ] Pelo menos 1 eixo 🟡 ou 🔴?

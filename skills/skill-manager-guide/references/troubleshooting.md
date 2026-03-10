@@ -36,6 +36,6 @@
 If things are completely broken:
 
 1. Delete the cache: remove the `.skill-manager-cache/` folder in the VS Code global storage
-2. Delete local skills: remove `.github/copilot/skills/` from your workspace
+2. Delete local skills: remove `.github/skills/` from your workspace
 3. Restart VS Code
 4. Re-add your repos and pull again

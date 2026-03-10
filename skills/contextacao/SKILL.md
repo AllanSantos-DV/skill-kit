@@ -1,146 +1,146 @@
 ---
 name: contextacao
-description: 'Análise estruturada de contexto antes de agir. Use quando precisar questionar premissas, levantar dependências, identificar pontos cegos e validar escopo de qualquer tarefa ou assunto. Use para contextualizar, questionar, analisar antes de implementar, revisar premissas, evitar alucinação, levantamento estruturado.'
-argument-hint: 'Descreva o assunto ou tarefa que precisa ser contextualizada'
+description: "Structured context analysis before acting. USE FOR: questioning assumptions, mapping dependencies, identifying blind spots, validating scope of any task or subject. Use to contextualize, question, analyze before implementing, review premises, prevent hallucination, structured assessment."
+argument-hint: Describe the subject or task that needs context analysis
 ---
 
-# Contextação — Análise Estruturada de Contexto
+# Contextação — Structured Context Analysis
 
-## Propósito
+## Purpose
 
-Antes de responder, implementar ou criar qualquer coisa, esta skill força uma análise crítica e estruturada do contexto. O objetivo é **levantar o que realmente importa** antes de agir, evitando respostas superficiais, premissas incorretas e pontos cegos.
+Before answering, implementing, or creating anything, this skill forces a critical and structured analysis of the context. The goal is to **surface what truly matters** before acting, avoiding shallow responses, incorrect assumptions, and blind spots.
 
-## Quando Usar
+## When to Use
 
-- Antes de criar uma skill, agente ou qualquer artefato complexo
-- Quando o assunto envolve tecnologias, APIs ou padrões que podem ter mudado
-- Quando a tarefa tem múltiplas interpretações possíveis
-- Quando o impacto de uma decisão errada é alto
-- Sempre que o usuário pedir para "contextualizar", "questionar" ou "analisar antes de agir"
+- Before creating a skill, agent, or any complex artifact
+- When the subject involves technologies, APIs, or patterns that may have changed
+- When the task has multiple possible interpretations
+- When the impact of a wrong decision is high
+- Whenever the user asks to "contextualize", "question", or "analyze before acting"
 
-## Procedimento
+## Procedure
 
-### Fase 0 — Triagem de Complexidade
+### Phase 0 — Complexity Triage
 
-Antes de tudo, classifique a tarefa usando os critérios objetivos abaixo. Basta **1 critério** do nível para classificar nele:
+First, classify the task using the objective criteria below. A single criterion from a level is enough to classify at that level:
 
-| Nível | Critérios objetivos | Profundidade |
-|-------|----------------------|--------------|
-| **Simples** | • 1 tecnologia envolvida • 0 dependências externas • Resultado reversível • 1 stakeholder | Fase 1 resumida (1 pergunta por eixo) + Fase 3 (só perguntas) + Fase 4 |
-| **Média** | • 2-3 tecnologias • 1+ dependência externa • Múltiplas interpretações possíveis • Resultado difícil de reverter | Fases 1-4 completas |
-| **Complexa** | • 4+ tecnologias • Domínio com atualizações frequentes (APIs, specs, compliance) • Múltiplos stakeholders • Impacto em produção ou dados de usuários | Fases 1-4 completas + consulta obrigatória a [frameworks](./references/frameworks.md) + exemplos de [análise boa vs. ruim](./references/exemplos.md) |
+| Level | Objective criteria | Depth |
+|-------|-------------------|-------|
+| **Simple** | • 1 technology involved • 0 external dependencies • Reversible outcome • 1 stakeholder | Phase 1 summarized (1 question per axis) + Phase 3 (questions only) + Phase 4 |
+| **Medium** | • 2-3 technologies • 1+ external dependency • Multiple possible interpretations • Hard-to-reverse outcome | Phases 1-4 complete |
+| **Complex** | • 4+ technologies • Domain with frequent updates (APIs, specs, compliance) • Multiple stakeholders • Production or user data impact | Phases 1-4 complete + mandatory consultation of [frameworks](./references/frameworks.md) + [good vs. bad analysis examples](./references/examples.md) |
 
-Na dúvida, classifique para cima. É melhor analisar demais do que de menos.
+When in doubt, classify upward. Over-analyzing is better than under-analyzing.
 
-### Fase 1 — Decomposição do Assunto
+### Phase 1 — Subject Decomposition
 
-Quebre o assunto/tarefa nos seguintes eixos. Para cada eixo, faça pelo menos 2 perguntas críticas (1 se triagem = Simples):
+Break the subject/task into the following axes. For each axis, ask at least 2 critical questions (1 if triage = Simple):
 
-#### 1.1 Premissas — *"O que estou tratando como fato sem evidência?"*
-- O que estou assumindo como verdade sem verificar?
-- Alguma dessas premissas depende de dados que podem estar desatualizados?
-- Qual premissa, se estiver errada, invalida toda a abordagem?
+#### 1.1 Assumptions — *"What am I treating as fact without evidence?"*
+- What am I assuming to be true without verification?
+- Do any of these assumptions depend on data that may be outdated?
+- Which assumption, if wrong, invalidates the entire approach?
 
-#### 1.2 Escopo — *"O que está dentro, fora e indefinido?"*
-- O que está explicitamente incluído?
-- O que está explicitamente excluído?
-- O que está ambíguo e precisa de definição?
+#### 1.2 Scope — *"What is in, out, and undefined?"*
+- What is explicitly included?
+- What is explicitly excluded?
+- What is ambiguous and needs definition?
 
-#### 1.3 Dependências — *"O que precisa existir ou funcionar para que a solução funcione?"*
-- Quais tecnologias, serviços ou sistemas estão envolvidos?
-- Alguma dependência tem versionamento ou ciclo de atualização que pode afetar a solução?
-- Existem dependências implícitas que não foram mencionadas?
+#### 1.3 Dependencies — *"What needs to exist or work for the solution to work?"*
+- What technologies, services, or systems are involved?
+- Does any dependency have versioning or update cycles that could affect the solution?
+- Are there implicit dependencies that were not mentioned?
 
-#### 1.4 Fontes de Verdade — *"De onde vem o conhecimento e ele é confiável?"*
-- O conhecimento necessário está no meu treinamento ou precisa de consulta externa?
-- Os dados envolvidos mudam com frequência? Se sim, qual a data da última fonte confiável que possuo?
-- Existe documentação oficial que deveria ser consultada antes de prosseguir?
+#### 1.4 Sources of Truth — *"Where does the knowledge come from and is it reliable?"*
+- Is the required knowledge in my training data or does it need external consultation?
+- Does the data involved change frequently? If so, when was my last reliable source?
+- Is there official documentation that should be consulted before proceeding?
 
-#### 1.5 Modos de Falha — *"Como isso pode dar errado e o que eu não enxergo?"*
-- O que eu (LLM) provavelmente **não sei** sobre este assunto?
-- Se essa solução falhasse em produção, qual seria a causa mais provável? (pre-mortem)
-- Existe viés de "entrega rápida" na minha primeira resposta?
+#### 1.5 Failure Modes — *"How can this go wrong and what am I not seeing?"*
+- What do I (LLM) probably **not know** about this subject?
+- If this solution failed in production, what would be the most likely cause? (pre-mortem)
+- Is there a "fast delivery" bias in my first response?
 
-#### 1.6 Stakeholders e Impacto — *"Quem é afetado e quem decide?"*
-- Quem será afetado pela decisão/entrega?
-- Existe conflito entre o que é rápido e o que é correto?
-- O resultado precisa ser validado por alguém antes de ser aplicado?
+#### 1.6 Stakeholders and Impact — *"Who is affected and who decides?"*
+- Who will be affected by the decision/delivery?
+- Is there a conflict between what is fast and what is correct?
+- Does the result need validation by someone before being applied?
 
-> **Fronteiras entre eixos**: Premissas = o que assumo. Fontes de Verdade = de onde vem o que sei. Modos de Falha = consequências de erros. Se um ponto se encaixa em mais de um eixo, coloque no eixo onde a **ação corretiva** é mais clara.
+> **Boundaries between axes**: Assumptions = what I assume. Sources of Truth = where my knowledge comes from. Failure Modes = consequences of errors. If a point fits multiple axes, place it in the axis where the **corrective action** is clearest.
 
-### Fase 2 — Classificação de Confiança
+### Phase 2 — Confidence Classification
 
-> ⚠️ **Disclaimer**: A classificação abaixo é uma **estimativa do modelo**, não um fato. LLMs tendem a ser overconfident — ou seja, classificar como 🟢 o que deveria ser 🟡. Sempre que a análise for usada para decisões de impacto, a classificação deve ser **validada por um humano** antes de prosseguir.
+> ⚠️ **Disclaimer**: The classification below is a **model estimate**, not a fact. LLMs tend to be overconfident — i.e., classifying as 🟢 what should be 🟡. Whenever the analysis informs high-impact decisions, the classification should be **validated by a human** before proceeding.
 
-Para cada eixo, classifique seu nível de confiança:
+For each axis, classify your confidence level:
 
-| Nível | Significado | Ação |
-|-------|-------------|------|
-| 🟢 Alto | Tenho dados confiáveis e atualizados | Prosseguir |
-| 🟡 Médio | Tenho conhecimento parcial ou possivelmente defasado | Sinalizar e buscar validação |
-| 🔴 Baixo | Não tenho dados suficientes ou sei que estão desatualizados | Parar e buscar fonte externa (RAG/docs/humano) |
+| Level | Meaning | Action |
+|-------|---------|--------|
+| 🟢 High | I have reliable, up-to-date data | Proceed |
+| 🟡 Medium | I have partial or possibly outdated knowledge | Flag and seek validation |
+| 🔴 Low | I lack sufficient data or know it's outdated | Stop and seek external source (RAG/docs/human) |
 
-### Fase 3 — Plano de Ação
+### Phase 3 — Action Plan
 
-Com base na análise, gere:
+Based on the analysis, generate:
 
-1. **Perguntas ao usuário** (OBRIGATÓRIO) — liste as perguntas que precisam de resposta humana antes de prosseguir. Toda análise DEVE gerar pelo menos 1 pergunta. Se não há perguntas, a análise provavelmente foi superficial.
-2. **O que pode ser respondido agora** — com confiança alta
-3. **O que precisa de consulta** — indicar onde buscar (docs, APIs, base interna)
-4. **O que precisa de validação humana** — decisões que o modelo não deveria tomar sozinho
-5. **O que NÃO deve ser feito** — ações que seriam prematuras sem mais contexto
+1. **Questions for the user** (MANDATORY) — list questions that need human answers before proceeding. Every analysis MUST generate at least 1 question. If there are no questions, the analysis was probably shallow.
+2. **What can be answered now** — with high confidence
+3. **What needs consultation** — specify where to look (docs, APIs, internal knowledge base)
+4. **What needs human validation** — decisions the model should not make alone
+5. **What should NOT be done** — actions that would be premature without more context
 
-Use o [template de output](./assets/output-template.md) para estruturar a entrega.
+Use the [output template](./assets/output-template.md) to structure the delivery.
 
-### Fase 4 — Transparência
+### Phase 4 — Transparency
 
-Sempre declare:
-- Quais premissas foram assumidas e não verificadas
-- Qual o nível de confiança geral da análise
-- O que ficou de fora e por quê
+Always declare:
+- Which assumptions were made and not verified
+- The overall confidence level of the analysis
+- What was left out and why
 
-### Fase 5 — Feedback Loop
+### Phase 5 — Feedback Loop
 
-Após entregar a análise e o usuário agir sobre ela, registre o aprendizado:
+After delivering the analysis and the user acts on it, record the learning:
 
-1. **Avalie o resultado**: a análise acertou? Errou? O que não foi previsto?
-2. **Registre no staging**: adicione uma entrada em [retrospectivas.md](./references/retrospectivas.md) no formato:
+1. **Evaluate the outcome**: did the analysis get it right? Wrong? What was not anticipated?
+2. **Record in staging**: add an entry in [retrospectives.md](./references/retrospectives.md) in the format:
    ```
-   ### [DATA] — [ASSUNTO]
-   **O que aconteceu**: [descrição curta]
-   **Aprendizado**: [regra concisa]
-   **Eixo afetado**: [eixo do SKILL.md]
+   ### [DATE] — [SUBJECT]
+   **What happened**: [short description]
+   **Learning**: [concise rule]
+   **Axis affected**: [axis from SKILL.md]
    ```
-3. **Verifique o cap**: se o staging atingiu 5 entradas, inicie o [procedimento de destilação](./references/retrospectivas.md#destilação)
-4. **Capture exemplos reais**: se a análise foi particularmente boa ou ruim, salve em [exemplos.md](./references/exemplos.md) na seção "Casos Reais"
+3. **Check the cap**: if staging reached 5 entries, start the [distillation procedure](./references/retrospectives.md#distillation)
+4. **Capture real examples**: if the analysis was particularly good or bad, save in [examples.md](./references/examples.md) under "Real Cases"
 
-> A Fase 5 é opcional para triagem Simples. Obrigatória para Média e Complexa.
+> Phase 5 is optional for Simple triage. Mandatory for Medium and Complex.
 
-## Regras
+## Rules
 
-- **NUNCA** pule direto para a solução sem passar pelas Fases 1-3
-- **NUNCA** diga "não é necessário" sem justificar com evidência
-- **NUNCA** classifique todos os eixos como 🟢 — se tudo parece seguro, questione se você não está sendo overconfident
-- **SEMPRE** sinalize quando seu conhecimento pode estar defasado
-- **SEMPRE** gere pelo menos 1 pergunta ao usuário na Fase 3 (se não há perguntas, a análise foi rasa)
-- **SEMPRE** pergunte ao usuário quando a ambiguidade for alta
-- Se o usuário pedir velocidade, sinalize os riscos mas respeite a decisão
+- **NEVER** jump straight to the solution without going through Phases 1-3
+- **NEVER** say "not necessary" without justifying with evidence
+- **NEVER** classify all axes as 🟢 — if everything seems safe, question whether you're being overconfident
+- **ALWAYS** flag when your knowledge may be outdated
+- **ALWAYS** generate at least 1 question for the user in Phase 3 (if there are no questions, the analysis was shallow)
+- **ALWAYS** ask the user when ambiguity is high
+- If the user asks for speed, flag the risks but respect the decision
 
-## Checklist de Qualidade (auto-validação)
+## Quality Checklist (self-validation)
 
-Antes de entregar a análise, verifique:
+Before delivering the analysis, verify:
 
-- [ ] Pelo menos 1 premissa que, se falsa, invalida a abordagem inteira?
-- [ ] Pelo menos 1 eixo classificado como 🟡 ou 🔴?
-- [ ] Pelo menos 1 pergunta ao usuário na Fase 3?
-- [ ] Perguntas são específicas ao contexto (não genéricas)?
-- [ ] Cada risco tem consequência concreta (não apenas "pode dar problema")?
-- [ ] Declarou explicitamente o que não sabe?
+- [ ] At least 1 assumption that, if false, invalidates the entire approach?
+- [ ] At least 1 axis classified as 🟡 or 🔴?
+- [ ] At least 1 question for the user in Phase 3?
+- [ ] Questions are context-specific (not generic)?
+- [ ] Each risk has a concrete consequence (not just "could cause problems")?
+- [ ] Explicitly declared what you don't know?
 
-Se algum item falhar, refine a análise antes de entregar. Consulte [exemplos de análise boa vs. ruim](./references/exemplos.md) para calibrar.
+If any item fails, refine the analysis before delivering. Consult [good vs. bad analysis examples](./references/examples.md) to calibrate.
 
-## Referências
+## References
 
-- [Frameworks de questionamento](./references/frameworks.md)
-- [Exemplos de análise boa vs. ruim](./references/exemplos.md)
-- [Retrospectivas — staging de aprendizados](./references/retrospectivas.md)
+- [Questioning frameworks](./references/frameworks.md)
+- [Good vs. bad analysis examples](./references/examples.md)
+- [Retrospectives — learning staging](./references/retrospectives.md)

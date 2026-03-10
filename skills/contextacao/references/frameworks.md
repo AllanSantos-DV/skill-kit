@@ -1,63 +1,63 @@
-# Frameworks de Questionamento
+# Questioning Frameworks
 
-## 5 Whys (5 Porquês)
+## 5 Whys
 
-Pergunte "por quê?" 5 vezes para chegar à causa raiz.
+Ask "why?" 5 times to reach the root cause.
 
-**Aplicação na contextação**: quando o usuário pede algo, questione a motivação até encontrar o problema real.
+**Application in context analysis**: when the user asks for something, question the motivation until you find the real problem.
 
-Exemplo:
-1. Por que precisamos de uma skill de deploy? → Porque o deploy falha frequentemente
-2. Por que o deploy falha? → Porque as configs mudam entre ambientes
-3. Por que as configs mudam? → Porque não temos padronização
-4. Por que não temos padronização? → Porque cada dev configura manualmente
-5. Por que configuram manualmente? → Porque não existe template/automação
+Example:
+1. Why do we need a deployment skill? → Because deployment fails frequently
+2. Why does deployment fail? → Because configs change between environments
+3. Why do configs change? → Because there's no standardization
+4. Why is there no standardization? → Because each dev configures manually
+5. Why do they configure manually? → Because there's no template/automation
 
-**Resultado**: a skill real deveria ser de padronização de configs, não de deploy.
+**Result**: the real skill should be about config standardization, not deployment.
 
 ---
 
-## First Principles (Primeiros Princípios)
+## First Principles
 
-Decomponha o problema até os fatos fundamentais, descartando suposições.
+Decompose the problem down to fundamental facts, discarding assumptions.
 
-**Aplicação na contextação**: separe o que é **fato verificável** do que é **suposição herdada**.
+**Application in context analysis**: separate what is a **verifiable fact** from what is an **inherited assumption**.
 
-Perguntas-chave:
-- O que sei com certeza (fato)?
-- O que estou assumindo por convenção?
-- Se eu começasse do zero, chegaria à mesma conclusão?
+Key questions:
+- What do I know for certain (fact)?
+- What am I assuming by convention?
+- If I started from scratch, would I reach the same conclusion?
 
 ---
 
 ## Pre-mortem
 
-Imagine que a solução falhou. Pergunte: **por que falhou?**
+Imagine the solution failed. Ask: **why did it fail?**
 
-**Aplicação na contextação**: antes de criar/implementar, simule os cenários de falha.
+**Application in context analysis**: before creating/implementing, simulate failure scenarios.
 
-Perguntas-chave:
-- Se isso der errado em produção, qual seria a causa mais provável?
-- O que eu ignorei que alguém mais experiente no domínio pegaria?
-- Qual parte da solução é mais frágil?
-
----
-
-## MECE (Mutuamente Exclusivo, Coletivamente Exaustivo)
-
-Garanta que a análise cobre tudo sem sobreposição.
-
-**Aplicação na contextação**: ao decompor o assunto nos 6 eixos (premissas, escopo, dependências, dados, riscos, stakeholders), cada ponto deve estar em exatamente um eixo, e juntos devem cobrir 100% do contexto relevante.
+Key questions:
+- If this went wrong in production, what would be the most likely cause?
+- What did I overlook that someone more experienced in the domain would catch?
+- Which part of the solution is most fragile?
 
 ---
 
-## Inversão
+## MECE (Mutually Exclusive, Collectively Exhaustive)
 
-Em vez de perguntar "como fazer certo?", pergunte "como garantir que dê errado?"
+Ensure the analysis covers everything without overlap.
 
-**Aplicação na contextação**: identifique anti-padrões e armadilhas antes de propor a solução.
+**Application in context analysis**: when decomposing the subject into the 6 axes (assumptions, scope, dependencies, sources of truth, failure modes, stakeholders), each point should be in exactly one axis, and together they should cover 100% of the relevant context.
 
-Perguntas-chave:
-- O que eu faria se quisesse que essa skill falhasse?
-- Qual a maneira mais rápida de entregar algo inútil?
-- O que um revisor crítico diria sobre essa abordagem?
+---
+
+## Inversion
+
+Instead of asking "how to do it right?", ask "how to guarantee it goes wrong?"
+
+**Application in context analysis**: identify anti-patterns and pitfalls before proposing the solution.
+
+Key questions:
+- What would I do if I wanted this skill to fail?
+- What's the fastest way to deliver something useless?
+- What would a critical reviewer say about this approach?

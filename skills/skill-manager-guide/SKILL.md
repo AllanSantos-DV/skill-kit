@@ -29,7 +29,7 @@ A **skill** is a Markdown file (`SKILL.md`) that gives you (the AI agent) domain
 ## How Sync Works
 
 1. The extension clones configured repos to a local cache.
-2. On `Pull`, it copies skills from `<repo>/skills/<name>/` to the workspace's `.github/copilot/skills/` directory.
+2. On `Pull`, it copies skills from `<repo>/skills/<name>/` to the workspace's `.github/skills/` directory.
 3. Each synced skill gets a `.manifest.json` tracking its origin and hash.
 4. If the local copy hasn't been edited, it auto-updates on next pull.
 5. If the local copy was edited, the conflict strategy kicks in (configurable).
