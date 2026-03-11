@@ -2,6 +2,7 @@
 name: skill-creator
 description: "**WORKFLOW SKILL** — Create complete, well-structured Copilot skills from scratch. USE FOR: scaffolding new SKILL.md files, writing effective agent instructions, configuring frontmatter fields, setting up directory structure (references, FEEDBACK.md), optimizing description for discoverability, applying progressive disclosure. DO NOT USE FOR: managing/syncing existing skills (use skill-manager-guide), general coding, VS Code extension development."
 argument-hint: Describe the domain or topic the new skill should cover
+license: MIT
 ---
 
 # Skill Creator — Complete Guide to Building Copilot Skills
@@ -193,6 +194,77 @@ A skill should cover one coherent domain. If you find yourself writing unrelated
 **Good scope:** "React Testing" — covers RTL, Jest, async testing, hooks testing, snapshot testing
 **Bad scope:** "React" — too broad, mixes routing, state management, testing, styling
 
+## Advanced Body Techniques
+
+These patterns improve agent navigation and scannability. Use them when the skill's complexity warrants it — not every skill needs all of them.
+
+### Technique: Decision Trees
+
+For skills that involve triage, routing, or conditional workflows, provide an ASCII decision tree the agent can follow mechanically. This reduces reasoning errors by making the decision path explicit.
+
+```markdown
+#### Triage Flow
+
+\```
+New request arrives
+  │
+  ├─ Condition A?
+  │   └─ ✅ Action A
+  │
+  ├─ Condition B?
+  │   └─ ⚠️ Action B (with caveat)
+  │
+  └─ Condition C?
+      └─ 🔴 Escalate / ask the user
+\```
+```
+
+**When to use:** Escalation logic, complexity triage, tool selection cascades, error diagnosis flows.
+
+### Technique: ❌/✅ Pitfall Markers
+
+Instead of plain text rules, use visual markers for common mistakes. This format is more scannable than prose and communicates do/don't at a glance.
+
+```markdown
+### Common Pitfalls
+
+| | Pitfall | Consequence |
+|---|---------|-------------|
+| ❌ | Doing X without checking Y | Z breaks silently |
+| ❌ | Assuming A is true | B fails in production |
+| ✅ | Checking Y before doing X | Z works reliably |
+| ✅ | Verifying A with tool | B is built on solid ground |
+```
+
+**When to use:** Rules sections, anti-patterns, common mistakes. Especially effective when the skill has 5+ rules — visual markers prevent "wall of NEVER" fatigue.
+
+### Technique: Quick Reference Table
+
+A task-oriented lookup table at the end of the skill. Maps common user intents to the right section and key decision. Gives the agent a fast-path before reading the full skill.
+
+```markdown
+## Quick Reference
+
+| I need to... | Go to section | Key decision |
+|-------------|---------------|-------------|
+| Do X | Section Y | Choose between A or B |
+| Debug Z | Troubleshooting | Check W first |
+```
+
+**When to use:** Skills with many sections (5+ headings), tool/command skills, reference-heavy skills.
+
+### Technique: Black-Box Script Instructions
+
+For skills that bundle executable scripts in `scripts/`, instruct the agent to treat them as black boxes — run `--help` to learn usage, never read the source code.
+
+```markdown
+> **⚠️ IMPORTANT: Treat scripts as black boxes.** Run `python scripts/<script>.py --help`
+> to learn usage. Do **NOT** read the source code — it pollutes the context window with
+> implementation details you don't need.
+```
+
+**When to use:** Any skill that includes bundled scripts, CLI tools, or executable utilities. Prevents the agent from wasting context on implementation details.
+
 ## FEEDBACK.md — Enabling the Improvement Loop
 
 A `FEEDBACK.md` enables users to submit improvements to the skill via PR.
@@ -312,6 +384,7 @@ Before considering a skill complete, verify:
 
 - [ ] **`name`** matches folder name (kebab-case)
 - [ ] **`description`** is specific, keyword-rich, under 300 chars
+- [ ] **`license`** field present in frontmatter
 - [ ] **Body opens with role context** — "You are helping a developer with..."
 - [ ] **Imperative voice** — instructs the agent what to do
 - [ ] **Tables** for reference data, **prose** for workflows
@@ -319,6 +392,10 @@ Before considering a skill complete, verify:
 - [ ] **SKILL.md under 500 lines** — heavy content goes to `references/`
 - [ ] **FEEDBACK.md** included with review format
 - [ ] **No unrelated topics** — one skill, one domain
+- [ ] **Decision tree** included if the skill has triage/routing logic (optional)
+- [ ] **❌/✅ pitfalls** used instead of plain text rules when 5+ rules exist (optional)
+- [ ] **Quick Reference** table at the end for complex skills with 5+ sections (optional)
+- [ ] **Black-box script instruction** present if skill bundles scripts in `scripts/` (optional)
 - [ ] **Tested** — invoke the skill in Copilot Chat and verify it guides correctly
 
 ## Anti-Patterns to Avoid

@@ -1,7 +1,8 @@
 ---
 name: agent-creator
-description: "**WORKFLOW SKILL** — Create custom VS Code Copilot agents (.agent.md). USE FOR: new agents, tool restrictions, handoffs, orchestration patterns, discipline constraints. DO NOT USE FOR: editing existing agents (use agent-customization), general coding."
+description: "**WORKFLOW SKILL** — Create custom VS Code Copilot agents (.agent.md). USE FOR: new agents, tool restrictions, handoffs, orchestration patterns, discipline constraints. DO NOT USE FOR: general coding, VS Code extension development."
 argument-hint: Describe the role or persona the new agent should have
+license: MIT
 ---
 
 # Agent Creator — Complete Guide to Building Custom Agents
@@ -474,3 +475,17 @@ Before considering an agent complete, verify:
 | `agents: ['*']` without control | Model may invoke unexpected agents | Use explicit agent lists |
 | Too many tool sets on a specialist | Agent gets distracted by capabilities | Principle of least privilege |
 | No output format defined | Inconsistent, unstructured responses | Add explicit format template |
+
+## Quick Reference
+
+| I need to... | Go to section | Key decision |
+|-------------|---------------|-------------|
+| Create a new agent from scratch | File Structure → Tool Configuration → Body | Tool strategy: omit vs declare? |
+| Make an agent read-only | Tool Configuration → Quick Reference Matrix | Declare `tools: [search, read]` |
+| Set up an orchestrator with workers | Orchestration Patterns → Pattern 1 | **Omit** `tools` on orchestrator |
+| Add agent-to-agent transitions | Handoffs | Forward (→) vs backward (←), `send: false` |
+| Restrict which agents can be invoked | Visibility Controls → `agents` | Explicit list vs `['*']` |
+| Hide an agent from the user picker | Visibility Controls → `user-invocable` | Set `user-invocable: false` |
+| Write effective body instructions | Writing the Body | Imperative voice, role tables, checklists |
+| Debug "agent can't access X" | Tool Configuration → Inheritance Rule | Check if `tools` is declared or omitted |
+| Make constraints stick | Discipline Constraints | Hard (tool-based) + soft (body) combined |

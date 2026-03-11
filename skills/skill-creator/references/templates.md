@@ -92,9 +92,10 @@ with <scope>.
 
 ## Common Pitfalls
 
-| Pitfall | Symptom | Fix |
-|---------|---------|-----|
-| <mistake> | <what happens> | <correction> |
+| | Pitfall | Consequence |
+|---|---------|-------------|
+| ❌ | <mistake> | <what happens> |
+| ✅ | <correct approach> | <why it works> |
 
 ## When the User Asks for Help
 

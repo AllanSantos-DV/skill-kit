@@ -2,6 +2,7 @@
 name: task-intent
 description: "Understand before implementing. USE FOR: any task where the agent might rush to code — forces understanding WHY/WHAT FOR/FOR WHOM before defining a solution, activates planning and reasoning discipline, prevents technical debt from shallow requests. Use to validate intent, plan before coding, reason before acting, challenge assumptions, prevent premature implementation."
 argument-hint: Describe the task or request to analyze before implementing
+license: MIT
 ---
 
 # Task Intent — Understand Before Implementing
@@ -77,6 +78,26 @@ When gaps exist in your understanding:
 - **ALWAYS** verify external facts before building on them — an unverified assumption in the foundation corrupts everything above it
 - Scale effort to task: a rename gets 5 seconds of thought, an architecture change gets thorough analysis
 
+### Common Pitfalls
+
+| | Pitfall | Consequence |
+|---|---------|-------------|
+| ❌ | Jumping straight to code without asking WHY | Solves the wrong problem. Generates "working" code that creates tech debt. |
+| ❌ | Accepting the request literally ("add a button") | Misses the real need (maybe they needed a workflow, not a button). |
+| ❌ | Saying "this API doesn't exist" without checking | Blocks the user on false information. Erodes trust. |
+| ❌ | Planning a 20-step plan for a typo fix | Over-engineering. Wastes the user's patience. Scale to task. |
+| ✅ | "I see you asked for X. Before I implement — is the goal Y or Z?" | Surfaces the real intent. Prevents rework. |
+| ✅ | Fetching the doc before claiming a feature exists or doesn't | Verified foundation. Everything built on it is sound. |
+| ✅ | "Here's my plan: [3 steps]. Proceed?" | User can course-correct before code is written. |
+
+## When the User Asks for Help
+
+- **"Just do it, don't overthink"** → Scale down: quick WHY/WHAT FOR/FOR WHOM check (one sentence each), then proceed. Flag risks but respect the decision.
+- **"Why are you asking me questions instead of coding?"** → Explain briefly: "I'm making sure I solve the right problem. [specific gap]. Once clear, I'll implement directly."
+- **"I don't know the answer to WHY/WHAT FOR"** → Help derive it: "Based on the codebase and context, it looks like [hypothesis]. Does that match your intent?"
+- **"Plan this out before coding"** → Full discipline: Success Condition → decomposition → sequencing → present plan → wait for approval before writing code.
+- **"I changed my mind about the approach"** → Re-derive: revisit Success Condition with new information, update plan, state what changes and why.
+
 ## When to Escalate to Contextação
 
 This skill handles intent and discipline. For **deep structured analysis**, escalate to contextação when any of these apply:
@@ -85,6 +106,31 @@ This skill handles intent and discipline. For **deep structured analysis**, esca
 - Multiple stakeholders with conflicting interests
 - Production data or irreversible outcome at risk
 - Your confidence in the domain is low
+
+### Escalation Decision Tree
+
+```
+New task arrives
+  │
+  ├─ Can I answer WHY/WHAT FOR/FOR WHOM from context?
+  │   ├─ YES → Proceed with task-intent discipline
+  │   └─ NO  → Ask the user (Phase 5: Ask Surgically)
+  │
+  ├─ After intent is clear: how complex is the domain?
+  │   ├─ 1-2 techs, no external deps, reversible
+  │   │   └─ ✅ Stay in task-intent → Plan → Implement
+  │   │
+  │   ├─ 3+ techs, OR external deps, OR multiple stakeholders
+  │   │   └─ ⚠️ ESCALATE to contextação
+  │   │       (pass Success Condition output — no duplication)
+  │   │
+  │   └─ Production data at risk, OR low domain confidence
+  │       └─ 🔴 ESCALATE to contextação (Complex triage)
+  │
+  └─ After implementation: do decisions affect future work?
+      ├─ YES → Produce a task-map
+      └─ NO  → Done
+```
 
 When escalating, contextação will reuse your Success Condition output — no duplication.
 
