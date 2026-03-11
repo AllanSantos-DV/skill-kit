@@ -1,7 +1,7 @@
 ---
 name: orchestrator
 description: "Smart coordinator. Assesses every request, gathers just enough context, and routes to the right specialist — or handles lightweight work itself."
-# tools: omitted — inherits ALL tools. Orchestrator is instruction-constrained ("NEVER edit/run/write").
+# tools: omitted — inherits ALL tools. Constrained via body instructions to assessment and coordination only.
 # This ensures subagents without explicit tools (e.g. implementor) inherit the full set.
 agents:
   - researcher
