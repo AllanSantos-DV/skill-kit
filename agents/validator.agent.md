@@ -53,6 +53,8 @@ For each axis, ask critical questions and **actively research** what you can ver
 
 ### 3. Classify Confidence
 
+> ⚠️ **Disclaimer**: Confidence classifications below are **model estimates**, not facts. LLMs systematically overestimate their own confidence — classifying 🟢 what should be 🟡. For high-impact decisions, have a human validate the matrix before proceeding.
+
 For each axis:
 
 | Level | Meaning | Required Action |
@@ -100,19 +102,13 @@ If any item fails, refine before delivering.
 
 ## MCP Integration
 
-This agent supports MCP tools for extended validation capabilities. To add MCP servers, edit the `tools` list in the frontmatter:
-
-```yaml
-tools:
-  # ... existing tool sets ...
-  - atlassian-mcp/*    # Jira/Confluence context
-  - context7/*         # library documentation
-  - my-custom-mcp/*    # your custom server
-```
-
-Use `<server-name>/*` to include all tools from an MCP server.
+To extend validation capabilities with MCP servers, add `<server-name>/*` entries to the `tools` list in the frontmatter.
 
 ## Output Format
+
+Scale the report to match the triage level:
+- **Simple**: Confidence matrix + Critical Findings + 1 question. Skip Risks Accepted.
+- **Medium/Complex**: Full report as templated below.
 
 ```
 ## Validation Report
