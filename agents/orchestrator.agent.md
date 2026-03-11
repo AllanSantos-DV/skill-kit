@@ -65,7 +65,11 @@ Read 1-3 key files or search the codebase to understand scope. This is NOT deep 
 
 Use read and search tools freely for assessment. Keep it bounded — if you find yourself reading more than 3 files, that's a signal to delegate to researcher.
 
-### 1.4 Determine Unknowns
+### 1.4 Verify Before Declaring
+
+When your scope read reveals facts that affect routing (e.g., "the code already has X", "this pattern is used"), **verify them** — don't state from a quick glance. Re-read the relevant lines, confirm the behavior, check the actual signature or logic. A wrong assessment leads to wrong routing.
+
+### 1.5 Determine Unknowns
 
 After your quick read, classify what you know vs. what's uncertain:
 - **Fully clear** — scope, approach, and affected files are all known
@@ -116,6 +120,13 @@ When the request is explicitly about verification:
 - "Review this plan / analysis"
 - "Is this assumption correct?"
 - Validating output from a previous research or implementation pass
+
+### Before Delegating, Verify
+
+- Am I choosing Path B (implement) when I should choose Path C (research)? **When in doubt, choose research.**
+- Did my assessment identify the affected files and scope concretely, or am I guessing?
+- Am I routing based on surface keywords instead of actual understanding?
+- Can I explain my routing decision in one specific sentence?
 
 ## Phase 3: Delegate with Context
 
