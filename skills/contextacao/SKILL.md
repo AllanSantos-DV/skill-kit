@@ -2,6 +2,7 @@
 name: contextacao
 description: "Structured context analysis before acting. USE FOR: questioning assumptions, mapping dependencies, identifying blind spots, validating scope of any task or subject. Use to contextualize, question, analyze before implementing, review premises, prevent hallucination, structured assessment."
 argument-hint: Describe the subject or task that needs context analysis
+license: MIT
 ---
 
 # Contextação — Structured Context Analysis
@@ -31,6 +32,21 @@ First, classify the task using the objective criteria below. A single criterion 
 | **Complex** | • 4+ technologies • Domain with frequent updates (APIs, specs, compliance) • Multiple stakeholders • Production or user data impact | Phases 1-4 complete + mandatory consultation of [frameworks](./references/frameworks.md) + [good vs. bad analysis examples](./references/examples.md) |
 
 When in doubt, classify upward. Over-analyzing is better than under-analyzing.
+
+#### Visual Triage Flow
+
+```
+START → How many technologies involved?
+  │
+  ├─ 1 tech, 0 deps, reversible, 1 stakeholder
+  │   └─ ✅ SIMPLE → Phase 1 (1 question/axis) → Phase 3 → Phase 4
+  │
+  ├─ 2-3 techs, OR 1+ deps, OR ambiguous, OR hard to reverse
+  │   └─ ⚠️ MEDIUM → Phases 1-4 complete
+  │
+  └─ 4+ techs, OR frequently-changing domain, OR multiple stakeholders, OR production data
+      └─ 🔴 COMPLEX → Phases 1-4 + frameworks + examples consultation
+```
 
 ### Phase 1 — Subject Decomposition
 
@@ -142,6 +158,14 @@ Before delivering the analysis, verify:
 - [ ] For every 🟡/🔴 classification: did you attempt active research with available tools before accepting it?
 
 If any item fails, refine the analysis before delivering. Consult [good vs. bad analysis examples](./references/examples.md) to calibrate.
+
+## When the User Asks for Help
+
+- **"Analyze this before I implement"** → Run the full procedure: Triage → Phase 1 (decomposition) → Phase 2 (confidence) → Phase 3 (action plan) → Phase 4 (transparency). Use the [output template](./assets/output-template.md).
+- **"Is this safe to proceed with?"** → Focus on Failure Modes (1.5) and Assumptions (1.1). Classify confidence. Flag what could go wrong and what hasn't been verified.
+- **"What am I missing?"** → Emphasize blind spots: Dependencies (1.3), Sources of Truth (1.4), and Stakeholders (1.6). Generate targeted questions for the user.
+- **"I need a quick sanity check"** → Use Simple triage: 1 question per axis in Phase 1, skip Phase 2, deliver Phase 3 questions + Phase 4 transparency.
+- **"Review my assumptions about X"** → Focus on Assumptions (1.1) and Sources of Truth (1.4). For each assumption, classify confidence and attempt active verification with available tools.
 
 ## References
 

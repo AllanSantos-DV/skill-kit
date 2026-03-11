@@ -62,7 +62,9 @@ Os agents aparecem automaticamente no dropdown do Chat no VS Code.
 
 | Skill | Descrição |
 |-------|-----------|
+| [agent-creator](skills/agent-creator/) | Guia completo para criar custom agents (.agent.md) — tool restrictions, handoffs, orchestration |
 | [contextacao](skills/contextacao/) | Análise estruturada de contexto antes de agir — questionar premissas, dependências e pontos cegos |
+| [doc-to-markdown](skills/doc-to-markdown/) | Converter documentos (Word, Excel, PDF, PowerPoint, etc.) para Markdown consumível por LLMs |
 | [task-intent](skills/task-intent/) | Entender antes de implementar — força o agente a compreender POR QUÊ/PRA QUÊ/PRA QUEM antes de escrever código |
 | [task-map](skills/task-map/) | Externalizar análise e encadear tarefas — persiste decisões e contexto entre sessões |
 | [skill-creator](skills/skill-creator/) | Guia completo para criar skills bem estruturadas do zero |

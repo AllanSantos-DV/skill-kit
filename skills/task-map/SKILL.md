@@ -2,6 +2,7 @@
 name: task-map
 description: "Persist analysis so it survives context compression and chains between tasks. USE FOR: any task whose decisions affect future work — features, refactors, architecture changes, integrations. Produces a lightweight Task Analysis Map that externalizes intent, decisions, and chain context. Use to document decisions, create continuity, prevent context loss, bridge tasks, externalize reasoning."
 argument-hint: Describe the task to map and where to store the map file
+license: MIT
 ---
 
 # Task Map — Externalize and Chain
@@ -86,6 +87,27 @@ Without the chain, Map #3 might propose a Redis-heavy solution that conflicts wi
 - **NEVER** leave Key Decisions without reasoning — "decided X" without "because Y" is useless
 - **NEVER** record a decision as ✅ verified unless you actually checked the source — claiming verification without doing it poisons the chain for every future task
 - The map is for the NEXT agent/session, not the current one — write for someone with zero context
+
+### Common Pitfalls
+
+| | Pitfall | Consequence |
+|---|---------|-------------|
+| ❌ | Writing a map for a typo fix or rename | Overhead exceeds value. Maps are for decisions that constrain future work. |
+| ❌ | "Decided to use PostgreSQL" (no reasoning) | Next agent doesn't know WHY → might reverse the decision or conflict with it. |
+| ❌ | Marking a decision ✅ without actually checking the source | Poisons the chain. Every future task trusts a lie. |
+| ❌ | Skipping "For Next" on a multi-task series | Chain breaks. Next task starts from zero, re-discovers constraints the hard way. |
+| ❌ | Writing a 500-line map for a 10-line change | Map should be proportional to the task's impact, not a documentation exercise. |
+| ✅ | "Chose JWT because: stateless, works with our API gateway, team familiar" | Next agent inherits the reasoning and can validate or extend. |
+| ✅ | "For Next: Redis is shared with rate limiter. Don't add heavy caching without checking memory limits." | Prevents the next task from accidentally breaking the constraint. |
+| ✅ | Linking to Map #1 when Map #2 continues the same work area | Creates a traceable decision chain across sessions. |
+
+## When the User Asks for Help
+
+- **"Where do I put the map file?"** → Default: `docs/maps/`. Ask if they prefer a different location. Use kebab-case filenames: `docs/maps/auth-module.md`.
+- **"Do I need a map for this?"** → Apply the criteria: does the task involve decisions that constrain future work, is it part of a series, or did it require significant reasoning? If none apply, skip the map.
+- **"What happened in the previous task?"** → Search `docs/maps/` for the most recent map related to the current area. Read its **For Next** section and summarize what the current task inherits.
+- **"This map is too heavy for what I did"** → Scale down: for moderate tasks, Intent + Key Decisions + Done When is enough. Drop For Next if there's no follow-up task expected.
+- **"Link this to the previous work"** → Find the related map, add it to the Related field, and incorporate its For Next into the current map's context.
 
 ## Companion Skills
 

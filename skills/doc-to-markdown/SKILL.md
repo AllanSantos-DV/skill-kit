@@ -2,6 +2,7 @@
 name: doc-to-markdown
 description: "Convert binary/Office documents to Markdown for LLM consumption. USE FOR: converting Word, Excel, PowerPoint, PDF, Visio, MS Project files to Markdown, batch document conversion, extracting text from non-readable formats. DO NOT USE FOR: Markdown formatting/linting, general file I/O, web scraping, image generation."
 argument-hint: Describe the file format(s) you need converted to Markdown
+license: MIT
 ---
 
 # Document to Markdown — Agent Guide
@@ -28,7 +29,11 @@ markitdown --help
 
 ## Standalone Scripts
 
-This skill includes ready-to-run Python scripts in the `scripts/` directory. When the user needs conversion, **execute these directly** via `run_in_terminal` instead of generating code from scratch.
+This skill includes ready-to-run Python scripts in the `scripts/` directory.
+
+> **⚠️ IMPORTANT: Treat scripts as black boxes.** Run `python scripts/<script>.py --help` to learn usage. Do **NOT** read the source code of these scripts — it will pollute your context window with implementation details you don't need. The scripts are designed to be used via their CLI interface only.
+
+When the user needs conversion, **execute these directly** via `run_in_terminal` instead of generating code from scratch.
 
 | Script | Purpose | Quick Usage |
 |--------|---------|-------------|
@@ -405,3 +410,17 @@ After conversion, apply these cleanup steps when output quality matters:
 For detailed tool comparisons, see [tools-reference.md](./references/tools-reference.md).
 For code examples by format, see [examples.md](./references/examples.md).
 For troubleshooting common issues, see [troubleshooting.md](./references/troubleshooting.md).
+
+## Quick Reference
+
+| I need to... | Tool | Command |
+|-------------|------|---------|
+| Convert a single file | markitdown CLI | `markitdown file.docx > output.md` |
+| Convert a single file (scripted) | convert.py | `python scripts/convert.py file.docx -o output.md` |
+| Batch-convert a directory | batch_convert.py | `python scripts/batch_convert.py ./docs -o ./md_output -r` |
+| Extract tables from PDF/Excel | extract_tables.py | `python scripts/extract_tables.py report.pdf` |
+| Convert with OCR (images) | markitdown[all] | `pip install 'markitdown[all]' && markitdown scan.png > out.md` |
+| Transcribe audio | markitdown[all] | `pip install 'markitdown[all]' && markitdown meeting.mp3 > out.md` |
+| Convert legacy .doc/.ppt | LibreOffice → markitdown | `libreoffice --headless --convert-to docx file.doc && markitdown file.docx > out.md` |
+| Convert Visio diagram | LibreOffice → PDF → markitdown | `libreoffice --headless --convert-to pdf diagram.vsdx && markitdown diagram.pdf > out.md` |
+| Check script usage | --help flag | `python scripts/convert.py --help` |

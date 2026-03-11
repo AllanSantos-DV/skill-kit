@@ -1,6 +1,8 @@
 ---
 name: skill-manager-guide
 description: How to use the Skill Manager for Copilot extension — install, configure, sync and manage skills
+argument-hint: Describe what you need help with in the Skill Manager extension
+license: MIT
 ---
 
 # Skill Manager for Copilot — User Guide
