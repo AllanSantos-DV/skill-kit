@@ -150,15 +150,14 @@ tools:
 ### Orchestrator / Router
 
 ```yaml
-tools:
-  - search        # understand context for routing
-  - read          # read files for assessment
-  - agent         # delegate to workers
-  - todo          # track workflow
+# tools: omitted — inherits ALL
+# Constrained by body instructions ("NEVER edit/run")
+# Omitting ensures full-access sub-agents inherit ALL tools
 ```
 
 **Use case:** Entry-point coordinator that classifies and delegates.
-**Cannot:** Edit files, run commands, access web.
+**Tool access:** ALL (inherited). Restriction is via body instructions ("NEVER edit files, run commands, or write code"), not via `tools` field.
+**Why omit instead of declare?** If an orchestrator declares `tools: [search, read, agent, todo]`, sub-agents that omit `tools` (e.g. implementor) inherit only that restricted set — breaking their full-access design. Omitting `tools` on the orchestrator ensures the full tool set flows down to workers that need it.
 
 ### Full-Access Implementor
 

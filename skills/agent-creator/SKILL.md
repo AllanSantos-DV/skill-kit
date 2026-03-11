@@ -92,12 +92,41 @@ This is the rule that governs all tool access:
 
 There is NO `tools: ['*']` syntax. The only way to grant all tools is to **omit the field entirely**.
 
-### Decision Matrix
+**Practical consequences:**
+- **Orchestrators OMIT `tools`** → sub-agents inherit ALL. Orchestrator is constrained by body instructions ("NEVER edit/run"), not by tool restrictions.
+- **Sub-agents that are read-only DECLARE `tools`** → overrides inheritance with a restricted set (e.g. `search`, `read`).
+- **Sub-agents that need full access OMIT `tools`** → inherit ALL from parent.
+
+### Tool Configuration Workflow
+
+When creating an agent, follow this decision workflow to determine the correct `tools` strategy:
+
+```
+1. Will this agent have sub-agents (orchestrator/coordinator)?
+   ├─ YES → OMIT `tools`. Constrain via body instructions.
+   │        Reason: Declaring tools restricts what sub-agents inherit.
+   │        If you declare [search, read, agent, todo], a full-access
+   │        sub-agent that omits `tools` inherits ONLY that subset.
+   └─ NO  → Go to 2.
+
+2. Does this agent need full access (edit, terminal, etc.)?
+   ├─ YES → OMIT `tools` (inherits everything from parent or system).
+   └─ NO  → Go to 3.
+
+3. Is this agent read-only (research, validation, review)?
+   ├─ YES → DECLARE tools: [search, read, web, todo] (or appropriate subset).
+   └─ NO  → Ask the user what capabilities the agent needs and
+            DECLARE only those tool sets.
+```
+
+**IMPORTANT:** Always follow this workflow. Do not default to declaring tools on an orchestrator.
+
+### Quick Reference Matrix
 
 | Agent Role | Tool Strategy | Why |
 |-----------|--------------|-----|
-| Orchestrator (routes work) | Declare: `search`, `read`, `agent`, `todo` | Needs routing, not editing |
-| Read-only agent (research, validation) | Declare: `search`, `read`, `web`, `todo` | Enforces no-edit constraint |
+| Orchestrator (has sub-agents) | **Omit `tools`** (instruction-constrained) | Ensures sub-agents inherit ALL tools. Restriction is via body ("NEVER edit/run"). |
+| Read-only agent (research, validation) | Declare: `search`, `read`, `web`, `todo` | Enforces no-edit constraint at tool level |
 | Full-access agent (implementation) | **Omit `tools`** | Inherits everything from parent |
 | Restricted specialist | Declare only what's needed | Principle of least privilege |
 
@@ -118,6 +147,41 @@ tools:
 ```
 
 If the agent's body says "NEVER edit files" but tools aren't restricted, the soft constraint can fail. **Combine discipline (body) with enforcement (tools).**
+
+### Anti-Pattern: Declaring `tools` on an Orchestrator with Sub-Agents
+
+```yaml
+# WRONG — restricts what sub-agents inherit
+---
+name: orchestrator
+tools:
+  - search
+  - read
+  - agent
+  - todo
+agents:
+  - researcher
+  - implementor
+---
+# Result: implementor omits `tools` → inherits ONLY [search, read, agent, todo]
+# Implementor has NO edit, NO terminal → BROKEN
+```
+
+```yaml
+# CORRECT — omit tools, constrain via body instructions
+---
+name: orchestrator
+# tools: omitted — inherits ALL.
+# Constrained by body: "NEVER edit files, run commands, or write code"
+agents:
+  - researcher
+  - implementor
+---
+# Result: implementor omits `tools` → inherits ALL → can edit, run terminal
+# Orchestrator's restriction is via body instructions, not tool restrictions
+```
+
+**The rule:** Orchestrators with full-access sub-agents must **OMIT** `tools`. The orchestrator's constraint is behavioral (body instructions), not structural (tool restrictions). Declaring tools on the orchestrator poisons the inheritance chain.
 
 ## Handoffs — Designing Agent Transitions
 
@@ -169,8 +233,8 @@ User → Orchestrator → Researcher | Validator | Implementor
 **When to use:** Tasks vary in type (research vs implementation vs review). One entry point simplifies UX.
 
 **Key design:**
-- Orchestrator: `tools: [search, read, agent, todo]`, `agents: [list of workers]`
-- Workers: Specialized tools per role
+- Orchestrator: **Omit `tools`** (instruction-constrained via body). `agents: [list of workers]`
+- Workers: Specialized tools per role (read-only declare, full-access omit)
 
 ### Pattern 2: Pipeline
 

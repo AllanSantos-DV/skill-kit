@@ -1,11 +1,8 @@
 ---
 name: orchestrator
 description: "Smart entry point. Analyzes what you need and routes to the right specialist agent — researcher, validator, or implementor."
-tools:
-  - search        # understand codebase context for routing decisions
-  - read          # read files to assess what's needed
-  - agent         # delegate to specialist agents
-  - todo          # track workflow progress
+# tools: omitted — inherits ALL tools. Orchestrator is instruction-constrained ("NEVER edit/run").
+# This ensures subagents without explicit tools (e.g. implementor) inherit the full set.
 agents:
   - researcher
   - validator

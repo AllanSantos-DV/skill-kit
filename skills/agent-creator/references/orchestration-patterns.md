@@ -28,11 +28,9 @@ User → Orchestrator ─┬→ Worker A (e.g. researcher)
 ---
 name: orchestrator
 description: "Entry point. Analyzes requests and routes to the right specialist."
-tools:
-  - search        # understand context for routing
-  - read          # read files to assess needs
-  - agent         # delegate to workers
-  - todo          # track progress
+# tools: omitted — inherits ALL tools.
+# Orchestrator is instruction-constrained ("NEVER edit/run").
+# Omitting ensures sub-agents without explicit tools inherit the full set.
 agents:
   - worker-a
   - worker-b
@@ -63,6 +61,7 @@ You are the entry point. Analyze requests and delegate.
 ## Rules
 
 - **NEVER** do work yourself — route only
+- **NEVER** edit files, run commands, or write code
 - **ALWAYS** explain your routing: "This is a X task because..."
 - **ALWAYS** pass full user context to the worker
 ```
@@ -101,7 +100,7 @@ You are a <domain> specialist. Your scope is limited to <X>.
 
 | Decision | Guidance |
 |----------|----------|
-| Orchestrator tools | `search` + `read` for context, `agent` for delegation, `todo` for tracking. Never `edit` or `terminal`. |
+| Orchestrator tools | **OMITTED** — instruction-constrained via body ("NEVER edit/run"). Omitting ensures full-access workers inherit ALL tools. |
 | Worker tools | Only what the role needs. Read-only workers: `search` + `read`. Full-access workers: omit `tools`. |
 | `agents` on orchestrator | Explicit list — never `['*']` to prevent unexpected routing. |
 | `agents` on workers | `[]` unless they need to invoke sub-workers. |
@@ -263,6 +262,10 @@ tools:
   - read
   - agent
   - todo
+# NOTE: tools are explicitly declared here because ALL sub-agents (security-reviewer,
+# performance-reviewer, ux-reviewer) declare their own read-only tools.
+# No sub-agent relies on inheriting from the coordinator.
+# For orchestrators with full-access workers, OMIT tools instead.
 agents:
   - security-reviewer
   - performance-reviewer
@@ -349,11 +352,8 @@ This is a real-world implementation of the **Coordinator/Worker + Pipeline** hyb
 ---
 name: orchestrator
 description: "Smart entry point. Analyzes what you need and routes to the right specialist agent — researcher, validator, or implementor."
-tools:
-  - search
-  - read
-  - agent
-  - todo
+# tools: omitted — inherits ALL tools. Orchestrator is instruction-constrained ("NEVER edit/run").
+# This ensures subagents without explicit tools (e.g. implementor) inherit the full set.
 agents:
   - researcher
   - validator
@@ -375,7 +375,7 @@ handoffs:
 ```
 
 - Routes via classification: exploration → researcher, verification → validator, action → implementor
-- `tools`: has `search` + `read` for context-aware routing, `agent` for delegation — but NOT `edit` or `terminal`
+- `tools`: **OMITTED** — inherits ALL. Constrained via body instructions ("NEVER edit files, run commands, or write code"). This ensures sub-agents that also omit `tools` (like implementor) inherit the full tool set.
 - `agents`: explicit list of 3 workers — not `['*']`
 
 **Researcher** (read-only investigation):
@@ -451,9 +451,10 @@ handoffs:
 
 | Principle | Implementation |
 |-----------|---------------|
-| Least privilege | Researcher/validator can't edit. Orchestrator can't edit. Only implementor can. |
+| Tool inheritance | Orchestrator **omits** `tools` → inherits ALL. Sub-agents that also omit (implementor) inherit ALL. Sub-agents that declare (researcher, validator) override with read-only set. |
+| Least privilege | Researcher/validator declare read-only tools (hard constraint). Orchestrator is instruction-constrained (soft constraint + identity framing). Only implementor has full access. |
 | Quality chain | Research → validate → implement ensures understanding before action. |
 | Escape hatch | Implementor's backward handoff prevents dead-end execution. |
 | Context preservation | Each handoff prompt tells the receiving agent WHAT to do with the context. |
-| Soft + hard constraints | Researcher body says "NEVER edit files" AND tools field omits `edit`. Double enforcement. |
+| Soft + hard constraints | Researcher body says "NEVER edit files" AND tools field omits `edit`. Double enforcement. Orchestrator body says "NEVER edit/run" — soft constraint is sufficient because routing is its only job. |
 | Explicit routing | Orchestrator has explicit `agents` list, not `['*']`. No accidental invocation. |
