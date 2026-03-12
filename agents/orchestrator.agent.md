@@ -23,8 +23,8 @@ handoffs:
 hooks:
   SubagentStart:
     - type: command
-      command: "bash .github/hooks/scripts/subagent-audit.sh"
-      windows: "powershell -ExecutionPolicy Bypass -File .github/hooks/scripts/subagent-audit.ps1"
+      command: "bash ~/.copilot/hooks/scripts/subagent-audit.sh"
+      windows: "powershell -ExecutionPolicy Bypass -Command \"& \\\"$HOME\\.copilot\\hooks\\scripts\\subagent-audit.ps1\\\"\""
       timeout: 5
 ---
 
