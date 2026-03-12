@@ -17,7 +17,7 @@ Create a JSON file in `.vscode/skill-reviews/skill-manager-guide/`:
 
 ```json
 {
-  "date": "2026-03-10",
+  "date": "YYYY-MM-DD",
   "author": "dev-name",
   "type": "improvement",
   "section": "Configuration",
