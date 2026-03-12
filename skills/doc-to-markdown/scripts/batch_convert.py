@@ -9,7 +9,9 @@ Usage:
     python batch_convert.py ./docs --dry-run                      # preview what would be converted
     python batch_convert.py ./docs --overwrite                    # overwrite existing .md files
 
-Supported formats: .docx, .doc, .xlsx, .xls, .csv, .pptx, .ppt, .pdf, .html, .epub, .png, .jpg, .jpeg, .gif, .bmp, .tiff, .mp3, .wav, .m4a, .ipynb, .zip, .msg
+Supported formats: .docx, .doc, .xlsx, .xls, .csv, .pptx, .ppt, .pdf, .html, .epub,
+    .png, .jpg, .jpeg, .gif, .bmp, .tiff, .mp3, .wav, .m4a, .ipynb, .zip, .msg,
+    .mpp, .mspdi, .mpx (MS Project — requires Java 11+)
 Requires: pip install markitdown (or pip install 'markitdown[all]' for OCR)
 """
 
@@ -26,6 +28,7 @@ SUPPORTED_EXTENSIONS = {
     ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff",
     ".mp3", ".wav", ".m4a",
     ".ipynb", ".zip", ".msg",
+    ".mpp", ".mspdi", ".mpx",  # MS Project
 }
 
 
@@ -36,7 +39,13 @@ def build_frontmatter(input_path: Path) -> str:
     return f'---\nsource: "{source}"\nconverted: "{date}"\nformat: "{fmt}"\n---\n\n'
 
 
+_MPP_EXTENSIONS = {".mpp", ".mspdi", ".mpx"}
+
+
 def convert_file(md_converter, input_path: Path) -> str:
+    if input_path.suffix.lower() in _MPP_EXTENSIONS:
+        from convert import convert_mpp
+        return convert_mpp(input_path)
     result = md_converter.convert(str(input_path))
     return result.text_content
 
@@ -175,6 +184,9 @@ def main() -> None:
         for name, err in failed:
             print(f"  ✗ {name}: {err}")
     print(f"Total files found: {len(files)}")
+
+    if failed:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

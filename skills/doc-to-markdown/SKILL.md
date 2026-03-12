@@ -27,6 +27,28 @@ pip install 'markitdown[all]'
 markitdown --help
 ```
 
+### Script Prerequisites
+
+| Script | pip install | System |
+|--------|-----------|--------|
+| `convert.py` | `markitdown` | — |
+| `convert.py` (OCR) | `markitdown[all]` | — |
+| `convert.py --tool pdfplumber` | `pdfplumber` | — |
+| `convert.py --tool mammoth` | `mammoth` | — |
+| `convert.py --tool mpxj` | `mpxj jpype1` | Java 11+ |
+| `batch_convert.py` | `markitdown` | — |
+| `batch_convert.py` (.mpp) | `markitdown mpxj jpype1` | Java 11+ |
+| `extract_tables.py` (PDF) | `pdfplumber` | — |
+| `extract_tables.py` (Excel) | `pandas tabulate openpyxl` | — |
+
+Scripts auto-install missing packages in interactive terminals. In non-interactive environments (LLM agents, CI), packages are installed automatically without prompting.
+
+#### Quick Install (all dependencies)
+
+```bash
+pip install markitdown pdfplumber mammoth pandas tabulate openpyxl mpxj jpype1
+```
+
 ## Standalone Scripts
 
 This skill includes ready-to-run Python scripts in the `scripts/` directory.
@@ -42,6 +64,8 @@ When the user needs conversion, **execute these directly** via `run_in_terminal`
 | `extract_tables.py` | Tables from PDF/Excel → Markdown | `python scripts/extract_tables.py report.pdf` |
 
 All scripts accept `--help` for full usage. Paths are passed as parameters — never hardcoded.
+
+> **Working directory:** Run scripts from any directory using absolute paths, or from the skill's root directory using relative paths (`python scripts/convert.py ...`).
 
 When the user asks for conversion, prefer running the bundled scripts over generating inline code. Adjust parameters to match the user's specific paths and requirements.
 
@@ -59,7 +83,7 @@ Use this table to determine the conversion approach:
 | PowerPoint (legacy) | .ppt | markitdown | LibreOffice headless → .pptx → markitdown |
 | PDF | .pdf | markitdown | PyMuPDF (fitz), pdfplumber (tables), pdf-parse (Node.js) |
 | Visio | .vsd, .vsdx | _not supported_ | LibreOffice headless → SVG/PDF → OCR, or export to PPTX → python-pptx |
-| MS Project | .mpp | _not supported_ | mpxj (Java + jpype), or export to XML/CSV from MS Project |
+| MS Project | .mpp, .mspdi, .mpx | mpxj (via convert.py) | Export to CSV → markitdown |
 | HTML | .html, .htm | markitdown | pandoc, BeautifulSoup |
 | EPUB | .epub | markitdown | pandoc |
 | Images (OCR) | .png, .jpg, .jpeg, .gif, .bmp, .tiff | markitdown (`[all]`) | pytesseract, EasyOCR |
@@ -206,44 +230,19 @@ No direct Python converter exists. Use this cascade:
 
 Always warn the user: Visio conversion is lossy. Complex diagrams with connectors and swimlanes will lose structural information. Suggest Mermaid diagrams as the target representation if the user needs to preserve diagram logic.
 
-#### MS Project (.mpp)
+#### MS Project (.mpp, .mspdi, .mpx)
 
-No Python-native converter. Options:
+Natively supported via `convert.py --tool mpxj`. Requires Java 11+ (auto-detected).
 
-1. **mpxj** (Java library with Python bindings):
-   ```bash
-   pip install mpxj
-   ```
-   ```python
-   import jpype
-   from net.sf.mpxj.reader import UniversalProjectReader
+```bash
+python scripts/convert.py project.mpp -o project.md
+```
 
-   reader = UniversalProjectReader()
-   project = reader.read("file.mpp")
-   for task in project.getTasks():
-       print(f"- **{task.getName()}** | Start: {task.getStart()} | End: {task.getFinish()} | Duration: {task.getDuration()}")
-   ```
-   Note: mpxj requires a JVM. Install Java JDK and jpype1 (`pip install jpype1`).
+Output includes: project properties, resources table, full task table (WBS, dates, durations, predecessors, resources), and summary statistics. The script uses MPXJ's UniversalProjectReader which handles .mpp (all versions), .mspdi (XML), and .mpx formats.
 
-2. **Export-based**: Ask the user to export from MS Project as XML or CSV, then parse:
-   ```bash
-   # If exported as CSV
-   markitdown project.csv > output.md
-   ```
-
-3. **XML parse**: If exported as MS Project XML:
-   ```python
-   import xml.etree.ElementTree as ET
-
-   tree = ET.parse("project.xml")
-   root = tree.getroot()
-   ns = {"ms": "http://schemas.microsoft.com/project"}
-   for task in root.findall(".//ms:Task", ns):
-       name = task.findtext("ms:Name", default="", namespaces=ns)
-       start = task.findtext("ms:Start", default="", namespaces=ns)
-       finish = task.findtext("ms:Finish", default="", namespaces=ns)
-       print(f"- **{name}** | {start} → {finish}")
-   ```
+If Java is not available, ask the user to:
+1. Install Java 11+: `choco install temurin17` (Windows) or `apt install openjdk-17-jdk` (Linux)
+2. Or export from MS Project as CSV, then: `python scripts/convert.py project.csv -o project.md`
 
 #### Images (.png, .jpg, .jpeg, .gif, .bmp, .tiff)
 
