@@ -1,6 +1,6 @@
 ---
 name: task-intent
-description: "Understand before implementing. USE FOR: any task where the agent might rush to code — forces understanding WHY/WHAT FOR/FOR WHOM before defining a solution, activates planning and reasoning discipline, prevents technical debt from shallow requests. Use to validate intent, plan before coding, reason before acting, challenge assumptions, prevent premature implementation."
+description: "**WORKFLOW SKILL** — Understand before implementing. USE FOR: any task where the agent might rush to code — forces understanding WHY/WHAT FOR/FOR WHOM before defining a solution, activates planning and reasoning discipline, prevents technical debt from shallow requests. Use to validate intent, plan before coding, reason before acting, challenge assumptions, prevent premature implementation. DO NOT USE FOR: deep multi-technology analysis (use contextação), persisting decisions across tasks (use task-map)."
 argument-hint: Describe the task or request to analyze before implementing
 license: MIT
 ---

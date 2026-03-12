@@ -1,6 +1,6 @@
 ---
 name: contextacao
-description: "Structured context analysis before acting. USE FOR: questioning assumptions, mapping dependencies, identifying blind spots, validating scope of any task or subject. Use to contextualize, question, analyze before implementing, review premises, prevent hallucination, structured assessment."
+description: "**WORKFLOW SKILL** — Structured context analysis before acting. USE FOR: questioning assumptions, mapping dependencies, identifying blind spots, validating scope of any task or subject. Use to contextualize, question, analyze before implementing, review premises, prevent hallucination, structured assessment. DO NOT USE FOR: simple tasks where task-intent suffices, direct implementation, code review."
 argument-hint: Describe the subject or task that needs context analysis
 license: MIT
 ---

@@ -1,6 +1,6 @@
 ---
 name: skill-manager-guide
-description: How to use the Skill Manager for Copilot extension — install, configure, sync and manage skills
+description: "Guide to the Skill Manager for Copilot extension. USE FOR: adding/removing skill repos, syncing skills, pushing feedback, configuring sync intervals, troubleshooting sync issues, understanding skill format. DO NOT USE FOR: creating new skills (use skill-creator), creating agents (use agent-creator)."
 argument-hint: Describe what you need help with in the Skill Manager extension
 license: MIT
 ---

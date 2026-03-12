@@ -1,6 +1,6 @@
 ---
 name: task-map
-description: "Persist analysis so it survives context compression and chains between tasks. USE FOR: any task whose decisions affect future work — features, refactors, architecture changes, integrations. Produces a lightweight Task Analysis Map that externalizes intent, decisions, and chain context. Use to document decisions, create continuity, prevent context loss, bridge tasks, externalize reasoning."
+description: "**WORKFLOW SKILL** — Persist analysis so it survives context compression and chains between tasks. USE FOR: any task whose decisions affect future work — features, refactors, architecture changes, integrations. Produces a lightweight Task Analysis Map that externalizes intent, decisions, and chain context. Use to document decisions, create continuity, prevent context loss, bridge tasks, externalize reasoning. DO NOT USE FOR: quick intent validation (use task-intent), deep structured analysis (use contextação)."
 argument-hint: Describe the task to map and where to store the map file
 license: MIT
 ---
