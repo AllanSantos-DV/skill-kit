@@ -20,6 +20,12 @@ handoffs:
     agent: implementor
     prompt: "Implement the task described above."
     send: false
+hooks:
+  SubagentStart:
+    - type: command
+      command: "bash .github/hooks/scripts/subagent-audit.sh"
+      windows: "powershell -ExecutionPolicy Bypass -File .github/hooks/scripts/subagent-audit.ps1"
+      timeout: 5
 ---
 
 # Orchestrator — Assess, Decide, Coordinate

@@ -14,6 +14,12 @@ handoffs:
     agent: validator
     prompt: "Review the implementation above. Verify that the changes match the validated plan, check for missed edge cases, and confirm the quality checklist passes."
     send: false
+hooks:
+  Stop:
+    - type: command
+      command: "bash .github/hooks/scripts/stop-checklist.sh"
+      windows: "powershell -ExecutionPolicy Bypass -File .github/hooks/scripts/stop-checklist.ps1"
+      timeout: 10
 ---
 
 # Implementor — Execute with Discipline
