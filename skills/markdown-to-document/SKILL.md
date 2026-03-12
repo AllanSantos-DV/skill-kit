@@ -432,3 +432,8 @@ For detailed tool comparisons, see [tools-reference.md](./references/tools-refer
 For code examples by format, see [examples.md](./references/examples.md).
 For troubleshooting common issues, see [troubleshooting.md](./references/troubleshooting.md).
 For template creation guidance, see [templates-guide.md](./references/templates-guide.md).
+
+## Companion Skills
+
+- For **the reverse direction** (documents → Markdown): use **doc-to-markdown**
+- For **understanding intent** before generating documents: use **task-intent**
