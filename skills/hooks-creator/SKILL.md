@@ -56,6 +56,16 @@ When targeting VS Code only, use the 8 shared events. When targeting Claude Code
 | `.claude/settings.json` | Workspace | Claude Code + VS Code |
 | `~/.claude/settings.json` | User global | Claude Code + VS Code |
 
+**Scope rules:**
+- Hooks are **per-workspace** — they only apply inside the project where they are configured. Other workspaces are unaffected.
+- VS Code has no global hooks path. To reuse hooks across projects, copy `.github/hooks/` and scripts to each workspace (or use a shared template repo).
+- Claude Code supports `~/.claude/settings.json` as a **user-global** hook location — hooks defined there apply to all projects.
+
+**`chat.useCustomAgentHooks` setting:**
+- This setting **only enables/disables** the agent-scoped hooks feature — it does NOT create or define any hooks.
+- Hooks are defined in `.github/hooks/*.json` (workspace) and `.agent.md` frontmatter (agent-scoped). The setting just controls whether VS Code reads the frontmatter hooks.
+- Recommended: set it **once in User Settings (global)** so it applies to all workspaces automatically — avoids repeating it in every `.vscode/settings.json`.
+
 **Precedence**: Agent-scoped hooks (frontmatter) run in addition to workspace hooks (`.github/hooks/`). They do NOT replace each other — both execute.
 
 ## Hook Configuration Format
