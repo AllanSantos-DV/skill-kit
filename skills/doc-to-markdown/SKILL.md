@@ -423,3 +423,8 @@ For troubleshooting common issues, see [troubleshooting.md](./references/trouble
 | Convert legacy .doc/.ppt | LibreOffice → markitdown | `libreoffice --headless --convert-to docx file.doc && markitdown file.docx > out.md` |
 | Convert Visio diagram | LibreOffice → PDF → markitdown | `libreoffice --headless --convert-to pdf diagram.vsdx && markitdown diagram.pdf > out.md` |
 | Check script usage | --help flag | `python scripts/convert.py --help` |
+
+## Companion Skills
+
+- For **the reverse direction** (Markdown → documents): use **markdown-to-document**
+- For **template pattern extraction** before generating documents: use **markdown-to-document** (`analyze_template.py`)

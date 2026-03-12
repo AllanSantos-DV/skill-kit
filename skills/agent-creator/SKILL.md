@@ -489,3 +489,8 @@ Before considering an agent complete, verify:
 | Write effective body instructions | Writing the Body | Imperative voice, role tables, checklists |
 | Debug "agent can't access X" | Tool Configuration → Inheritance Rule | Check if `tools` is declared or omitted |
 | Make constraints stick | Discipline Constraints | Hard (tool-based) + soft (body) combined |
+
+## Companion Skills
+
+- For **creating the skills that agents use**: use **skill-creator**
+- For **managing and syncing skills across repos**: use **skill-manager-guide**
