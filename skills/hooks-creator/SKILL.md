@@ -235,6 +235,49 @@ Hook scripts run with **the user's permissions**. A malicious hook in a cloned r
 | Assuming matchers work in VS Code | Filter `tool_name` inside the script |
 | Hook script not executable on Linux | Run `chmod +x` on bash scripts |
 | Long-running hooks blocking the agent | Set appropriate `timeout` values |
+| Agent-scoped hooks not working | Enable `chat.useCustomAgentHooks: true` in VS Code User Settings (global) |
+
+## Distribution via Skill Manager
+
+The **Skill Manager extension** can automatically distribute hook scripts alongside agents and skills. This is the recommended approach for teams and shared repos.
+
+### How it works
+
+1. Place hook scripts (`.sh` and `.ps1`) in a `hooks/` directory at the repo root (alongside `agents/` and `skills/`)
+2. When the extension runs `Pull All`, it syncs hooks to `~/.copilot/hooks/scripts/` — same global location referenced by agents
+3. Hook scripts are always overwritten from the repo (repo is source of truth, no conflict resolution)
+
+### Repo structure
+
+```
+my-repo/
+  agents/         ← agent .md files (synced to ~/.copilot/agents/)
+  skills/         ← skill directories (synced to ~/.copilot/skills/)
+  hooks/          ← hook scripts (synced to ~/.copilot/hooks/scripts/)
+    stop-checklist.sh
+    stop-checklist.ps1
+    output-format.sh
+    output-format.ps1
+```
+
+### Configuration
+
+The hooks directory path defaults to `hooks/` and can be overridden in `.skillmanager.json`:
+
+```json
+{
+  "hooks": { "path": "hooks" }
+}
+```
+
+The destination directory defaults to `~/.copilot/hooks/scripts/` and can be overridden via the `skillManager.hooksPath` VS Code setting.
+
+### Why this matters
+
+Without distribution, hook scripts must be manually copied to each machine. With the Skill Manager:
+- **New team member** installs the extension → pulls → agents + hooks are ready
+- **Hook update** pushed to repo → next pull automatically updates scripts everywhere
+- **Cross-platform** — both `.sh` and `.ps1` variants are synced
 
 ## Companion Skills
 
