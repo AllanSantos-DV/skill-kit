@@ -58,8 +58,16 @@ When targeting VS Code only, use the 8 shared events. When targeting Claude Code
 
 **Scope rules:**
 - Hooks are **per-workspace** — they only apply inside the project where they are configured. Other workspaces are unaffected.
-- VS Code has no global hooks path. To reuse hooks across projects, copy `.github/hooks/` and scripts to each workspace (or use a shared template repo).
+- VS Code has no global hooks path for **workspace hooks** (`.github/hooks/`). To reuse those across projects, copy the files or use a template repo.
 - Claude Code supports `~/.claude/settings.json` as a **user-global** hook location — hooks defined there apply to all projects.
+
+**Global vs workspace scripts for agent-scoped hooks:**
+- Agent-scoped hooks (frontmatter) reference **shell scripts by path**. If the scripts live inside the workspace (e.g., `.github/hooks/scripts/`), they only work in that workspace.
+- **Recommended for portable agents**: store hook scripts in a **global user directory** (e.g., `~/.copilot/hooks/scripts/`) and reference them with portable paths:
+  - **bash/macOS/Linux**: `bash ~/.copilot/hooks/scripts/<script>.sh` — `~` expands at runtime
+  - **Windows**: `powershell -ExecutionPolicy Bypass -Command "& \"$HOME\.copilot\hooks\scripts\<script>.ps1\""` — `$HOME` resolves at runtime
+- This way, agents synced to any workspace always find their hook scripts. No per-workspace setup needed.
+- **Workspace hooks** (`.github/hooks/*.json`) should keep scripts inside the project — they are project-specific by nature (e.g., injecting git context).
 
 **`chat.useCustomAgentHooks` setting:**
 - This setting **only enables/disables** the agent-scoped hooks feature — it does NOT create or define any hooks.

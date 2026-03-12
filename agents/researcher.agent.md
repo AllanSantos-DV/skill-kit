@@ -18,8 +18,8 @@ handoffs:
 hooks:
   Stop:
     - type: command
-      command: "bash .github/hooks/scripts/output-format.sh"
-      windows: "powershell -ExecutionPolicy Bypass -File .github/hooks/scripts/output-format.ps1"
+      command: "bash ~/.copilot/hooks/scripts/output-format.sh"
+      windows: "powershell -ExecutionPolicy Bypass -Command \"& \\\"$HOME\\.copilot\\hooks\\scripts\\output-format.ps1\\\"\""
       timeout: 10
 ---
 
