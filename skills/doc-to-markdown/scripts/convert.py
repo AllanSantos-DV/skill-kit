@@ -7,14 +7,21 @@ Usage:
     python convert.py report.pdf --tool pdfplumber      # force specific tool
     python convert.py scan.png --ocr                    # OCR mode
     python convert.py file.docx --no-frontmatter        # skip YAML header
+    python convert.py project.mpp -o project.md         # MS Project
+    python convert.py project.mpp --tool mpxj           # force mpxj
 
-Supported formats: .docx, .doc, .xlsx, .xls, .csv, .pptx, .ppt, .pdf, .html, .epub, .png, .jpg, .jpeg, .gif, .bmp, .tiff, .mp3, .wav, .m4a, .ipynb, .zip, .msg
+Supported formats: .docx, .doc, .xlsx, .xls, .csv, .pptx, .ppt, .pdf, .html, .epub,
+    .png, .jpg, .jpeg, .gif, .bmp, .tiff, .mp3, .wav, .m4a, .ipynb, .zip, .msg,
+    .mpp, .mspdi, .mpx (MS Project — requires Java 11+)
 Requires: pip install markitdown (or pip install 'markitdown[all]' for OCR)
 """
 
 from __future__ import annotations
 
 import argparse
+import json
+import os
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -25,9 +32,10 @@ SUPPORTED_EXTENSIONS = {
     ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff",
     ".mp3", ".wav", ".m4a",
     ".ipynb", ".zip", ".msg",
+    ".mpp", ".mspdi", ".mpx",  # MS Project
 }
 
-TOOL_CHOICES = ["markitdown", "pandoc", "pdfplumber", "mammoth"]
+TOOL_CHOICES = ["markitdown", "pandoc", "pdfplumber", "mammoth", "mpxj"]
 
 
 def convert_markitdown(input_path: Path, *, enable_ocr: bool = False) -> str:
@@ -120,6 +128,277 @@ def convert_mammoth(input_path: Path) -> str:
     return result.value
 
 
+# ---------------------------------------------------------------------------
+# MS Project conversion via MPXJ
+# ---------------------------------------------------------------------------
+
+# Java helpers shared with markdown-to-document/scripts/analyze_template.py
+
+
+def _ensure_package(import_name: str, pip_name: str | None = None) -> bool:
+    """Try to import a package; auto-install if non-interactive. Returns True if available."""
+    pip_name = pip_name or import_name
+    try:
+        __import__(import_name)
+        return True
+    except (ImportError, OSError):
+        pass
+
+    if sys.stdin.isatty():
+        answer = input(f'Package "{pip_name}" is not installed. Install it now? [Y/n] ').strip().lower()
+        if answer in ("", "y", "yes"):
+            subprocess.check_call([sys.executable, "-m", "pip", "install", pip_name])
+            return True
+        return False
+    else:
+        print(f"Auto-installing missing package: {pip_name}", file=sys.stderr)
+        subprocess.check_call([sys.executable, "-m", "pip", "install", pip_name])
+        __import__(import_name)  # verify
+        return True
+
+
+def _check_java(min_version: int = 11) -> str | None:
+    """Check if Java is available and meets the minimum version. Returns java path or None."""
+    resolver = Path(__file__).parent / "runtime_resolver.py"
+    if resolver.is_file():
+        try:
+            result = subprocess.run(
+                [sys.executable, str(resolver), "java",
+                 "--min-version", str(min_version)],
+                capture_output=True, text=True, timeout=30
+            )
+            if result.returncode == 0:
+                info = json.loads(result.stdout)
+                if info.get("found"):
+                    return info.get("path")
+        except Exception:
+            pass
+
+    java_cmd = "java"
+    try:
+        result = subprocess.run(
+            [java_cmd, "-version"],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.stderr or result.stdout:
+            return java_cmd
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    return None
+
+
+def _resolve_java_home(java_path: str) -> Path | None:
+    """Resolve the actual JAVA_HOME from a java executable path."""
+    resolved = Path(java_path).resolve()
+    if resolved.parent.name.lower() == "bin":
+        return resolved.parent.parent
+    try:
+        result = subprocess.run(
+            [java_path, "-XshowSettings:properties", "-version"],
+            capture_output=True, text=True, timeout=10,
+        )
+        for line in (result.stderr or "").splitlines():
+            if "java.home" in line and "=" in line:
+                return Path(line.split("=", 1)[1].strip())
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    return None
+
+
+def _find_jvm_dll(jdk_home: Path) -> str | None:
+    """Locate the JVM shared library inside a JDK home directory."""
+    if sys.platform == "win32":
+        candidates = [
+            jdk_home / "bin" / "server" / "jvm.dll",
+            jdk_home / "bin" / "client" / "jvm.dll",
+        ]
+    elif sys.platform == "darwin":
+        candidates = [
+            jdk_home / "lib" / "server" / "libjvm.dylib",
+            jdk_home / "lib" / "client" / "libjvm.dylib",
+        ]
+    else:
+        candidates = [
+            jdk_home / "lib" / "server" / "libjvm.so",
+            jdk_home / "lib" / "client" / "libjvm.so",
+        ]
+    for c in candidates:
+        if c.is_file():
+            return str(c)
+    return None
+
+
+def _bootstrap_jvm() -> None:
+    """Ensure JVM is started with MPXJ on classpath."""
+    java_path = _check_java(min_version=11)
+    if not java_path:
+        print("Error: Java 11+ is required for MS Project conversion.", file=sys.stderr)
+        print("Install: choco install temurin17 (Windows) or apt install openjdk-17-jdk (Linux)", file=sys.stderr)
+        sys.exit(1)
+
+    jdk_home = _resolve_java_home(java_path)
+    jvm_path = _find_jvm_dll(jdk_home) if jdk_home else None
+    if jdk_home:
+        os.environ["JAVA_HOME"] = str(jdk_home)
+
+    _ensure_package("mpxj")
+    _ensure_package("jpype", "jpype1")
+
+    import mpxj  # noqa: F401 — adds MPXJ jars to classpath
+    import jpype
+    if not jpype.isJVMStarted():
+        try:
+            if jvm_path:
+                jpype.startJVM(jvm_path)
+            else:
+                jpype.startJVM()
+        except Exception as e:
+            print(f"Error starting JVM: {e}", file=sys.stderr)
+            sys.exit(1)
+
+
+def _format_date(dt) -> str:
+    """Convert a Java LocalDateTime/LocalDate to 'YYYY-MM-DD' string."""
+    if dt is None:
+        return "—"
+    try:
+        return str(dt).split("T")[0]
+    except Exception:
+        return str(dt)
+
+
+def _format_duration(dur) -> str:
+    """Convert an MPXJ Duration to a human string like '5d' or '8h'."""
+    if dur is None:
+        return "—"
+    try:
+        val = dur.getDuration()
+        units = str(dur.getUnits())
+        if "HOUR" in units:
+            return f"{val}h"
+        if "WEEK" in units:
+            return f"{val}w"
+        if "MINUTE" in units:
+            return f"{val}m"
+        return f"{val}d"
+    except Exception:
+        return str(dur)
+
+
+def convert_mpp(input_path: Path) -> str:
+    """Convert MS Project file (.mpp, .mspdi, .mpx) to Markdown."""
+    _bootstrap_jvm()
+
+    from org.mpxj.reader import UniversalProjectReader
+
+    reader = UniversalProjectReader()
+    project = reader.read(str(input_path))
+    if project is None:
+        print(f"Error: MPXJ could not read '{input_path}'.", file=sys.stderr)
+        sys.exit(1)
+
+    parts: list[str] = []
+
+    # --- Project header ---
+    props = project.getProjectProperties()
+    name = str(props.getName() or input_path.stem)
+    parts.append(f"# Project: {name}\n")
+
+    start = _format_date(props.getStartDate())
+    finish = _format_date(props.getFinishDate())
+    cal = project.getDefaultCalendar()
+    cal_name = str(cal.getName()) if cal else "Standard"
+    parts.append(f"**Start:** {start} | **Finish:** {finish} | **Calendar:** {cal_name}\n")
+
+    # --- Properties table ---
+    hours_per_day = 8.0
+    try:
+        mpd = props.getMinutesPerDay()
+        if mpd:
+            hours_per_day = round(float(mpd.getDuration()) / 60, 1)
+    except Exception:
+        pass
+
+    days_per_month = 20
+    try:
+        dpm = props.getDaysPerMonth()
+        if dpm is not None:
+            days_per_month = int(dpm)
+    except Exception:
+        pass
+
+    author = str(props.getAuthor() or "")
+
+    parts.append("\n## Project Properties\n")
+    parts.append("| Property | Value |")
+    parts.append("|----------|-------|")
+    parts.append(f"| Hours per Day | {hours_per_day} |")
+    parts.append(f"| Days per Month | {days_per_month} |")
+    if author:
+        parts.append(f"| Author | {author} |")
+
+    # --- Resources table ---
+    all_resources = list(project.getResources())
+    named_resources = [r for r in all_resources if r.getName()]
+    if named_resources:
+        parts.append("\n## Resources\n")
+        parts.append("| Name | Type | Group |")
+        parts.append("|------|------|-------|")
+        for r in named_resources:
+            rname = str(r.getName())
+            rtype = str(r.getType() or "Work")
+            rgroup = str(r.getGroup() or "")
+            parts.append(f"| {rname} | {rtype} | {rgroup} |")
+
+    # --- Tasks table ---
+    all_tasks = list(project.getTasks())
+    tasks = [t for t in all_tasks if t.getID() is not None and int(t.getID()) > 0 and t.getName()]
+    if tasks:
+        parts.append("\n## Tasks\n")
+        parts.append("| # | WBS | Task | Start | Finish | Duration | Predecessors | Resources |")
+        parts.append("|---|-----|------|-------|--------|----------|-------------|-----------|")
+        for i, task in enumerate(tasks, 1):
+            wbs = str(task.getWBS() or "")
+            tname = str(task.getName())
+            tstart = _format_date(task.getStart())
+            tfinish = _format_date(task.getFinish())
+            dur = _format_duration(task.getDuration())
+
+            # Predecessors
+            preds: list[str] = []
+            try:
+                for pred in (task.getPredecessors() or []):
+                    pred_task = pred.getTargetTask()
+                    if pred_task:
+                        preds.append(str(pred_task.getID()))
+            except Exception:
+                pass
+            pred_str = ", ".join(preds) if preds else "—"
+
+            # Resources
+            res_names: list[str] = []
+            try:
+                for ra in (task.getResourceAssignments() or []):
+                    r = ra.getResource()
+                    if r and r.getName():
+                        res_names.append(str(r.getName()))
+            except Exception:
+                pass
+            res_str = ", ".join(res_names) if res_names else "—"
+
+            parts.append(f"| {i} | {wbs} | {tname} | {tstart} | {tfinish} | {dur} | {pred_str} | {res_str} |")
+
+    # --- Summary ---
+    milestone_count = sum(1 for t in tasks if t.getMilestone())
+    parts.append("\n## Summary\n")
+    parts.append(f"- **Total tasks:** {len(tasks)}")
+    parts.append(f"- **Milestones:** {milestone_count}")
+    parts.append(f"- **Resources:** {len(named_resources)}")
+    parts.append(f"- **Duration:** {start} to {finish}")
+
+    return "\n".join(parts)
+
+
 def build_frontmatter(input_path: Path) -> str:
     source = input_path.name
     date = datetime.now().strftime("%Y-%m-%d")
@@ -128,6 +407,9 @@ def build_frontmatter(input_path: Path) -> str:
 
 
 def detect_tool(input_path: Path) -> str:
+    ext = input_path.suffix.lower()
+    if ext in (".mpp", ".mspdi", ".mpx"):
+        return "mpxj"
     return "markitdown"
 
 
@@ -157,7 +439,7 @@ def main() -> None:
         sys.exit(1)
 
     ext = input_path.suffix.lower()
-    if ext not in SUPPORTED_EXTENSIONS and not args.ocr:
+    if ext not in SUPPORTED_EXTENSIONS and not args.ocr and not args.tool:
         print(
             f"Error: unsupported format '{ext}'. "
             f"Supported: {', '.join(sorted(SUPPORTED_EXTENSIONS))}",
@@ -172,6 +454,7 @@ def main() -> None:
         "pdfplumber": lambda: convert_pdfplumber(input_path),
         "pandoc": lambda: convert_pandoc(input_path),
         "mammoth": lambda: convert_mammoth(input_path),
+        "mpxj": lambda: convert_mpp(input_path),
     }
 
     try:
