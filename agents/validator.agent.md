@@ -15,6 +15,12 @@ handoffs:
     agent: implementor
     prompt: "Implement the validated plan above. Follow the key decisions, respect the constraints identified, and produce a task map documenting your implementation decisions."
     send: false
+hooks:
+  Stop:
+    - type: command
+      command: "bash .github/hooks/scripts/output-format.sh"
+      windows: "powershell -ExecutionPolicy Bypass -File .github/hooks/scripts/output-format.ps1"
+      timeout: 10
 ---
 
 # Validator — Analyze and Verify Before Implementing

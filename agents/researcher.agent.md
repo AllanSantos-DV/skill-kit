@@ -15,6 +15,12 @@ handoffs:
     agent: validator
     prompt: "Validate the research and analysis above. Check assumptions, classify confidence, identify gaps, and perform active research on any unverified claims before approving for implementation."
     send: false
+hooks:
+  Stop:
+    - type: command
+      command: "bash .github/hooks/scripts/output-format.sh"
+      windows: "powershell -ExecutionPolicy Bypass -File .github/hooks/scripts/output-format.ps1"
+      timeout: 10
 ---
 
 # Researcher — Understand Before Acting
