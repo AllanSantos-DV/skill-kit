@@ -167,8 +167,8 @@ Always provide both `command` (Linux/macOS default) and `windows` override for p
 
 **Rules:**
 - Bash scripts: always start with `#!/bin/bash`
-- PowerShell scripts: use `$input | ConvertFrom-Json` for stdin
-- Bash scripts: use `INPUT=$(cat)` then pipe to `jq` for JSON parsing
+- PowerShell scripts: read stdin with the pipeline-then-console fallback (see below)
+- Bash scripts: use `INPUT=$(cat)` then `grep`/`sed` for JSON field extraction (do NOT depend on `jq` — it may not be installed)
 - Always test both platforms when possible
 
 ## VS Code Matcher Workaround
@@ -180,7 +180,7 @@ Always provide both `command` (Linux/macOS default) and `windows` override for p
 ```bash
 #!/bin/bash
 INPUT=$(cat)
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
+TOOL=$(echo "$INPUT" | grep -o '"tool_name"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
 # Only run for file edits
 if [[ "$TOOL" != "replace_string_in_file" && "$TOOL" != "create_file" && "$TOOL" != "multi_replace_string_in_file" ]]; then
   exit 0
@@ -191,7 +191,9 @@ fi
 ### PowerShell
 
 ```powershell
-$input_json = $input | ConvertFrom-Json
+$rawInput = @($input) -join "`n"
+if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+$input_json = $rawInput | ConvertFrom-Json
 $tool = $input_json.tool_name
 if ($tool -notin @('replace_string_in_file', 'create_file', 'multi_replace_string_in_file')) {
     exit 0

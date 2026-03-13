@@ -30,7 +30,7 @@ Runs `prettier` on any file modified by a file-editing tool.
 ```bash
 #!/bin/bash
 INPUT=$(cat)
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
+TOOL=$(echo "$INPUT" | grep -o '"tool_name"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
 
 # Only run for file-editing tools
 if [[ "$TOOL" != "replace_string_in_file" && "$TOOL" != "create_file" && "$TOOL" != "multi_replace_string_in_file" ]]; then
@@ -38,7 +38,10 @@ if [[ "$TOOL" != "replace_string_in_file" && "$TOOL" != "create_file" && "$TOOL"
 fi
 
 # Extract file path from tool input
-FILE=$(echo "$INPUT" | jq -r '.tool_input.filePath // .tool_input.file_path // empty')
+FILE=$(echo "$INPUT" | grep -o '"filePath"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
+if [ -z "$FILE" ]; then
+  FILE=$(echo "$INPUT" | grep -o '"file_path"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
+fi
 
 if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
   exit 0
@@ -53,7 +56,9 @@ echo '{}'
 ### PowerShell Script
 
 ```powershell
-$input_json = $input | ConvertFrom-Json
+$rawInput = @($input) -join "`n"
+if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+$input_json = $rawInput | ConvertFrom-Json
 $tool = $input_json.tool_name
 
 # Only run for file-editing tools
@@ -167,14 +172,14 @@ Prevents the agent from running dangerous terminal commands like `rm -rf`, `DROP
 ```bash
 #!/bin/bash
 INPUT=$(cat)
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
+TOOL=$(echo "$INPUT" | grep -o '"tool_name"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
 
 # Only check terminal/command tools
 if [[ "$TOOL" != "run_in_terminal" && "$TOOL" != "run_command" ]]; then
   exit 0
 fi
 
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+COMMAND=$(echo "$INPUT" | grep -o '"command"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
 
 # Dangerous patterns
 DANGEROUS_PATTERNS=(
@@ -209,7 +214,9 @@ echo '{}'
 ### PowerShell Script
 
 ```powershell
-$input_json = $input | ConvertFrom-Json
+$rawInput = @($input) -join "`n"
+if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+$input_json = $rawInput | ConvertFrom-Json
 $tool = $input_json.tool_name
 
 # Only check terminal/command tools
@@ -272,7 +279,8 @@ hooks:
 ```bash
 #!/bin/bash
 INPUT=$(cat)
-ACTIVE=$(echo "$INPUT" | jq -r '.stop_hook_active // false')
+ACTIVE=$(echo "$INPUT" | grep -o '"stop_hook_active"\s*:\s*true' | head -1)
+ACTIVE=${ACTIVE:+true}
 
 # Prevent infinite loop
 if [ "$ACTIVE" = "true" ]; then
@@ -291,7 +299,9 @@ EOF
 ### PowerShell Script
 
 ```powershell
-$input_json = $input | ConvertFrom-Json
+$rawInput = @($input) -join "`n"
+if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+$input_json = $rawInput | ConvertFrom-Json
 
 # Prevent infinite loop
 if ($input_json.stop_hook_active -eq $true) {
@@ -333,7 +343,8 @@ hooks:
 ```bash
 #!/bin/bash
 INPUT=$(cat)
-AGENT=$(echo "$INPUT" | jq -r '.agentName // "unknown"')
+AGENT=$(echo "$INPUT" | grep -o '"agentName"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
+AGENT=${AGENT:-unknown}
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
 # Log to stderr (doesn't affect hook output)
@@ -344,7 +355,9 @@ echo "{}"
 ### PowerShell Script
 
 ```powershell
-$input_json = $input | ConvertFrom-Json
+$rawInput = @($input) -join "`n"
+if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+$input_json = $rawInput | ConvertFrom-Json
 $agent = $input_json.agentName
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
@@ -381,7 +394,8 @@ hooks:
 ```bash
 #!/bin/bash
 INPUT=$(cat)
-ACTIVE=$(echo "$INPUT" | jq -r '.stop_hook_active // false')
+ACTIVE=$(echo "$INPUT" | grep -o '"stop_hook_active"\s*:\s*true' | head -1)
+ACTIVE=${ACTIVE:+true}
 
 if [ "$ACTIVE" = "true" ]; then
   exit 0
@@ -399,7 +413,9 @@ EOF
 ### PowerShell Script
 
 ```powershell
-$input_json = $input | ConvertFrom-Json
+$rawInput = @($input) -join "`n"
+if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+$input_json = $rawInput | ConvertFrom-Json
 
 if ($input_json.stop_hook_active -eq $true) {
     exit 0

@@ -1,6 +1,7 @@
 #!/bin/bash
 INPUT=$(cat)
-ACTIVE=$(echo "$INPUT" | jq -r '.stop_hook_active // false')
+ACTIVE=$(echo "$INPUT" | grep -o '"stop_hook_active"\s*:\s*true' | head -1)
+ACTIVE=${ACTIVE:+true}
 
 if [ "$ACTIVE" = "true" ]; then
   exit 0

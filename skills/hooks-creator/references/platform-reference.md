@@ -58,7 +58,10 @@ Complete comparison of hook capabilities between platforms.
 **Recommendation**: When writing cross-platform scripts, check for both casing patterns:
 
 ```bash
-SESSION=$(echo "$INPUT" | jq -r '.sessionId // .session_id // empty')
+SESSION=$(echo "$INPUT" | grep -o '"sessionId"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
+if [ -z "$SESSION" ]; then
+  SESSION=$(echo "$INPUT" | grep -o '"session_id"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
+fi
 ```
 
 ```powershell
