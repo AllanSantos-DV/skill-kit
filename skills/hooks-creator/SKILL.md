@@ -65,7 +65,7 @@ When targeting VS Code only, use the 8 shared events. When targeting Claude Code
 - Agent-scoped hooks (frontmatter) reference **shell scripts by path**. If the scripts live inside the workspace (e.g., `.github/hooks/scripts/`), they only work in that workspace.
 - **Recommended for portable agents**: store hook scripts in a **global user directory** (e.g., `~/.copilot/hooks/scripts/`) and reference them with portable paths:
   - **bash/macOS/Linux**: `bash ~/.copilot/hooks/scripts/<script>.sh` — `~` expands at runtime
-  - **Windows**: `powershell -ExecutionPolicy Bypass -Command "& \"$HOME\.copilot\hooks\scripts\<script>.ps1\""` — `$HOME` resolves at runtime
+  - **Windows**: `powershell -ExecutionPolicy Bypass -Command "& '$HOME\.copilot\hooks\scripts\<script>.ps1'"` — `$HOME` resolves at runtime
 - This way, agents synced to any workspace always find their hook scripts. No per-workspace setup needed.
 - **Workspace hooks** (`.github/hooks/*.json`) should keep scripts inside the project — they are project-specific by nature (e.g., injecting git context).
 

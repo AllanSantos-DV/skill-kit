@@ -24,17 +24,17 @@ hooks:
   PreToolUse:
     - type: command
       command: "bash ~/.copilot/hooks/scripts/pre-commit-guard.sh"
-      windows: "powershell -ExecutionPolicy Bypass -Command \"& \\\"$HOME\\.copilot\\hooks\\scripts\\pre-commit-guard.ps1\\\"\""
+      windows: "powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\pre-commit-guard.ps1'\""
       timeout: 5
   SubagentStart:
     - type: command
       command: "bash ~/.copilot/hooks/scripts/subagent-audit.sh"
-      windows: "powershell -ExecutionPolicy Bypass -Command \"& \\\"$HOME\\.copilot\\hooks\\scripts\\subagent-audit.ps1\\\"\""
+      windows: "powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\subagent-audit.ps1'\""
       timeout: 5
   Stop:
     - type: command
       command: "bash ~/.copilot/hooks/scripts/verify-claims.sh"
-      windows: "powershell -ExecutionPolicy Bypass -Command \"& \\\"$HOME\\.copilot\\hooks\\scripts\\verify-claims.ps1\\\"\""
+      windows: "powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\verify-claims.ps1'\""
       timeout: 5
 ---
 
