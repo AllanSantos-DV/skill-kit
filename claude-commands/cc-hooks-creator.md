@@ -12,7 +12,7 @@ Hooks are **deterministic actions** executed at specific lifecycle events during
 
 ## Lifecycle Events
 
-Claude Code supports 20 lifecycle events:
+Claude Code supports 18 lifecycle events:
 
 | Event | Trigger | Matchers |
 |-------|---------|:--------:|
@@ -71,7 +71,7 @@ Runs a shell command. Receives JSON on stdin, returns JSON on stdout.
 | `timeout` | — | Max seconds before kill (default: 60) |
 | `async` | — | If `true`, fire-and-forget (no output captured) |
 | `statusMessage` | — | Message shown while hook runs |
-| `once` | — | If `true`, runs only once per session |
+| `once` | — | If `true`, runs only once per session (skills only, not agents) |
 
 ### `http` — HTTP POST
 
@@ -221,6 +221,33 @@ Hooks receive JSON via **stdin** and return JSON via **stdout**.
 | `tool_input` | object | Tool events only |
 | `tool_use_id` | string | Tool events only |
 
+### Event-Specific Input Fields
+
+Beyond common fields, events include additional data:
+
+| Event | Extra Fields |
+|-------|-------------|
+| `SessionStart` | `source` (startup/resume/clear/compact), `model` |
+| `UserPromptSubmit` | `prompt` |
+| `PreToolUse` | `tool_name`, `tool_input`, `tool_use_id` |
+| `PostToolUse` | `tool_name`, `tool_input`, `tool_response`, `tool_use_id` |
+| `PostToolUseFailure` | `tool_name`, `tool_input`, `tool_use_id`, `error`, `is_interrupt` |
+| `PermissionRequest` | `tool_name`, `tool_input`, `permission_suggestions` |
+| `Stop` | `stop_hook_active`, `last_assistant_message` |
+| `SubagentStart` | `agent_id`, `agent_type` |
+| `SubagentStop` | `stop_hook_active`, `agent_id`, `agent_type`, `agent_transcript_path`, `last_assistant_message` |
+| `Notification` | `message`, `title`, `notification_type` |
+| `TeammateIdle` | `teammate_name`, `team_name` |
+| `TaskCompleted` | `task_id`, `task_subject`, `task_description`, `teammate_name`, `team_name` |
+| `ConfigChange` | `source`, `file_path` |
+| `WorktreeCreate` | `name` |
+| `WorktreeRemove` | `worktree_path` |
+| `PreCompact` | `trigger` (manual/auto), `custom_instructions` |
+| `SessionEnd` | `reason` |
+| `InstructionsLoaded` | `file_path`, `memory_type`, `load_reason` |
+
+**Critical for Stop hooks**: Always check `stop_hook_active` to prevent infinite loops — if `true`, exit 0 immediately.
+
 ### Exit Codes
 
 | Code | Meaning | Behavior |
@@ -244,6 +271,26 @@ Hooks receive JSON via **stdin** and return JSON via **stdout**.
 | `permissionDecision` | string | `"allow"`, `"deny"`, or `"ask"` |
 | `updatedInput` | object | Modified tool arguments |
 | `additionalContext` | string | Extra context for the agent |
+
+### Decision Control
+
+Some events support blocking or controlling behavior through output:
+
+| Event | Mechanism | Fields |
+|-------|-----------|--------|
+| `Stop`, `SubagentStop`, `PostToolUse`, `UserPromptSubmit`, `ConfigChange` | Top-level decision | `decision: "block"`, `reason` |
+| `PreToolUse` | hookSpecificOutput | `permissionDecision` (allow/deny/ask), `permissionDecisionReason`, `updatedInput` |
+| `PermissionRequest` | hookSpecificOutput | `decision.behavior` (allow/deny), `updatedInput` |
+
+To block Claude from stopping:
+```json
+{"decision": "block", "reason": "Tests must pass before finishing"}
+```
+
+To deny a tool call:
+```json
+{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "Command blocked"}}
+```
 
 ## Cross-Platform Scripts
 

@@ -13,7 +13,7 @@ try {
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
 # Log to stderr (doesn't affect hook output)
-Write-Host "[$timestamp] Subagent started: $agent" -ForegroundColor Cyan 2>&1 | Write-Error
+[Console]::Error.WriteLine("[$timestamp] Subagent started: $agent")
 
 # Return empty success
 Write-Output "{}"

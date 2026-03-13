@@ -1,12 +1,19 @@
 # SubagentStart hook: log routing decisions
-$rawInput = @($input) -join "`n"
-if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
-$input_json = $rawInput | ConvertFrom-Json
-$agent = $input_json.agentName
+try {
+    $rawInput = @($input) -join "`n"
+    if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+    if ($rawInput) {
+        $input_json = $rawInput | ConvertFrom-Json
+        $agent = $input_json.agentName
+    }
+} catch {
+    # Empty or invalid JSON — use default
+}
+if (-not $agent) { $agent = "unknown" }
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
 # Log to stderr (doesn't affect hook output)
-Write-Host "[$timestamp] Subagent started: $agent" -ForegroundColor Cyan 2>&1 | Write-Error
+[Console]::Error.WriteLine("[$timestamp] Subagent started: $agent")
 
 # Return empty success
 Write-Output "{}"

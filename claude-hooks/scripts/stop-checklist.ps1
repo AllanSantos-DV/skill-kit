@@ -13,10 +13,9 @@ try {
     # Empty or invalid JSON — continue to output reminder
 }
 
-$reminder = @{
-    hookSpecificOutput = @{
-        systemMessage = "Before finishing: 1) Did you run tests? 2) Did you produce a task map (if decisions were made)? 3) Is the quality checklist satisfied?"
-    }
-} | ConvertTo-Json -Depth 3
+$result = @{
+    decision = "block"
+    reason = "Before finishing: 1) Did you run tests? 2) Did you produce a task map (if decisions were made)? 3) Is the quality checklist satisfied?"
+} | ConvertTo-Json -Depth 2
 
-Write-Output $reminder
+Write-Output $result
