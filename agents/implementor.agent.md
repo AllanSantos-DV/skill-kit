@@ -15,11 +15,20 @@ handoffs:
     prompt: "Review the implementation above. Verify that the changes match the validated plan, check for missed edge cases, and confirm the quality checklist passes."
     send: false
 hooks:
+  PreToolUse:
+    - type: command
+      command: "bash ~/.copilot/hooks/scripts/pre-commit-guard.sh"
+      windows: "powershell -ExecutionPolicy Bypass -Command \"& \\\"$HOME\\.copilot\\hooks\\scripts\\pre-commit-guard.ps1\\\"\""
+      timeout: 5
   Stop:
     - type: command
       command: "bash ~/.copilot/hooks/scripts/stop-checklist.sh"
       windows: "powershell -ExecutionPolicy Bypass -Command \"& \\\"$HOME\\.copilot\\hooks\\scripts\\stop-checklist.ps1\\\"\""
       timeout: 10
+    - type: command
+      command: "bash ~/.copilot/hooks/scripts/verify-claims.sh"
+      windows: "powershell -ExecutionPolicy Bypass -Command \"& \\\"$HOME\\.copilot\\hooks\\scripts\\verify-claims.ps1\\\"\""
+      timeout: 5
 ---
 
 # Implementor — Execute with Discipline

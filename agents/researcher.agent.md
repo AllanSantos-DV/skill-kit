@@ -21,6 +21,10 @@ hooks:
       command: "bash ~/.copilot/hooks/scripts/output-format.sh"
       windows: "powershell -ExecutionPolicy Bypass -Command \"& \\\"$HOME\\.copilot\\hooks\\scripts\\output-format.ps1\\\"\""
       timeout: 10
+    - type: command
+      command: "bash ~/.copilot/hooks/scripts/verify-claims.sh"
+      windows: "powershell -ExecutionPolicy Bypass -Command \"& \\\"$HOME\\.copilot\\hooks\\scripts\\verify-claims.ps1\\\"\""
+      timeout: 5
 ---
 
 # Researcher — Understand Before Acting
