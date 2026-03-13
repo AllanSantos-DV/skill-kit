@@ -12,6 +12,18 @@
         ]
       }
     ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks-scripts/pre-commit-guard.sh",
+            "command_win32": "powershell -ExecutionPolicy Bypass -File \"$HOME\\.claude\\hooks-scripts\\pre-commit-guard.ps1\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -25,6 +37,12 @@
             "type": "command",
             "command": "bash ~/.claude/hooks-scripts/stop-checklist.sh",
             "command_win32": "powershell -ExecutionPolicy Bypass -File \"$HOME\\.claude\\hooks-scripts\\stop-checklist.ps1\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks-scripts/verify-claims.sh",
+            "command_win32": "powershell -ExecutionPolicy Bypass -File \"$HOME\\.claude\\hooks-scripts\\verify-claims.ps1\"",
             "timeout": 5
           }
         ]
