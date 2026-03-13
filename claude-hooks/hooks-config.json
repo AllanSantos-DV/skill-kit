@@ -6,6 +6,7 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks-scripts/session-context.sh",
+            "command_win32": "powershell -ExecutionPolicy Bypass -File \"$HOME\\.claude\\hooks-scripts\\session-context.ps1\"",
             "timeout": 10
           }
         ]
@@ -17,11 +18,13 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks-scripts/output-format.sh",
+            "command_win32": "powershell -ExecutionPolicy Bypass -File \"$HOME\\.claude\\hooks-scripts\\output-format.ps1\"",
             "timeout": 5
           },
           {
             "type": "command",
             "command": "bash ~/.claude/hooks-scripts/stop-checklist.sh",
+            "command_win32": "powershell -ExecutionPolicy Bypass -File \"$HOME\\.claude\\hooks-scripts\\stop-checklist.ps1\"",
             "timeout": 5
           }
         ]
@@ -33,6 +36,7 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks-scripts/subagent-audit.sh",
+            "command_win32": "powershell -ExecutionPolicy Bypass -File \"$HOME\\.claude\\hooks-scripts\\subagent-audit.ps1\"",
             "timeout": 5
           }
         ]
