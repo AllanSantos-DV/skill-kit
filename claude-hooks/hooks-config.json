@@ -2,32 +2,40 @@
   "hooks": {
     "SessionStart": [
       {
-        "type": "command",
-        "command": "bash ~/.claude/hooks-scripts/session-context.sh",
-        "windows": "powershell -ExecutionPolicy Bypass -File \"$env:USERPROFILE\\.claude\\hooks-scripts\\session-context.ps1\"",
-        "timeout": 10
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks-scripts/session-context.sh",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "Stop": [
       {
-        "type": "command",
-        "command": "bash ~/.claude/hooks-scripts/output-format.sh",
-        "windows": "powershell -ExecutionPolicy Bypass -File \"$env:USERPROFILE\\.claude\\hooks-scripts\\output-format.ps1\"",
-        "timeout": 5
-      },
-      {
-        "type": "command",
-        "command": "bash ~/.claude/hooks-scripts/stop-checklist.sh",
-        "windows": "powershell -ExecutionPolicy Bypass -File \"$env:USERPROFILE\\.claude\\hooks-scripts\\stop-checklist.ps1\"",
-        "timeout": 5
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks-scripts/output-format.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks-scripts/stop-checklist.sh",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SubagentStart": [
       {
-        "type": "command",
-        "command": "bash ~/.claude/hooks-scripts/subagent-audit.sh",
-        "windows": "powershell -ExecutionPolicy Bypass -File \"$env:USERPROFILE\\.claude\\hooks-scripts\\subagent-audit.ps1\"",
-        "timeout": 5
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks-scripts/subagent-audit.sh",
+            "timeout": 5
+          }
+        ]
       }
     ]
   }

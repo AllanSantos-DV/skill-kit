@@ -11,8 +11,7 @@ fi
 
 cat <<EOF
 {
-  "hookSpecificOutput": {
-    "systemMessage": "Before finishing: 1) Did you run tests? 2) Did you produce a task map (if decisions were made)? 3) Is the quality checklist satisfied?"
-  }
+  "decision": "block",
+  "reason": "Before finishing: 1) Did you run tests? 2) Did you produce a task map (if decisions were made)? 3) Is the quality checklist satisfied?"
 }
 EOF

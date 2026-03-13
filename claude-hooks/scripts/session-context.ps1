@@ -5,6 +5,7 @@ $status = git status --short 2>$null | Measure-Object -Line | Select-Object -Exp
 
 $context = @{
     hookSpecificOutput = @{
+        hookEventName = "SessionStart"
         additionalContext = "Project context: branch=$branch | last_commit=$lastCommit | uncommitted_changes=$status"
     }
 } | ConvertTo-Json -Depth 3

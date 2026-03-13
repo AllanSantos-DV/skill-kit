@@ -6,6 +6,7 @@ CHANGES=$(git status --short 2>/dev/null | wc -l | tr -d ' ')
 cat <<EOF
 {
   "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
     "additionalContext": "Project context: branch=$BRANCH | last_commit=$LAST_COMMIT | uncommitted_changes=$CHANGES"
   }
 }

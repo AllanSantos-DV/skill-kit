@@ -12,10 +12,9 @@ try {
     # Empty or invalid JSON — continue to output reminder
 }
 
-$reminder = @{
-    hookSpecificOutput = @{
-        systemMessage = "Verify your output follows the required format: Research Summary (researcher) or Validation Report (validator) with all mandatory sections."
-    }
-} | ConvertTo-Json -Depth 3
+$result = @{
+    decision = "block"
+    reason = "Verify your output follows the required format: Research Summary (researcher) or Validation Report (validator) with all mandatory sections."
+} | ConvertTo-Json -Depth 2
 
-Write-Output $reminder
+Write-Output $result
