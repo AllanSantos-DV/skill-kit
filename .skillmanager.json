@@ -1,5 +1,11 @@
 {
   "skills": {
     "path": "skills"
+  },
+  "claudeCommands": {
+    "path": "claude-commands"
+  },
+  "claudeHooks": {
+    "path": "claude-hooks"
   }
 }
