@@ -1,5 +1,7 @@
 # SubagentStart hook: log routing decisions
-$input_json = $input | ConvertFrom-Json
+$rawInput = @($input) -join "`n"
+if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+$input_json = $rawInput | ConvertFrom-Json
 $agent = $input_json.agentName
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 

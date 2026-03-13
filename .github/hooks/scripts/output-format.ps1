@@ -1,5 +1,7 @@
 # Stop hook for researcher/validator: remind output format
-$input_json = $input | ConvertFrom-Json
+$rawInput = @($input) -join "`n"
+if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+$input_json = $rawInput | ConvertFrom-Json
 
 if ($input_json.stop_hook_active -eq $true) {
     exit 0
