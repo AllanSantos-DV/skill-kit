@@ -1,10 +1,12 @@
 #!/bin/bash
-INPUT=$(cat)
-ACTIVE=$(echo "$INPUT" | grep -o '"stop_hook_active"\s*:\s*true' | head -1)
-ACTIVE=${ACTIVE:+true}
+INPUT=$(cat 2>/dev/null || true)
 
-if [ "$ACTIVE" = "true" ]; then
-  exit 0
+if [ -n "$INPUT" ]; then
+  ACTIVE=$(echo "$INPUT" | grep -o '"stop_hook_active"\s*:\s*true' | head -1)
+  ACTIVE=${ACTIVE:+true}
+  if [ "$ACTIVE" = "true" ]; then
+    exit 0
+  fi
 fi
 
 cat <<EOF

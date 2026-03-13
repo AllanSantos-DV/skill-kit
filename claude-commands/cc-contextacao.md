@@ -26,7 +26,7 @@ First, classify the task using the objective criteria below. A single criterion 
 |-------|-------------------|-------|
 | **Simple** | • 1 technology involved • 0 external dependencies • Reversible outcome • 1 stakeholder | Phase 1 summarized (1 question per axis) + Phase 3 (questions only) + Phase 4 |
 | **Medium** | • 2-3 technologies • 1+ external dependency • Multiple possible interpretations • Hard-to-reverse outcome | Phases 1-4 complete |
-| **Complex** | • 4+ technologies • Domain with frequent updates (APIs, specs, compliance) • Multiple stakeholders • Production or user data impact | Phases 1-4 complete + mandatory consultation of [frameworks](./references/frameworks.md) + [good vs. bad analysis examples](./references/examples.md) |
+| **Complex** | • 4+ technologies • Domain with frequent updates (APIs, specs, compliance) • Multiple stakeholders • Production or user data impact | Phases 1-4 complete + mandatory use of questioning frameworks (see below) + good vs. bad analysis examples (see below) |
 
 When in doubt, classify upward. Over-analyzing is better than under-analyzing.
 
@@ -104,7 +104,7 @@ Based on the analysis, generate:
 4. **What needs human validation** — decisions the model should not make alone
 5. **What should NOT be done** — actions that would be premature without more context
 
-Use the [output template](./assets/output-template.md) to structure the delivery.
+Structure the delivery using the output format from Phase 4.
 
 ### Phase 4 — Transparency
 
@@ -118,15 +118,8 @@ Always declare:
 After delivering the analysis and the user acts on it, record the learning:
 
 1. **Evaluate the outcome**: did the analysis get it right? Wrong? What was not anticipated?
-2. **Record in staging**: add an entry in [retrospectives.md](./references/retrospectives.md) in the format:
-   ```
-   ### [DATE] — [SUBJECT]
-   **What happened**: [short description]
-   **Learning**: [concise rule]
-   **Axis affected**: [axis from SKILL.md]
-   ```
-3. **Check the cap**: if staging reached 5 entries, start the [distillation procedure](./references/retrospectives.md#distillation)
-4. **Capture real examples**: if the analysis was particularly good or bad, save in [examples.md](./references/examples.md) under "Real Cases"
+2. **Record the learning**: note what happened, what was learned, and which axis was affected
+3. **Capture real examples**: if the analysis was particularly good or bad, note it for future calibration
 
 > Phase 5 is optional for Simple triage. Mandatory for Medium and Complex.
 
@@ -154,21 +147,15 @@ Before delivering the analysis, verify:
 - [ ] Explicitly declared what you don't know?
 - [ ] For every 🟡/🔴 classification: did you attempt active research with available tools before accepting it?
 
-If any item fails, refine the analysis before delivering. Consult [good vs. bad analysis examples](./references/examples.md) to calibrate.
+If any item fails, refine the analysis before delivering. Consult the analysis examples below to calibrate.
 
 ## When the User Asks for Help
 
-- **"Analyze this before I implement"** → Run the full procedure: Triage → Phase 1 (decomposition) → Phase 2 (confidence) → Phase 3 (action plan) → Phase 4 (transparency). Use the [output template](./assets/output-template.md).
+- **"Analyze this before I implement"** → Run the full procedure: Triage → Phase 1 (decomposition) → Phase 2 (confidence) → Phase 3 (action plan) → Phase 4 (transparency).
 - **"Is this safe to proceed with?"** → Focus on Failure Modes (1.5) and Assumptions (1.1). Classify confidence. Flag what could go wrong and what hasn't been verified.
 - **"What am I missing?"** → Emphasize blind spots: Dependencies (1.3), Sources of Truth (1.4), and Stakeholders (1.6). Generate targeted questions for the user.
 - **"I need a quick sanity check"** → Use Simple triage: 1 question per axis in Phase 1, skip Phase 2, deliver Phase 3 questions + Phase 4 transparency.
 - **"Review my assumptions about X"** → Focus on Assumptions (1.1) and Sources of Truth (1.4). For each assumption, classify confidence and attempt active verification with available tools.
-
-## References
-
-- [Questioning frameworks](./references/frameworks.md)
-- [Good vs. bad analysis examples](./references/examples.md)
-- [Retrospectives — learning staging](./references/retrospectives.md)
 
 ## Companion Skills
 

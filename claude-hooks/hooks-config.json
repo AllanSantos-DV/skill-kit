@@ -22,7 +22,7 @@
         "timeout": 5
       }
     ],
-    "SubagentStop": [
+    "SubagentStart": [
       {
         "type": "command",
         "command": "bash ~/.claude/hooks-scripts/subagent-audit.sh",
