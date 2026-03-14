@@ -60,6 +60,8 @@ When the user needs document generation, **execute these directly** via `run_in_
 | `generate_pdf.py` | MD/HTML → PDF | `python scripts/generate_pdf.py input.md -o output.pdf --css style.css` |
 | `analyze_template.py` | Extract style profile | `python scripts/analyze_template.py input.pptx -o profile.json` (also .docx, .xlsx, .mpp, .mspdi, .mpx, .xml) |
 | `runtime_resolver.py` | Check runtime deps | `python scripts/runtime_resolver.py java --min-version 11` |
+| `audit_overflow.py` | Detect text overflow risks | `python scripts/audit_overflow.py output.pptx` |
+| `check_placeholders.py` | Detect leftover placeholders | `python scripts/check_placeholders.py output.pptx --strict` |
 
 All scripts accept `--help` for full usage. Paths are passed as parameters — never hardcoded.
 
@@ -181,6 +183,30 @@ When Markdown structure isn't sufficient, produce JSON matching these schemas. S
 
 > **Bullet formatting:** Bullet markers (`•`, `-`, `*`) and indentation (2 spaces per level, max level 2) in the `body` field are converted to native PowerPoint bullet formatting with proper paragraph levels. Numbered lists (`1.`, `2.`, etc.) are preserved as text with bullet-level indentation. Lines without markers are rendered as plain paragraphs. Speaker notes are always plain text.
 
+### PPTX Inject Schema
+
+Used with `--mode inject`. Each entry targets an existing slide by index (0-based). If `slide_index` is omitted, slides are matched sequentially.
+
+```json
+{
+  "slides": [
+    {
+      "slide_index": 0,
+      "title": "New Title for Slide 1",
+      "body": "Replaced body content",
+      "notes": "Optional new speaker notes"
+    },
+    {
+      "slide_index": 2,
+      "title": "Updated Third Slide",
+      "body": "- Bullet 1\n- Bullet 2\n- Bullet 3"
+    }
+  ]
+}
+```
+
+> **Inject rules:** Only slides referenced in the JSON are modified — others stay untouched. The `title` replaces the title placeholder text. The `body` replaces the first non-title text placeholder. Multi-line body text is split by `\n` and distributed across existing paragraphs; if there are more lines than paragraphs, new ones are cloned from the last paragraph's format. `layout` and `image_path` are ignored in inject mode.
+
 ### DOCX Schema
 
 **Without template** (from-scratch generation using built-in structure):
@@ -282,7 +308,7 @@ python scripts/runtime_resolver.py java --min-version 11
 
 ### PowerPoint (.pptx)
 
-**With template:**
+**With template (generate mode — default):**
 1. Prepare JSON matching the PPTX schema
 2. Run: `python scripts/generate_pptx.py slides.json -t corporate_template.pptx -o output.pptx`
 3. The script opens the template, matches slide layouts by name, and populates placeholders
@@ -296,6 +322,21 @@ python scripts/runtime_resolver.py java --min-version 11
 - Headings (`##`) become slide titles
 - Bullet lists become slide body content
 - Content between headings becomes one slide
+
+**Inject mode (mail-merge from corporate templates):**
+
+Use `--mode inject` when you have a fully-designed corporate template and want to replace only the text content while preserving **100% of the visual formatting** (fonts, colors, animations, backgrounds, shapes).
+
+1. Prepare JSON matching the PPTX Inject Schema (see below)
+2. Run: `python scripts/generate_pptx.py input.json -t corporate_template.pptx -o output.pptx --mode inject`
+3. The script walks existing slides and replaces text in-place via XML manipulation — no slides are added or removed
+
+Key differences from generate mode:
+- Does NOT add new slides — works with existing template slides only
+- Preserves all `<a:rPr>` (run properties: font, size, color, bold, italic)
+- Preserves all `<a:pPr>` (paragraph properties: alignment, spacing, bullets)
+- Multi-line body text is distributed across existing paragraphs; excess paragraphs are cloned from the last one
+- Slides not referenced in the JSON input remain untouched
 
 **Pandoc fallback:**
 ```bash
@@ -404,6 +445,40 @@ pandoc input.md -o output.pdf --pdf-engine=weasyprint --css=style.css
 | Generate a PDF | PDF | xhtml2pdf / fpdf2 | CSS optional |
 | Quick convert (any) | PPTX/DOCX/PDF | Pandoc | `--reference-doc` |
 | Analyze a template | PPTX/DOCX/XLSX/MPP | analyze_template.py | N/A — reads existing docs |
+
+## QA Pipeline
+
+After generating a PPTX (especially in inject mode), run the QA scripts to catch issues before delivery:
+
+```bash
+# Step 1: Generate the document
+python scripts/generate_pptx.py input.json -t template.pptx -o output.pptx --mode inject
+
+# Step 2: Check for text overflow
+python scripts/audit_overflow.py output.pptx
+
+# Step 3: Check for leftover placeholders
+python scripts/check_placeholders.py output.pptx --strict
+```
+
+| Script | What it checks | Exit code |
+|--------|---------------|----------|
+| `audit_overflow.py` | Text boxes where content exceeds estimated capacity | 1 if any OVERFLOW, 0 otherwise |
+| `check_placeholders.py` | Leftover template text ("Click to add", "Lorem ipsum", demo names) | 1 if any found, 0 if clean |
+
+**`audit_overflow.py` flags:**
+- `--budget 0.8` — capacity threshold for "AT RISK" warning (default: 80%)
+- `--json` — output as JSON for programmatic use
+
+**`check_placeholders.py` flags:**
+- `--strict` — also detect demo company names (Contoso, Fabrikam) and example URLs
+- `--json` — output as JSON
+- `--patterns file.txt` — additional regex patterns (one per line)
+
+**CI integration:** Both scripts return exit code 1 on failure, making them suitable for CI pipelines:
+```bash
+python scripts/audit_overflow.py output.pptx && python scripts/check_placeholders.py output.pptx --strict
+```
 
 ## Common Pitfalls
 

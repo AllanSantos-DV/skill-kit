@@ -5,9 +5,15 @@ Usage:
     python generate_pptx.py input.json -o output.pptx
     python generate_pptx.py input.json -t template.pptx -o output.pptx
     python generate_pptx.py input.md -o output.pptx
+    python generate_pptx.py input.json -t template.pptx -o output.pptx --mode inject
+
+Modes:
+    generate (default): Create new slides from scratch using template layouts.
+    inject: Replace text in EXISTING template slides, preserving all XML formatting.
 
 Input formats:
     JSON: {"slides": [{"layout": "...", "title": "...", "body": "...", "notes": "...", "image_path": "..."}]}
+    JSON (inject mode): {"slides": [{"slide_index": 0, "title": "...", "body": "..."}]}
     Markdown: ## headings become slide titles, content between headings becomes slide body.
 
 Requires: pip install python-pptx
@@ -213,6 +219,120 @@ def generate(slides: list[dict], template_path: Path | None, output_path: Path) 
     print(f"Generated: {output_path} ({len(slides)} slides)")
 
 
+# ---------------------------------------------------------------------------
+# Inject mode — replace text in existing template slides, preserving formatting
+# ---------------------------------------------------------------------------
+
+_NSMAP = {'a': 'http://schemas.openxmlformats.org/drawingml/2006/main'}
+
+
+def _inject_text_preserve_format(shape, new_text: str) -> None:
+    """Replace text in a shape while preserving all XML formatting."""
+    t_elements = shape._element.findall('.//a:t', _NSMAP)
+    if not t_elements:
+        return
+    t_elements[0].text = new_text
+    for t_elem in t_elements[1:]:
+        t_elem.text = ''
+
+
+def _inject_body_preserve_format(shape, body_text: str) -> None:
+    """Replace body content preserving paragraph and run formatting."""
+    from copy import deepcopy
+    from lxml import etree
+
+    paragraphs = shape._element.findall('.//a:p', _NSMAP)
+    lines = [line for line in body_text.split('\n') if line.strip()]
+
+    if not paragraphs:
+        return
+
+    # Fill existing paragraphs with new lines
+    for i, line in enumerate(lines):
+        if i < len(paragraphs):
+            t_elements = paragraphs[i].findall('.//a:t', _NSMAP)
+            _level, clean_text = _parse_bullet_line(line)
+            if t_elements:
+                t_elements[0].text = clean_text
+                for t in t_elements[1:]:
+                    t.text = ''
+        else:
+            # More lines than paragraphs — clone last paragraph and append
+            new_p = deepcopy(paragraphs[-1])
+            t_elements = new_p.findall('.//a:t', _NSMAP)
+            _level, clean_text = _parse_bullet_line(line)
+            if t_elements:
+                t_elements[0].text = clean_text
+                for t in t_elements[1:]:
+                    t.text = ''
+            # Append after last paragraph's parent (the <a:txBody>)
+            paragraphs[-1].getparent().append(new_p)
+
+    # Clear excess paragraphs (fewer lines than paragraphs)
+    for i in range(len(lines), len(paragraphs)):
+        t_elements = paragraphs[i].findall('.//a:t', _NSMAP)
+        for t in t_elements:
+            t.text = ''
+
+
+def inject(slides: list[dict], template_path: Path, output_path: Path) -> None:
+    """Inject content into existing template slides, preserving formatting."""
+    if not _ensure_package("pptx", "python-pptx"):
+        print("Error: python-pptx is required.", file=sys.stderr)
+        sys.exit(1)
+    from pptx import Presentation
+
+    prs = Presentation(str(template_path))
+    template_slides = list(prs.slides)
+
+    # Build index map: slide_index → slide_data
+    for seq_idx, slide_data in enumerate(slides):
+        target_idx = slide_data.get("slide_index", seq_idx)
+        if target_idx < 0 or target_idx >= len(template_slides):
+            print(
+                f"Warning: slide_index {target_idx} out of range "
+                f"(template has {len(template_slides)} slides), skipping.",
+                file=sys.stderr,
+            )
+            continue
+
+        slide = template_slides[target_idx]
+
+        # Title
+        title_text = slide_data.get("title")
+        if title_text and slide.shapes.title:
+            _inject_text_preserve_format(slide.shapes.title, title_text)
+
+        # Body — find the first non-title placeholder or text shape
+        body_text = slide_data.get("body")
+        if body_text:
+            body_shape = None
+            for ph in slide.placeholders:
+                if ph != slide.shapes.title and ph.has_text_frame:
+                    body_shape = ph
+                    break
+            if body_shape is None:
+                # Fallback: first non-title shape with text
+                for shape in slide.shapes:
+                    if shape != slide.shapes.title and shape.has_text_frame:
+                        body_shape = shape
+                        break
+            if body_shape:
+                if '\n' in body_text:
+                    _inject_body_preserve_format(body_shape, body_text)
+                else:
+                    _inject_text_preserve_format(body_shape, body_text)
+
+        # Speaker notes
+        notes_text = slide_data.get("notes")
+        if notes_text:
+            slide.notes_slide.notes_text_frame.text = notes_text
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    prs.save(str(output_path))
+    print(f"Injected: {output_path} ({len(slides)} slides modified, {len(template_slides)} total)")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate a PowerPoint presentation from JSON or Markdown input."
@@ -234,6 +354,12 @@ def main() -> None:
         default=Path("output.pptx"),
         help="Output file path (default: output.pptx)."
     )
+    parser.add_argument(
+        "--mode",
+        choices=["generate", "inject"],
+        default="generate",
+        help="Mode: 'generate' creates new slides (default), 'inject' replaces text in existing template slides preserving formatting."
+    )
     args = parser.parse_args()
 
     if not args.input.is_file():
@@ -242,9 +368,16 @@ def main() -> None:
     if args.template and not args.template.is_file():
         print(f"Error: Template file not found: {args.template}", file=sys.stderr)
         sys.exit(1)
+    if args.mode == "inject" and not args.template:
+        print("Error: --mode inject requires a template (-t/--template).", file=sys.stderr)
+        sys.exit(1)
 
     slides = load_input(args.input)
-    generate(slides, args.template, args.output)
+
+    if args.mode == "inject":
+        inject(slides, args.template, args.output)
+    else:
+        generate(slides, args.template, args.output)
 
 
 if __name__ == "__main__":
