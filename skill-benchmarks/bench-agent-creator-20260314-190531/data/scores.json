@@ -1,0 +1,452 @@
+{
+  "skill": "agent-creator",
+  "summary": {
+    "total_tasks": 5,
+    "runs_per_task": 3,
+    "total_calls": 30,
+    "wins": 5,
+    "losses": 0,
+    "ties": 0,
+    "win_rate": 1.0,
+    "overall_delta": 0.705
+  },
+  "dimensions": {
+    "completeness": {
+      "avg_with": 1.0,
+      "avg_without": 0.44,
+      "avg_delta": 0.56
+    },
+    "correctness": {
+      "avg_with": 1.0,
+      "avg_without": 0.38,
+      "avg_delta": 0.62
+    },
+    "edge_cases": {
+      "avg_with": 1.0,
+      "avg_without": 0.1333,
+      "avg_delta": 0.8667
+    },
+    "pattern_adherence": {
+      "avg_with": 1.0,
+      "avg_without": 0.2267,
+      "avg_delta": 0.7733
+    }
+  },
+  "tasks": [
+    {
+      "task_id": "task-01",
+      "prompt": "Create a VS Code Copilot agent called 'reviewer' that can only read files and search code. It should not be able to edit files or run terminal commands. It serves as a code review assistant that provides feedback without making changes.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.3,
+        "completeness": 0.3667,
+        "pattern_adherence": 0.2,
+        "edge_cases": 0.0667
+      },
+      "average_with": 1.0,
+      "average_without": 0.2334,
+      "delta": 0.7667,
+      "per_dimension_delta": {
+        "correctness": 0.7,
+        "completeness": 0.6333,
+        "pattern_adherence": 0.8,
+        "edge_cases": 0.9333
+      },
+      "winner": "with",
+      "runs_count": 3,
+      "per_run_scores": [
+        {
+          "run": 1,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.3,
+            "completeness": 0.4,
+            "pattern_adherence": 0.2,
+            "edge_cases": 0.1
+          },
+          "average_with": 1.0,
+          "average_without": 0.25,
+          "delta": 0.75
+        },
+        {
+          "run": 2,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.3,
+            "completeness": 0.3,
+            "pattern_adherence": 0.1,
+            "edge_cases": 0.0
+          },
+          "average_with": 1.0,
+          "average_without": 0.175,
+          "delta": 0.825
+        },
+        {
+          "run": 3,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.3,
+            "completeness": 0.4,
+            "pattern_adherence": 0.3,
+            "edge_cases": 0.1
+          },
+          "average_with": 1.0,
+          "average_without": 0.275,
+          "delta": 0.725
+        }
+      ]
+    },
+    {
+      "task_id": "task-02",
+      "prompt": "Create an orchestrator agent that coordinates between a 'researcher' sub-agent (read-only access) and a 'coder' sub-agent (full tool access). The orchestrator itself should not edit files — it only delegates. Include handoff configurations so the orchestrator can pass context to each sub-agent.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.5,
+        "completeness": 0.4667,
+        "pattern_adherence": 0.2333,
+        "edge_cases": 0.2
+      },
+      "average_with": 1.0,
+      "average_without": 0.35,
+      "delta": 0.65,
+      "per_dimension_delta": {
+        "correctness": 0.5,
+        "completeness": 0.5333,
+        "pattern_adherence": 0.7667,
+        "edge_cases": 0.8
+      },
+      "winner": "with",
+      "runs_count": 3,
+      "per_run_scores": [
+        {
+          "run": 1,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.4,
+            "completeness": 0.5,
+            "pattern_adherence": 0.1,
+            "edge_cases": 0.2
+          },
+          "average_with": 1.0,
+          "average_without": 0.3,
+          "delta": 0.7
+        },
+        {
+          "run": 2,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.4,
+            "completeness": 0.4,
+            "pattern_adherence": 0.1,
+            "edge_cases": 0.1
+          },
+          "average_with": 1.0,
+          "average_without": 0.25,
+          "delta": 0.75
+        },
+        {
+          "run": 3,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.7,
+            "completeness": 0.5,
+            "pattern_adherence": 0.5,
+            "edge_cases": 0.3
+          },
+          "average_with": 1.0,
+          "average_without": 0.5,
+          "delta": 0.5
+        }
+      ]
+    },
+    {
+      "task_id": "task-03",
+      "prompt": "Create a 'security-auditor' agent that has access to search and read tools only, is user-invocable but NOT model-invocable (the user must explicitly select it). It should analyze code for OWASP Top 10 vulnerabilities.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.3667,
+        "completeness": 0.5,
+        "pattern_adherence": 0.2667,
+        "edge_cases": 0.1333
+      },
+      "average_with": 1.0,
+      "average_without": 0.3167,
+      "delta": 0.6833,
+      "per_dimension_delta": {
+        "correctness": 0.6333,
+        "completeness": 0.5,
+        "pattern_adherence": 0.7333,
+        "edge_cases": 0.8667
+      },
+      "winner": "with",
+      "runs_count": 3,
+      "per_run_scores": [
+        {
+          "run": 1,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.3,
+            "completeness": 0.5,
+            "pattern_adherence": 0.2,
+            "edge_cases": 0.1
+          },
+          "average_with": 1.0,
+          "average_without": 0.275,
+          "delta": 0.725
+        },
+        {
+          "run": 2,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.3,
+            "completeness": 0.5,
+            "pattern_adherence": 0.2,
+            "edge_cases": 0.1
+          },
+          "average_with": 1.0,
+          "average_without": 0.275,
+          "delta": 0.725
+        },
+        {
+          "run": 3,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.5,
+            "completeness": 0.5,
+            "pattern_adherence": 0.4,
+            "edge_cases": 0.2
+          },
+          "average_with": 1.0,
+          "average_without": 0.4,
+          "delta": 0.6
+        }
+      ]
+    },
+    {
+      "task_id": "task-04",
+      "prompt": "Create a 'documentation-writer' agent that has access to read, edit, and search tools, but NOT terminal access. Configure it so the model CAN auto-invoke it when the user asks for documentation. Add a handoff to forward complex API documentation tasks to a 'researcher' agent.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.4667,
+        "completeness": 0.4667,
+        "pattern_adherence": 0.3,
+        "edge_cases": 0.2333
+      },
+      "average_with": 1.0,
+      "average_without": 0.3667,
+      "delta": 0.6333,
+      "per_dimension_delta": {
+        "correctness": 0.5333,
+        "completeness": 0.5333,
+        "pattern_adherence": 0.7,
+        "edge_cases": 0.7667
+      },
+      "winner": "with",
+      "runs_count": 3,
+      "per_run_scores": [
+        {
+          "run": 1,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.3,
+            "completeness": 0.4,
+            "pattern_adherence": 0.2,
+            "edge_cases": 0.2
+          },
+          "average_with": 1.0,
+          "average_without": 0.275,
+          "delta": 0.725
+        },
+        {
+          "run": 2,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.4,
+            "completeness": 0.5,
+            "pattern_adherence": 0.2,
+            "edge_cases": 0.1
+          },
+          "average_with": 1.0,
+          "average_without": 0.3,
+          "delta": 0.7
+        },
+        {
+          "run": 3,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.7,
+            "completeness": 0.5,
+            "pattern_adherence": 0.5,
+            "edge_cases": 0.4
+          },
+          "average_with": 1.0,
+          "average_without": 0.525,
+          "delta": 0.475
+        }
+      ]
+    },
+    {
+      "task_id": "task-05",
+      "prompt": "Create an agent that inherits ALL tools from its parent (do not declare tools explicitly). It should have a custom description optimized for discovery when the user asks about 'database migrations'. Include metadata with author and version.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.2667,
+        "completeness": 0.4,
+        "pattern_adherence": 0.1333,
+        "edge_cases": 0.0333
+      },
+      "average_with": 1.0,
+      "average_without": 0.2083,
+      "delta": 0.7917,
+      "per_dimension_delta": {
+        "correctness": 0.7333,
+        "completeness": 0.6,
+        "pattern_adherence": 0.8667,
+        "edge_cases": 0.9667
+      },
+      "winner": "with",
+      "runs_count": 3,
+      "per_run_scores": [
+        {
+          "run": 1,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.2,
+            "completeness": 0.5,
+            "pattern_adherence": 0.1,
+            "edge_cases": 0.0
+          },
+          "average_with": 1.0,
+          "average_without": 0.2,
+          "delta": 0.8
+        },
+        {
+          "run": 2,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.2,
+            "completeness": 0.3,
+            "pattern_adherence": 0.1,
+            "edge_cases": 0.0
+          },
+          "average_with": 1.0,
+          "average_without": 0.15,
+          "delta": 0.85
+        },
+        {
+          "run": 3,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.4,
+            "completeness": 0.4,
+            "pattern_adherence": 0.2,
+            "edge_cases": 0.1
+          },
+          "average_with": 1.0,
+          "average_without": 0.275,
+          "delta": 0.725
+        }
+      ]
+    }
+  ]
+}

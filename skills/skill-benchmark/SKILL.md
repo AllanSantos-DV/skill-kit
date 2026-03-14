@@ -46,6 +46,8 @@ Before running any scripts, create the output directory structure.
 
 The output dir name follows the pattern: `bench-{skill-name}-{YYYYMMDD-HHmmss}/`
 
+> **The timestamp MUST be the real current date+time (to the second) — never replace it with labels like "runs3", "final", or any other suffix. The seconds-precision timestamp is what guarantees uniqueness.**
+
 **Default location**: current working directory.
 **Custom location**: if the user specifies a directory, use that as the parent for the bench dir.
 **skill-kit internal evaluations**: always use `skill-benchmarks/` at the skill-kit repo root.
@@ -115,21 +117,35 @@ Save the completed `benchmark.json` to `<bench-dir>/data/`.
 
 For each task in `benchmark.json`, dispatch **two sub-agents** that produce outputs independently.
 
+### Configuration: runs per task
+
+By default, each task runs once (`--runs 1`). For statistical significance, use `--runs N` (recommended: 3):
+
+- Each run dispatches 2 sub-agent calls (with + without skill)
+- Total calls = tasks × runs × 2
+- Example: 5 tasks × 3 runs = 30 sub-agent calls
+
+The `--runs` value is passed to `evaluate.py prepare` later. Plan your file naming accordingly.
+
 ### Directory setup
 
 Results go in the `<bench-dir>/results/` directory (already created in the Output Directory step).
 
-### For each task:
+### For each task, for each run (1..N):
 
 **Sub-agent A (WITH skill):**
 - System prompt: inject the full content of the target skill's SKILL.md
 - User prompt: the task's `prompt` field
-- Save output to: `<bench-dir>/results/task-{id}-with.md`
+- Save output to:
+  - If runs=1: `<bench-dir>/results/task-{id}-with.md`
+  - If runs>1: `<bench-dir>/results/task-{id}-run-{N}-with.md`
 
 **Sub-agent B (WITHOUT skill):**
 - System prompt: default (no skill injected)
 - User prompt: the exact same task `prompt`
-- Save output to: `<bench-dir>/results/task-{id}-without.md`
+- Save output to:
+  - If runs=1: `<bench-dir>/results/task-{id}-without.md`
+  - If runs>1: `<bench-dir>/results/task-{id}-run-{N}-without.md`
 
 ### Execution rules
 
@@ -143,15 +159,14 @@ Results go in the `<bench-dir>/results/` directory (already created in the Outpu
 Use whatever sub-agent mechanism is available in your environment. The key contract:
 
 ```
-Sub-agent A input:
-  system: <full SKILL.md content>
-  user: <task prompt>
-  → save to <bench-dir>/results/task-{id}-with.md
+For runs=1 (default):
+  Sub-agent A: system=<SKILL.md> user=<prompt> → results/task-{id}-with.md
+  Sub-agent B: system=(default)  user=<prompt> → results/task-{id}-without.md
 
-Sub-agent B input:
-  system: (none / default)
-  user: <task prompt>
-  → save to <bench-dir>/results/task-{id}-without.md
+For runs=N (N>1):
+  For each run 1..N:
+    Sub-agent A: system=<SKILL.md> user=<prompt> → results/task-{id}-run-{N}-with.md
+    Sub-agent B: system=(default)  user=<prompt> → results/task-{id}-run-{N}-without.md
 ```
 
 ## Step 4: Evaluate
@@ -161,10 +176,10 @@ Score each pair of outputs against the task's rubric.
 ### 4a. Prepare the evaluation
 
 ```bash
-python scripts/evaluate.py prepare --benchmark <bench-dir>/data/benchmark.json --results-dir <bench-dir>/results/ --output <bench-dir>/data/evaluation.json
+python scripts/evaluate.py prepare --benchmark <bench-dir>/data/benchmark.json --results-dir <bench-dir>/results/ --output <bench-dir>/data/evaluation.json --runs <N>
 ```
 
-This reads all result pairs and the rubric, producing an `evaluation.json` with structured comparisons for you to score.
+The `--runs` flag (default: 1) tells the script how many runs to expect per task. It reads the matching result files and produces an `evaluation.json` with structured comparisons for you to score. Each task contains a `runs` array with per-run outputs.
 
 ### 4b. Score each comparison
 
@@ -228,6 +243,24 @@ python scripts/provision.py --skill-path <path> --count 10 --output benchmark.js
 - 8–10 tasks: thorough validation
 - 15+: overkill for most skills, but useful for regression suites
 
+### Runs per task
+
+Default: 1 run. Override with `--runs` in the `evaluate.py prepare` step:
+
+```bash
+python scripts/evaluate.py prepare --benchmark benchmark.json --results-dir results/ --output evaluation.json --runs 3
+```
+
+Each run produces independent sub-agent calls (with + without skill), so total calls = tasks × runs × 2.
+
+**Guidelines:**
+- 1 run: quick check (default, backward compatible)
+- 3 runs: recommended for statistical confidence
+- 5+ runs: thorough, useful for marginal skills
+
+When using multiple runs, name result files as `task-{id}-run-{N}-with.md` / `task-{id}-run-{N}-without.md`.
+For single-run mode (`--runs 1` or omitted), the old format `task-{id}-with.md` still works.
+
 ### Custom dimensions
 
 Add custom rubric dimensions beyond the default 4. In the benchmark.json, add fields to the rubric object:
@@ -247,19 +280,15 @@ Add custom rubric dimensions beyond the default 4. In the benchmark.json, add fi
 
 The evaluation pipeline handles any number of dimensions — they flow through scoring and into the report automatically.
 
-### Multiple runs
+### Multiple score files (cross-benchmark averaging)
 
-For statistical confidence, run the same benchmark multiple times:
-
-1. Execute Step 3 multiple times, saving results to `results-run-1/`, `results-run-2/`, etc.
-2. Evaluate each run separately
-3. The report script accepts multiple score files:
+To compare across separate benchmark runs (different benchmarks, not within-task runs), the report script accepts multiple score files:
 
 ```bash
 python scripts/report.py --scores scores-run-1.json scores-run-2.json --output report.html
 ```
 
-This shows variance across runs and computes confidence intervals.
+This averages aggregates across files and shows cross-benchmark variance.
 
 ## Self-Evaluation (Dogfooding)
 
@@ -389,10 +418,12 @@ bench-{skill-name}-{YYYYMMDD-HHmmss}/
     evaluation.json          ← Scored comparisons
     scores.json              ← Computed aggregates
   results/
-    task-01-with.md          ← Sub-agent A output (with skill)
-    task-01-without.md       ← Sub-agent B output (without skill)
-    task-02-with.md
-    task-02-without.md
+    task-01-with.md          ← Sub-agent A output (runs=1 format)
+    task-01-without.md       ← Sub-agent B output (runs=1 format)
+    task-01-run-1-with.md    ← Sub-agent A output (runs>1 format)
+    task-01-run-1-without.md ← Sub-agent B output (runs>1 format)
+    task-01-run-2-with.md
+    task-01-run-2-without.md
     ...
 ```
 
