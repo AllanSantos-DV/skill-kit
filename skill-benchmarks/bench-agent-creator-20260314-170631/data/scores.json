@@ -1,0 +1,165 @@
+{
+  "skill": "agent-creator",
+  "summary": {
+    "total_tasks": 5,
+    "wins": 5,
+    "losses": 0,
+    "ties": 0,
+    "win_rate": 1.0,
+    "overall_delta": 0.8
+  },
+  "dimensions": {
+    "completeness": {
+      "avg_with": 1.0,
+      "avg_without": 0.35,
+      "avg_delta": 0.65
+    },
+    "correctness": {
+      "avg_with": 1.0,
+      "avg_without": 0.35,
+      "avg_delta": 0.65
+    },
+    "edge_cases": {
+      "avg_with": 1.0,
+      "avg_without": 0.05,
+      "avg_delta": 0.95
+    },
+    "pattern_adherence": {
+      "avg_with": 1.0,
+      "avg_without": 0.05,
+      "avg_delta": 0.95
+    }
+  },
+  "tasks": [
+    {
+      "task_id": "task-01",
+      "prompt": "Create a VS Code Copilot agent called 'reviewer' that can only read files and search code. It should not be able to edit files or run terminal commands. It serves as a code review assistant that provides feedback without making changes.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.25,
+        "completeness": 0.25,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.0
+      },
+      "average_with": 1.0,
+      "average_without": 0.125,
+      "delta": 0.875,
+      "per_dimension_delta": {
+        "correctness": 0.75,
+        "completeness": 0.75,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "winner": "with"
+    },
+    {
+      "task_id": "task-02",
+      "prompt": "Create an orchestrator agent that coordinates between a 'researcher' sub-agent (read-only access) and a 'coder' sub-agent (full tool access). The orchestrator itself should not edit files — it only delegates. Include handoff configurations so the orchestrator can pass context to each sub-agent.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.5,
+        "completeness": 0.25,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.0
+      },
+      "average_with": 1.0,
+      "average_without": 0.1875,
+      "delta": 0.8125,
+      "per_dimension_delta": {
+        "correctness": 0.5,
+        "completeness": 0.75,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "winner": "with"
+    },
+    {
+      "task_id": "task-03",
+      "prompt": "Create a 'security-auditor' agent that has access to search and read tools only, is user-invocable but NOT model-invocable (the user must explicitly select it). It should analyze code for OWASP Top 10 vulnerabilities.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.25,
+        "completeness": 0.5,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.0
+      },
+      "average_with": 1.0,
+      "average_without": 0.1875,
+      "delta": 0.8125,
+      "per_dimension_delta": {
+        "correctness": 0.75,
+        "completeness": 0.5,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "winner": "with"
+    },
+    {
+      "task_id": "task-04",
+      "prompt": "Create a 'documentation-writer' agent that has access to read, edit, and search tools, but NOT terminal access. Configure it so the model CAN auto-invoke it when the user asks for documentation. Add a handoff to forward complex API documentation tasks to a 'researcher' agent.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.75,
+        "completeness": 0.5,
+        "pattern_adherence": 0.25,
+        "edge_cases": 0.25
+      },
+      "average_with": 1.0,
+      "average_without": 0.4375,
+      "delta": 0.5625,
+      "per_dimension_delta": {
+        "correctness": 0.25,
+        "completeness": 0.5,
+        "pattern_adherence": 0.75,
+        "edge_cases": 0.75
+      },
+      "winner": "with"
+    },
+    {
+      "task_id": "task-05",
+      "prompt": "Create an agent that inherits ALL tools from its parent (do not declare tools explicitly). It should have a custom description optimized for discovery when the user asks about 'database migrations'. Include metadata with author and version.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.0,
+        "completeness": 0.25,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.0
+      },
+      "average_with": 1.0,
+      "average_without": 0.0625,
+      "delta": 0.9375,
+      "per_dimension_delta": {
+        "correctness": 1.0,
+        "completeness": 0.75,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "winner": "with"
+    }
+  ]
+}
