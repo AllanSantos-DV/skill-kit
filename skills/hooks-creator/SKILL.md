@@ -165,10 +165,51 @@ Always provide both `command` (Linux/macOS default) and `windows` override for p
 }
 ```
 
+### Windows Quoting — Critical
+
+The `windows:` field passes through multiple escaping layers. Getting this wrong causes PowerShell `TerminatorExpectedAtEndOfString` errors.
+
+**For workspace hooks (JSON config):** Simple — use `-File` for relative paths:
+```json
+"windows": "powershell -ExecutionPolicy Bypass -File .github\\hooks\\scripts\\my-hook.ps1"
+```
+
+**For global scripts with `$HOME` (agent frontmatter YAML):** Use `-Command` with single quotes around the path:
+```yaml
+windows: "powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\my-hook.ps1'\""
+```
+
+After YAML parsing, this becomes:
+```
+powershell -ExecutionPolicy Bypass -Command "& '$HOME\.copilot\hooks\scripts\my-hook.ps1'"
+```
+
+**Why NOT `-File` for global paths?**
+- `-File` treats `$HOME` as a **literal string** — it does NOT expand PowerShell variables
+- `-Command` runs the argument as PowerShell code, so `$HOME` resolves correctly
+- Single quotes around the path avoid nested double-quote escaping hell
+
+**Why NOT double quotes around the path?**
+- Double quotes like `\"$HOME\\.copilot\\...\"` require triple-escaping in YAML (`\\\"...\\\"`)`, which is fragile
+- If the script contains single quotes internally (e.g., `'run_in_terminal'`), the double-quote wrapping can interact badly with how Copilot invokes the command
+
+| Context | Recommended Pattern |
+|---------|-------------------|
+| JSON config, relative path | `powershell -ExecutionPolicy Bypass -File scripts\\my-hook.ps1` |
+| JSON config, global path | `powershell -ExecutionPolicy Bypass -Command "& '$HOME\\.copilot\\hooks\\scripts\\my-hook.ps1'"` |
+| YAML frontmatter, global path | `"powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\my-hook.ps1'\""` |
+
 **Rules:**
 - Bash scripts: always start with `#!/bin/bash`
 - PowerShell scripts: read stdin with the pipeline-then-console fallback (see below)
-- Bash scripts: use `INPUT=$(cat)` then `grep`/`sed` for JSON field extraction (do NOT depend on `jq` — it may not be installed)
+- Bash scripts: use `INPUT=$(cat 2>/dev/null || true)` then prefer `jq` for JSON parsing with `grep`/`sed` as fallback (jq may not be installed everywhere):
+  ```bash
+  if command -v jq &>/dev/null; then
+    TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""')
+  else
+    TOOL=$(echo "$INPUT" | grep -o '"tool_name"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
+  fi
+  ```
 - Always test both platforms when possible
 
 ## VS Code Matcher Workaround
@@ -179,7 +220,7 @@ Always provide both `command` (Linux/macOS default) and `windows` override for p
 
 ```bash
 #!/bin/bash
-INPUT=$(cat)
+INPUT=$(cat 2>/dev/null || true)
 TOOL=$(echo "$INPUT" | grep -o '"tool_name"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
 # Only run for file edits
 if [[ "$TOOL" != "replace_string_in_file" && "$TOOL" != "create_file" && "$TOOL" != "multi_replace_string_in_file" ]]; then
@@ -238,6 +279,32 @@ Hook scripts run with **the user's permissions**. A malicious hook in a cloned r
 | Hook script not executable on Linux | Run `chmod +x` on bash scripts |
 | Long-running hooks blocking the agent | Set appropriate `timeout` values |
 | Agent-scoped hooks not working | Enable `chat.useCustomAgentHooks: true` in VS Code User Settings (global) |
+| Using `-File` with `$HOME` variable paths | `-File` treats `$HOME` literally — use `-Command "& '...'"` instead |
+| Marker file for "retry guard" hooks | Marker auto-bypass lets agent pass on 2nd attempt without real verification — always block, let the agent demonstrate compliance |
+| Claude Code terminal tool is `Bash`, not `run_in_terminal` | Check for both: `$tool -notin @('Bash', 'run_in_terminal')` |
+| `INPUT=$(cat)` hanging if stdin empty | Use `INPUT=$(cat 2>/dev/null || true)` |
+
+## Claude Code vs Copilot — Key Differences for Hook Scripts
+
+When creating hooks that work on both platforms, be aware of these differences:
+
+| Aspect | VS Code Copilot | Claude Code |
+|--------|----------------|-------------|
+| Terminal tool name | `run_in_terminal` | `Bash` (also accepts `run_in_terminal`) |
+| Stop hook enforcement | `hookSpecificOutput.systemMessage` — informational only, agent can ignore | `decision: "block"` — actually blocks the agent from stopping |
+| Windows config field | `windows:` in JSON/YAML | `command_win32` in `hooks-config.json` (not officially documented) |
+| Global hooks location | `~/.copilot/hooks/scripts/` | `~/.claude/hooks-scripts/` |
+| Matcher support | Ignored — filter inside script | Supported (regex on tool_name) |
+
+**Tool name check pattern** (handles both platforms):
+```bash
+# Bash
+if [ "$TOOL" != "Bash" ] && [ "$TOOL" != "run_in_terminal" ]; then exit 0; fi
+```
+```powershell
+# PowerShell
+if ($input_json.tool_name -notin @('Bash', 'run_in_terminal')) { exit 0 }
+```
 
 ## Distribution via Skill Manager
 
@@ -285,3 +352,41 @@ Without distribution, hook scripts must be manually copied to each machine. With
 
 - For creating the agents that use hooks: use **agent-creator**
 - For creating skills (which cannot define hooks): use **skill-creator**
+
+<!-- FEEDBACK:START -->
+---
+threshold: 5
+---
+
+## Feedback Protocol — hooks-creator
+
+### When to Log a Review
+
+Log a review whenever you help a user create hooks and:
+- The instructions in SKILL.md were insufficient or unclear
+- A hook event, configuration format, or platform behavior changed and the skill is outdated
+- You had to improvise guidance not covered by the skill
+- The user's resulting hook had issues traceable to missing instructions
+- Cross-platform compatibility issues were encountered
+
+### Review Format
+
+Create a JSON file in `.vscode/skill-reviews/hooks-creator/`:
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "author": "dev-name",
+  "type": "improvement | correction | addition",
+  "section": "Section Name",
+  "suggestion": "What should change",
+  "context": "What prompted this feedback"
+}
+```
+
+### Consolidation
+
+When 5 reviews accumulate, summarize them into a single actionable
+improvement for the skill maintainer.
+
+<!-- FEEDBACK:END -->

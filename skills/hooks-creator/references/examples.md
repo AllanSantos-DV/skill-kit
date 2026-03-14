@@ -29,7 +29,7 @@ Runs `prettier` on any file modified by a file-editing tool.
 
 ```bash
 #!/bin/bash
-INPUT=$(cat)
+INPUT=$(cat 2>/dev/null || true)
 TOOL=$(echo "$INPUT" | grep -o '"tool_name"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
 
 # Only run for file-editing tools
@@ -56,9 +56,15 @@ echo '{}'
 ### PowerShell Script
 
 ```powershell
-$rawInput = @($input) -join "`n"
-if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
-$input_json = $rawInput | ConvertFrom-Json
+try {
+    $rawInput = @($input) -join "`n"
+    if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+    if ($rawInput) {
+        $input_json = $rawInput | ConvertFrom-Json
+    }
+} catch {
+    exit 0
+}
 $tool = $input_json.tool_name
 
 # Only run for file-editing tools
@@ -171,7 +177,7 @@ Prevents the agent from running dangerous terminal commands like `rm -rf`, `DROP
 
 ```bash
 #!/bin/bash
-INPUT=$(cat)
+INPUT=$(cat 2>/dev/null || true)
 TOOL=$(echo "$INPUT" | grep -o '"tool_name"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
 
 # Only check terminal/command tools
@@ -214,9 +220,15 @@ echo '{}'
 ### PowerShell Script
 
 ```powershell
-$rawInput = @($input) -join "`n"
-if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
-$input_json = $rawInput | ConvertFrom-Json
+try {
+    $rawInput = @($input) -join "`n"
+    if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+    if ($rawInput) {
+        $input_json = $rawInput | ConvertFrom-Json
+    }
+} catch {
+    exit 0
+}
 $tool = $input_json.tool_name
 
 # Only check terminal/command tools
@@ -278,7 +290,7 @@ hooks:
 
 ```bash
 #!/bin/bash
-INPUT=$(cat)
+INPUT=$(cat 2>/dev/null || true)
 ACTIVE=$(echo "$INPUT" | grep -o '"stop_hook_active"\s*:\s*true' | head -1)
 ACTIVE=${ACTIVE:+true}
 
@@ -299,9 +311,15 @@ EOF
 ### PowerShell Script
 
 ```powershell
-$rawInput = @($input) -join "`n"
-if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
-$input_json = $rawInput | ConvertFrom-Json
+try {
+    $rawInput = @($input) -join "`n"
+    if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+    if ($rawInput) {
+        $input_json = $rawInput | ConvertFrom-Json
+    }
+} catch {
+    exit 0
+}
 
 # Prevent infinite loop
 if ($input_json.stop_hook_active -eq $true) {
@@ -342,7 +360,7 @@ hooks:
 
 ```bash
 #!/bin/bash
-INPUT=$(cat)
+INPUT=$(cat 2>/dev/null || true)
 AGENT=$(echo "$INPUT" | grep -o '"agentName"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
 AGENT=${AGENT:-unknown}
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
@@ -355,9 +373,15 @@ echo "{}"
 ### PowerShell Script
 
 ```powershell
-$rawInput = @($input) -join "`n"
-if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
-$input_json = $rawInput | ConvertFrom-Json
+try {
+    $rawInput = @($input) -join "`n"
+    if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+    if ($rawInput) {
+        $input_json = $rawInput | ConvertFrom-Json
+    }
+} catch {
+    exit 0
+}
 $agent = $input_json.agentName
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
@@ -393,7 +417,7 @@ hooks:
 
 ```bash
 #!/bin/bash
-INPUT=$(cat)
+INPUT=$(cat 2>/dev/null || true)
 ACTIVE=$(echo "$INPUT" | grep -o '"stop_hook_active"\s*:\s*true' | head -1)
 ACTIVE=${ACTIVE:+true}
 
@@ -413,9 +437,15 @@ EOF
 ### PowerShell Script
 
 ```powershell
-$rawInput = @($input) -join "`n"
-if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
-$input_json = $rawInput | ConvertFrom-Json
+try {
+    $rawInput = @($input) -join "`n"
+    if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+    if ($rawInput) {
+        $input_json = $rawInput | ConvertFrom-Json
+    }
+} catch {
+    exit 0
+}
 
 if ($input_json.stop_hook_active -eq $true) {
     exit 0
