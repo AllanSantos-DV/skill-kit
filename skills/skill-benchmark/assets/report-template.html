@@ -168,6 +168,56 @@
             margin-left: 0.5rem;
         }
 
+        /* Expandable prompt rows */
+        .task-row {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .task-row:hover {
+            background: rgba(88, 166, 255, 0.05);
+        }
+
+        .task-row td:first-child::before {
+            content: '▶';
+            display: inline-block;
+            margin-right: 0.4rem;
+            font-size: 0.7rem;
+            transition: transform 0.15s ease;
+            color: var(--text-secondary);
+        }
+
+        .task-row.expanded td:first-child::before {
+            transform: rotate(90deg);
+        }
+
+        .prompt-row {
+            display: none;
+        }
+
+        .prompt-row.visible {
+            display: table-row;
+        }
+
+        .prompt-cell {
+            padding: 0.8rem 1rem 0.8rem 2.2rem;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-word;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .prompt-hint {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-style: italic;
+            margin-left: 0.5rem;
+        }
+
         footer {
             text-align: center;
             color: var(--text-secondary);
@@ -277,6 +327,10 @@
             ];
             if (d.num_runs > 1) {
                 cards.push({ value: d.num_runs, label: T.T_RUNS_AVERAGED, cls: '' });
+            }
+            if (d.runs_per_task > 1) {
+                cards.push({ value: d.runs_per_task, label: T.T_RUNS_PER_TASK, cls: '' });
+                cards.push({ value: d.total_calls, label: T.T_TOTAL_CALLS, cls: '' });
             }
             grid.innerHTML = cards.map(c =>
                 `<div class="stat-card"><div class="value ${c.cls}">${c.value}</div><div class="label">${c.label}</div></div>`
@@ -395,23 +449,41 @@
         // --- Task Table ---
         (function renderTaskTable() {
             const tbody = document.querySelector('#taskTable tbody');
-            for (const t of tasksData.labels.map((label, i) => ({
-                label,
-                with_avg: tasksData.with_avgs[i],
-                without_avg: tasksData.without_avgs[i],
-                delta: tasksData.deltas[i],
-            }))) {
+            tasksData.labels.forEach((label, i) => {
+                const t = {
+                    label,
+                    with_avg: tasksData.with_avgs[i],
+                    without_avg: tasksData.without_avgs[i],
+                    delta: tasksData.deltas[i],
+                    prompt: (tasksData.prompts && tasksData.prompts[i]) || '',
+                };
                 const winner = t.delta > 0.01 ? T.T_WINNER_WITH : t.delta < -0.01 ? T.T_WINNER_WITHOUT : T.T_WINNER_TIE;
+                const truncated = t.prompt.length > 200 ? t.prompt.slice(0, 200) + '...' : t.prompt;
+                const hint = t.prompt ? `<span class="prompt-hint">${truncated ? T.T_CLICK_TO_EXPAND : ''}</span>` : '';
+
                 const row = document.createElement('tr');
+                row.className = 'task-row';
                 row.innerHTML = `
-                    <td>${t.label}</td>
+                    <td>${t.label}${hint}</td>
                     <td>${t.with_avg.toFixed(3)}</td>
                     <td>${t.without_avg.toFixed(3)}</td>
                     <td class="${deltaClass(t.delta)}">${formatDelta(t.delta)}</td>
                     <td>${winner}</td>
                 `;
                 tbody.appendChild(row);
-            }
+
+                if (t.prompt) {
+                    const promptRow = document.createElement('tr');
+                    promptRow.className = 'prompt-row';
+                    promptRow.innerHTML = `<td class="prompt-cell" colspan="5"><strong>${T.T_PROMPT}:</strong>\n${t.prompt}</td>`;
+                    tbody.appendChild(promptRow);
+
+                    row.addEventListener('click', () => {
+                        row.classList.toggle('expanded');
+                        promptRow.classList.toggle('visible');
+                    });
+                }
+            });
         })();
     </script>
 </body>

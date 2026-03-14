@@ -71,6 +71,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "T_WINNER_WITH": "\u2705 Com",
         "T_WINNER_WITHOUT": "\u274c Sem",
         "T_WINNER_TIE": "\u2796 Empate",
+        "T_PROMPT": "Tarefa Delegada",
+        "T_CLICK_TO_EXPAND": "Clique para expandir",
+        "T_RUNS_PER_TASK": "Exec/Tarefa",
+        "T_TOTAL_CALLS": "Total Chamadas",
     },
     "es": {
         "T_LANG": "es",
@@ -100,6 +104,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "T_WINNER_WITH": "\u2705 Con",
         "T_WINNER_WITHOUT": "\u274c Sin",
         "T_WINNER_TIE": "\u2796 Empate",
+        "T_PROMPT": "Tarea Delegada",
+        "T_CLICK_TO_EXPAND": "Clic para expandir",
+        "T_RUNS_PER_TASK": "Ejec/Tarea",
+        "T_TOTAL_CALLS": "Total Llamadas",
     },
 }
 
@@ -176,12 +184,14 @@ def build_tasks_data(scores: dict) -> str:
     deltas = [t.get("delta", 0) for t in tasks]
     with_avgs = [t.get("average_with", 0) for t in tasks]
     without_avgs = [t.get("average_without", 0) for t in tasks]
+    prompts = [t.get("prompt", "") for t in tasks]
     return json.dumps(
         {
             "labels": labels,
             "deltas": deltas,
             "with_avgs": with_avgs,
             "without_avgs": without_avgs,
+            "prompts": prompts,
         }
     )
 
@@ -190,15 +200,20 @@ def build_aggregate_data(scores: dict) -> str:
     """Build JSON for summary statistics."""
     summary = scores.get("summary", {})
     dimensions = scores.get("dimensions", {})
+    total_tasks = summary.get("total_tasks", 0)
+    runs_per_task = summary.get("runs_per_task", 1)
+    total_calls = summary.get("total_calls", total_tasks * 2)
     return json.dumps(
         {
-            "total_tasks": summary.get("total_tasks", 0),
+            "total_tasks": total_tasks,
             "wins": summary.get("wins", 0),
             "losses": summary.get("losses", 0),
             "ties": summary.get("ties", 0),
             "win_rate": summary.get("win_rate", 0),
             "overall_delta": summary.get("overall_delta", 0),
             "num_runs": summary.get("num_runs", 1),
+            "runs_per_task": runs_per_task,
+            "total_calls": total_calls,
             "dimensions": {
                 dim: {
                     "avg_with": v.get("avg_with", 0),

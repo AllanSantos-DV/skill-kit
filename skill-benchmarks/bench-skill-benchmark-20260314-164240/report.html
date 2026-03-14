@@ -168,6 +168,56 @@
             margin-left: 0.5rem;
         }
 
+        /* Expandable prompt rows */
+        .task-row {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .task-row:hover {
+            background: rgba(88, 166, 255, 0.05);
+        }
+
+        .task-row td:first-child::before {
+            content: '▶';
+            display: inline-block;
+            margin-right: 0.4rem;
+            font-size: 0.7rem;
+            transition: transform 0.15s ease;
+            color: var(--text-secondary);
+        }
+
+        .task-row.expanded td:first-child::before {
+            transform: rotate(90deg);
+        }
+
+        .prompt-row {
+            display: none;
+        }
+
+        .prompt-row.visible {
+            display: table-row;
+        }
+
+        .prompt-cell {
+            padding: 0.8rem 1rem 0.8rem 2.2rem;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-word;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .prompt-hint {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-style: italic;
+            margin-left: 0.5rem;
+        }
+
         footer {
             text-align: center;
             color: var(--text-secondary);
@@ -241,9 +291,9 @@
     <script>
         // Data injected by report.py
         const radarData = {"labels": ["completeness", "correctness", "edge_cases", "pattern_adherence"], "with_values": [0.95, 1.0, 1.0, 1.0], "without_values": [0.4, 0.5, 0.15, 0.15]};
-        const tasksData = {"labels": ["self-01", "self-02", "self-03", "self-04", "self-05"], "deltas": [0.8125, 0.75, 0.5, 0.8125, 0.5625], "with_avgs": [1.0, 0.9375, 1.0, 1.0, 1.0], "without_avgs": [0.1875, 0.1875, 0.5, 0.1875, 0.4375]};
-        const aggregateData = {"total_tasks": 5, "wins": 5, "losses": 0, "ties": 0, "win_rate": 1.0, "overall_delta": 0.6875, "num_runs": 1, "dimensions": {"completeness": {"avg_with": 0.95, "avg_without": 0.4, "avg_delta": 0.55}, "correctness": {"avg_with": 1.0, "avg_without": 0.5, "avg_delta": 0.5}, "edge_cases": {"avg_with": 1.0, "avg_without": 0.15, "avg_delta": 0.85}, "pattern_adherence": {"avg_with": 1.0, "avg_without": 0.15, "avg_delta": 0.85}}};
-        const T = {"T_LANG": "pt", "T_TITLE": "Relatório de Benchmark de Skill", "T_TARGET_SKILL": "Skill avaliada", "T_RADAR_TITLE": "Comparação por Dimensão (Radar)", "T_BAR_TITLE": "Delta por Tarefa", "T_DIM_BREAKDOWN": "Detalhamento por Dimensão", "T_TASK_RESULTS": "Resultados por Tarefa", "T_DIMENSION": "Dimensão", "T_WITH_SKILL": "Com Skill", "T_WITHOUT_SKILL": "Sem Skill", "T_DELTA": "Delta", "T_TASK": "Tarefa", "T_WINNER": "Vencedor", "T_TASKS": "Tarefas", "T_OVERALL_DELTA": "Delta Geral", "T_WIN_RATE": "Taxa de Vitória", "T_WINS": "Vitórias", "T_LOSSES": "Derrotas", "T_TIES": "Empates", "T_RUNS_AVERAGED": "Execuções Promediadas", "T_CHART_WITH": "Com Skill", "T_CHART_WITHOUT": "Sem Skill", "T_CHART_DELTA": "Delta (com − sem)", "T_FOOTER": "Gerado por skill-benchmark • Chart.js", "T_WINNER_WITH": "✅ Com", "T_WINNER_WITHOUT": "❌ Sem", "T_WINNER_TIE": "➖ Empate"};
+        const tasksData = {"labels": ["self-01", "self-02", "self-03", "self-04", "self-05"], "deltas": [0.8125, 0.75, 0.5, 0.8125, 0.5625], "with_avgs": [1.0, 0.9375, 1.0, 1.0, 1.0], "without_avgs": [0.1875, 0.1875, 0.5, 0.1875, 0.4375], "prompts": ["Here is a skill about Docker Compose best practices:\n\n---\nname: docker-compose\ndescription: Best practices for multi-container Docker Compose setups.\n---\n\n# Docker Compose Best Practices\n\n## Service Dependencies\nAlways use `depends_on` with health checks rather than fixed delays.\n\n## Networking\nCreate explicit networks instead of relying on the default bridge network.\n\n## Volumes\nUse named volumes for persistent data. Bind mounts are for development only.\n\n## Environment\nNever hard-code secrets in docker-compose.yml. Use .env files or external secret managers.\n\nDesign 3 benchmark tasks with rubrics to evaluate this skill's effectiveness. Each task must include a realistic prompt and scoring criteria for correctness, completeness, pattern_adherence, and edge_cases.", "Review these two agent outputs for the same task and assign scores on a 0.0\u20131.0 scale with justification for each dimension.\n\n**Task prompt:** Write a retry mechanism for an HTTP client that handles transient failures.\n\n**Rubric:**\n- correctness: Implements exponential backoff with jitter\n- completeness: Covers timeout, 429, 5xx, and network errors\n- pattern_adherence: Uses the decorator/wrapper pattern\n- edge_cases: Handles max retries exceeded and non-retryable errors\n\n**Output A (with skill):**\n```python\nimport time, random\n\ndef retry(max_retries=3, base_delay=1.0):\n    def decorator(func):\n        def wrapper(*args, **kwargs):\n            for attempt in range(max_retries):\n                try:\n                    return func(*args, **kwargs)\n                except (TimeoutError, ConnectionError) as e:\n                    if attempt == max_retries - 1:\n                        raise\n                    delay = base_delay * (2 ** attempt) + random.uniform(0, 0.5)\n                    time.sleep(delay)\n        return wrapper\n    return decorator\n```\n\n**Output B (without skill):**\n```python\nimport time\n\ndef call_with_retry(func, retries=3):\n    for i in range(retries):\n        try:\n            return func()\n        except Exception:\n            time.sleep(1)\n    raise Exception('All retries failed')\n```", "Analyze this scores.json and provide an interpretation: which dimensions are strong, which need improvement, and what specific changes to the skill would help.\n\n```json\n{\n  \"skill\": \"api-error-handling\",\n  \"summary\": {\n    \"tasks_evaluated\": 5,\n    \"avg_delta\": 0.18,\n    \"win_rate\": 0.6\n  },\n  \"dimensions\": {\n    \"correctness\": { \"with\": 0.85, \"without\": 0.55, \"delta\": 0.30 },\n    \"completeness\": { \"with\": 0.70, \"without\": 0.60, \"delta\": 0.10 },\n    \"pattern_adherence\": { \"with\": 0.80, \"without\": 0.35, \"delta\": 0.45 },\n    \"edge_cases\": { \"with\": 0.40, \"without\": 0.50, \"delta\": -0.10 }\n  }\n}\n```", "Create a complete evaluation rubric for a skill about 'Git workflow management'. Define criteria for correctness, completeness, pattern_adherence, and edge_cases. The skill teaches: conventional commits, branch naming conventions, PR review checklists, rebase vs. merge strategy, and handling merge conflicts.", "Given benchmark results showing a -0.1 delta on completeness but +0.4 on pattern_adherence, explain what this means for the skill and recommend improvements. The skill being tested is about 'Database query optimization' and teaches: indexing strategies, query plan analysis, N+1 detection, and connection pooling."]};
+        const aggregateData = {"total_tasks": 5, "wins": 5, "losses": 0, "ties": 0, "win_rate": 1.0, "overall_delta": 0.6875, "num_runs": 1, "runs_per_task": 1, "total_calls": 10, "dimensions": {"completeness": {"avg_with": 0.95, "avg_without": 0.4, "avg_delta": 0.55}, "correctness": {"avg_with": 1.0, "avg_without": 0.5, "avg_delta": 0.5}, "edge_cases": {"avg_with": 1.0, "avg_without": 0.15, "avg_delta": 0.85}, "pattern_adherence": {"avg_with": 1.0, "avg_without": 0.15, "avg_delta": 0.85}}};
+        const T = {"T_LANG": "pt", "T_TITLE": "Relatório de Benchmark de Skill", "T_TARGET_SKILL": "Skill avaliada", "T_RADAR_TITLE": "Comparação por Dimensão (Radar)", "T_BAR_TITLE": "Delta por Tarefa", "T_DIM_BREAKDOWN": "Detalhamento por Dimensão", "T_TASK_RESULTS": "Resultados por Tarefa", "T_DIMENSION": "Dimensão", "T_WITH_SKILL": "Com Skill", "T_WITHOUT_SKILL": "Sem Skill", "T_DELTA": "Delta", "T_TASK": "Tarefa", "T_WINNER": "Vencedor", "T_TASKS": "Tarefas", "T_OVERALL_DELTA": "Delta Geral", "T_WIN_RATE": "Taxa de Vitória", "T_WINS": "Vitórias", "T_LOSSES": "Derrotas", "T_TIES": "Empates", "T_RUNS_AVERAGED": "Execuções Promediadas", "T_CHART_WITH": "Com Skill", "T_CHART_WITHOUT": "Sem Skill", "T_CHART_DELTA": "Delta (com − sem)", "T_FOOTER": "Gerado por skill-benchmark • Chart.js", "T_WINNER_WITH": "✅ Com", "T_WINNER_WITHOUT": "❌ Sem", "T_WINNER_TIE": "➖ Empate", "T_PROMPT": "Tarefa Delegada", "T_CLICK_TO_EXPAND": "Clique para expandir", "T_RUNS_PER_TASK": "Exec/Tarefa", "T_TOTAL_CALLS": "Total Chamadas"};
 
         // --- Helpers ---
         function deltaClass(val) {
@@ -277,6 +327,10 @@
             ];
             if (d.num_runs > 1) {
                 cards.push({ value: d.num_runs, label: T.T_RUNS_AVERAGED, cls: '' });
+            }
+            if (d.runs_per_task > 1) {
+                cards.push({ value: d.runs_per_task, label: T.T_RUNS_PER_TASK, cls: '' });
+                cards.push({ value: d.total_calls, label: T.T_TOTAL_CALLS, cls: '' });
             }
             grid.innerHTML = cards.map(c =>
                 `<div class="stat-card"><div class="value ${c.cls}">${c.value}</div><div class="label">${c.label}</div></div>`
@@ -395,23 +449,41 @@
         // --- Task Table ---
         (function renderTaskTable() {
             const tbody = document.querySelector('#taskTable tbody');
-            for (const t of tasksData.labels.map((label, i) => ({
-                label,
-                with_avg: tasksData.with_avgs[i],
-                without_avg: tasksData.without_avgs[i],
-                delta: tasksData.deltas[i],
-            }))) {
+            tasksData.labels.forEach((label, i) => {
+                const t = {
+                    label,
+                    with_avg: tasksData.with_avgs[i],
+                    without_avg: tasksData.without_avgs[i],
+                    delta: tasksData.deltas[i],
+                    prompt: (tasksData.prompts && tasksData.prompts[i]) || '',
+                };
                 const winner = t.delta > 0.01 ? T.T_WINNER_WITH : t.delta < -0.01 ? T.T_WINNER_WITHOUT : T.T_WINNER_TIE;
+                const truncated = t.prompt.length > 200 ? t.prompt.slice(0, 200) + '...' : t.prompt;
+                const hint = t.prompt ? `<span class="prompt-hint">${truncated ? T.T_CLICK_TO_EXPAND : ''}</span>` : '';
+
                 const row = document.createElement('tr');
+                row.className = 'task-row';
                 row.innerHTML = `
-                    <td>${t.label}</td>
+                    <td>${t.label}${hint}</td>
                     <td>${t.with_avg.toFixed(3)}</td>
                     <td>${t.without_avg.toFixed(3)}</td>
                     <td class="${deltaClass(t.delta)}">${formatDelta(t.delta)}</td>
                     <td>${winner}</td>
                 `;
                 tbody.appendChild(row);
-            }
+
+                if (t.prompt) {
+                    const promptRow = document.createElement('tr');
+                    promptRow.className = 'prompt-row';
+                    promptRow.innerHTML = `<td class="prompt-cell" colspan="5"><strong>${T.T_PROMPT}:</strong>\n${t.prompt}</td>`;
+                    tbody.appendChild(promptRow);
+
+                    row.addEventListener('click', () => {
+                        row.classList.toggle('expanded');
+                        promptRow.classList.toggle('visible');
+                    });
+                }
+            });
         })();
     </script>
 </body>

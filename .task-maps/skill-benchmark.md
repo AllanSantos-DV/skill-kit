@@ -48,3 +48,48 @@ Related: none (new skill)
 - Multiple-run support in report.py averages scores across files. For true statistical analysis (confidence intervals, p-values), a more sophisticated stats module would be needed.
 - All scripts target Python 3.9+ with stdlib only. This limits JSON/file I/O to standard patterns.
 - Adding new languages: add a dict entry to `TRANSLATIONS` in report.py with the same keys. The template automatically picks it up.
+
+---
+
+## Task: Multi-run support + prompt display in report
+
+Related: [Create the skill-benchmark skill](#task-create-the-skill-benchmark-skill)
+
+### Intent
+- **WHY**: Single-run benchmarks lack statistical confidence; report hides the task prompt, losing context
+- **WHAT FOR**: Enable N runs per task for averaging, and show prompt text in the HTML report for transparency
+- **FOR WHOM**: Skill authors running benchmarks who need reproducible, explainable results
+
+### Key Decisions
+
+| Decision | Why this over alternatives | Verified? |
+|----------|--------------------------|:---------:|
+| `--runs` flag on `evaluate.py prepare`, not on provision or report | Runs affect result file reading and evaluation structure; report just renders what scores.json contains | ✅ Evaluated data flow |
+| `runs` array in evaluation.json (always, even for runs=1) | Uniform structure simplifies finalize logic — no branching on old vs new format | ✅ Implemented, tested syntax |
+| Backward compat: runs=1 tries old filenames first, then run-1 | Old benchmarks (no run number) keep working without migration | ✅ Code reads `task-{id}-with.md` before `task-{id}-run-1-with.md` |
+| scores.json gets `runs_per_task` + `total_calls` in summary | Report needs these for display; compute is trivial (tasks × runs × 2) | ✅ Added to finalize |
+| report.py defaults missing `runs_per_task` to 1, `total_calls` to tasks×2 | Old scores.json files (pre-runs) render correctly without migration | ✅ Backward compat in build_aggregate_data |
+| Expandable prompt row via CSS+JS toggle (no framework) | Template is self-contained HTML; adding a collapse library is overkill | ✅ Matches existing Chart.js-only approach |
+| Prompt truncated to 200 chars in task row, full in expanded | Long prompts would break table layout; expand shows full context | ✅ Implemented in JS |
+| `per_run_scores` array in each task result | Transparency: see individual run scores, not just the average | ✅ Added to finalize output |
+
+### Done When
+
+- [x] evaluate.py prepare accepts `--runs` flag
+- [x] evaluate.py prepare supports multi-run file naming with backward compat
+- [x] evaluation.json uses `runs` array structure
+- [x] evaluate.py finalize averages scores across runs per task
+- [x] scores.json includes `runs_per_task`, `total_calls`, `per_run_scores`
+- [x] report.py reads runs_per_task/total_calls with backward compat defaults
+- [x] report-template.html shows runs/total_calls summary cards (when runs>1)
+- [x] report-template.html shows expandable prompt rows in task table
+- [x] Translations added for T_PROMPT, T_CLICK_TO_EXPAND, T_RUNS_PER_TASK, T_TOTAL_CALLS (en/pt/es)
+- [x] SKILL.md updated: Step 3 explains runs, Step 4a shows --runs flag, Configuration documents runs
+- [x] All 3 scripts pass syntax check
+- [x] All 3 scripts --help works
+
+### For Next
+
+- The `per_run_scores` array is in scores.json but not yet visualized in the report (could add a per-run variance chart later).
+- If runs>5, the evaluation.json will be large (N×2 outputs per task). Consider a streaming/chunked approach for very high run counts.
+- The prompt display uses `textContent`-style rendering (pre-wrap). If prompts contain markdown, a renderer could be added later.

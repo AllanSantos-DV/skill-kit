@@ -17,11 +17,17 @@ from pathlib import Path
 # Phase 1: prepare
 # ---------------------------------------------------------------------------
 
+def _read_result_file(path: Path) -> str | None:
+    """Read a result file if it exists, otherwise return None."""
+    return path.read_text(encoding="utf-8") if path.is_file() else None
+
+
 def cmd_prepare(args: argparse.Namespace) -> int:
     """Read benchmark.json + results/ and produce evaluation.json for scoring."""
     benchmark_path: Path = args.benchmark
     results_dir: Path = args.results_dir
     output_path: Path = args.output
+    num_runs: int = args.runs
 
     if not benchmark_path.is_file():
         print(f"Error: benchmark file not found at '{benchmark_path}'", file=sys.stderr)
@@ -35,45 +41,62 @@ def cmd_prepare(args: argparse.Namespace) -> int:
 
     for task in benchmark.get("tasks", []):
         task_id = task["id"]
-        with_file = results_dir / f"{task_id}-with.md"
-        without_file = results_dir / f"{task_id}-without.md"
-
-        with_content = (
-            with_file.read_text(encoding="utf-8") if with_file.is_file() else None
-        )
-        without_content = (
-            without_file.read_text(encoding="utf-8") if without_file.is_file() else None
-        )
-
-        if with_content is None:
-            print(f"Warning: missing {with_file.name}, skipping task {task_id}", file=sys.stderr)
-            continue
-        if without_content is None:
-            print(f"Warning: missing {without_file.name}, skipping task {task_id}", file=sys.stderr)
-            continue
-
-        # Build per-dimension score slots
         rubric = task.get("rubric", {})
         dimensions = list(rubric.keys())
         score_template = {dim: None for dim in dimensions}
+
+        runs = []
+        for run_idx in range(1, num_runs + 1):
+            if num_runs == 1:
+                # Backward compat: try old-style names first, then run-1 names
+                with_content = _read_result_file(results_dir / f"{task_id}-with.md")
+                if with_content is None:
+                    with_content = _read_result_file(results_dir / f"{task_id}-run-1-with.md")
+                without_content = _read_result_file(results_dir / f"{task_id}-without.md")
+                if without_content is None:
+                    without_content = _read_result_file(results_dir / f"{task_id}-run-1-without.md")
+            else:
+                with_content = _read_result_file(results_dir / f"{task_id}-run-{run_idx}-with.md")
+                without_content = _read_result_file(results_dir / f"{task_id}-run-{run_idx}-without.md")
+
+            if with_content is None:
+                suffix = "" if num_runs == 1 else f" run {run_idx}"
+                print(f"Warning: missing with-skill output for {task_id}{suffix}, skipping run", file=sys.stderr)
+                continue
+            if without_content is None:
+                suffix = "" if num_runs == 1 else f" run {run_idx}"
+                print(f"Warning: missing without-skill output for {task_id}{suffix}, skipping run", file=sys.stderr)
+                continue
+
+            runs.append(
+                {
+                    "run": run_idx,
+                    "output_with_skill": with_content,
+                    "output_without_skill": without_content,
+                    "scores_with": dict(score_template),
+                    "scores_without": dict(score_template),
+                }
+            )
+
+        if not runs:
+            print(f"Warning: no valid runs for {task_id}, skipping task", file=sys.stderr)
+            continue
 
         evaluations.append(
             {
                 "task_id": task_id,
                 "prompt": task.get("prompt", ""),
                 "rubric": rubric,
-                "output_with_skill": with_content,
-                "output_without_skill": without_content,
-                "scores_with": dict(score_template),
-                "scores_without": dict(score_template),
+                "runs": runs,
             }
         )
 
     evaluation_doc = {
         "skill": benchmark.get("skill", "unknown"),
         "total_tasks": len(evaluations),
+        "runs_per_task": num_runs,
         "instructions": (
-            "For each task, read both outputs and the rubric criteria. "
+            "For each task and each run, read both outputs and the rubric criteria. "
             "Assign a score from 0.0 to 1.0 for each dimension in scores_with "
             "and scores_without. Replace null values with numeric scores."
         ),
@@ -87,7 +110,8 @@ def cmd_prepare(args: argparse.Namespace) -> int:
     )
     print(f"Evaluation template written to {output_path}")
     print(f"  Tasks to score: {len(evaluations)}")
-    print(f"  Fill null scores in scores_with and scores_without for each task.")
+    print(f"  Runs per task: {num_runs}")
+    print(f"  Fill null scores in scores_with and scores_without for each run.")
     return 0
 
 
@@ -106,6 +130,7 @@ def cmd_finalize(args: argparse.Namespace) -> int:
 
     evaluation = json.loads(evaluation_path.read_text(encoding="utf-8"))
     evaluations = evaluation.get("evaluations", [])
+    runs_per_task = evaluation.get("runs_per_task", 1)
 
     if not evaluations:
         print("Error: no evaluations found in the file", file=sys.stderr)
@@ -113,44 +138,78 @@ def cmd_finalize(args: argparse.Namespace) -> int:
 
     # Validate that all scores are filled
     for ev in evaluations:
-        for key in ("scores_with", "scores_without"):
-            for dim, val in ev.get(key, {}).items():
-                if val is None:
-                    print(
-                        f"Error: {ev['task_id']}.{key}.{dim} is still null. "
-                        f"Fill all scores before finalizing.",
-                        file=sys.stderr,
-                    )
-                    return 1
+        for run_entry in ev.get("runs", []):
+            for key in ("scores_with", "scores_without"):
+                for dim, val in run_entry.get(key, {}).items():
+                    if val is None:
+                        print(
+                            f"Error: {ev['task_id']}.run-{run_entry['run']}.{key}.{dim} "
+                            f"is still null. Fill all scores before finalizing.",
+                            file=sys.stderr,
+                        )
+                        return 1
 
-    # Compute per-task scores
+    # Compute per-task scores (averaged across runs)
     task_results = []
     all_dimensions: set[str] = set()
 
     for ev in evaluations:
-        dims_with = ev["scores_with"]
-        dims_without = ev["scores_without"]
-        all_dimensions.update(dims_with.keys())
+        runs = ev.get("runs", [])
+        if not runs:
+            continue
 
-        avg_with = sum(dims_with.values()) / len(dims_with) if dims_with else 0
-        avg_without = sum(dims_without.values()) / len(dims_without) if dims_without else 0
+        # Collect all dimension names from first run
+        first_run_dims = list(runs[0]["scores_with"].keys())
+        all_dimensions.update(first_run_dims)
+
+        # Average scores across runs
+        avg_dims_with: dict[str, float] = {}
+        avg_dims_without: dict[str, float] = {}
+        for dim in first_run_dims:
+            with_vals = [r["scores_with"].get(dim, 0) for r in runs]
+            without_vals = [r["scores_without"].get(dim, 0) for r in runs]
+            avg_dims_with[dim] = round(sum(with_vals) / len(with_vals), 4)
+            avg_dims_without[dim] = round(sum(without_vals) / len(without_vals), 4)
+
+        avg_with = sum(avg_dims_with.values()) / len(avg_dims_with) if avg_dims_with else 0
+        avg_without = sum(avg_dims_without.values()) / len(avg_dims_without) if avg_dims_without else 0
         delta = avg_with - avg_without
 
         per_dim_delta = {}
-        for dim in dims_with:
-            per_dim_delta[dim] = round(dims_with[dim] - dims_without.get(dim, 0), 4)
+        for dim in first_run_dims:
+            per_dim_delta[dim] = round(avg_dims_with[dim] - avg_dims_without.get(dim, 0), 4)
+
+        # Per-run scores for transparency
+        per_run_scores = []
+        for r in runs:
+            dw = r["scores_with"]
+            dwo = r["scores_without"]
+            rw = sum(dw.values()) / len(dw) if dw else 0
+            rwo = sum(dwo.values()) / len(dwo) if dwo else 0
+            per_run_scores.append(
+                {
+                    "run": r["run"],
+                    "scores_with": dw,
+                    "scores_without": dwo,
+                    "average_with": round(rw, 4),
+                    "average_without": round(rwo, 4),
+                    "delta": round(rw - rwo, 4),
+                }
+            )
 
         task_results.append(
             {
                 "task_id": ev["task_id"],
                 "prompt": ev.get("prompt", ""),
-                "scores_with": dims_with,
-                "scores_without": dims_without,
+                "scores_with": avg_dims_with,
+                "scores_without": avg_dims_without,
                 "average_with": round(avg_with, 4),
                 "average_without": round(avg_without, 4),
                 "delta": round(delta, 4),
                 "per_dimension_delta": per_dim_delta,
                 "winner": "with" if delta > 0.01 else ("without" if delta < -0.01 else "tie"),
+                "runs_count": len(runs),
+                "per_run_scores": per_run_scores,
             }
         )
 
@@ -181,10 +240,14 @@ def cmd_finalize(args: argparse.Namespace) -> int:
         else 0
     )
 
+    total_calls = total_tasks * runs_per_task * 2
+
     scores_doc = {
         "skill": evaluation.get("skill", "unknown"),
         "summary": {
             "total_tasks": total_tasks,
+            "runs_per_task": runs_per_task,
+            "total_calls": total_calls,
             "wins": wins,
             "losses": losses,
             "ties": ties,
@@ -232,6 +295,7 @@ def main(argv: list[str] | None = None) -> int:
     p_prep.add_argument("--benchmark", type=Path, required=True, help="Path to benchmark.json")
     p_prep.add_argument("--results-dir", type=Path, required=True, help="Path to results/ directory")
     p_prep.add_argument("--output", type=Path, default=Path("evaluation.json"), help="Output evaluation template path")
+    p_prep.add_argument("--runs", type=int, default=1, help="Number of runs per task (default: 1, recommended: 3)")
 
     # finalize
     p_fin = sub.add_parser("finalize", help="Compute aggregates from scored evaluation")

@@ -168,6 +168,56 @@
             margin-left: 0.5rem;
         }
 
+        /* Expandable prompt rows */
+        .task-row {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .task-row:hover {
+            background: rgba(88, 166, 255, 0.05);
+        }
+
+        .task-row td:first-child::before {
+            content: '▶';
+            display: inline-block;
+            margin-right: 0.4rem;
+            font-size: 0.7rem;
+            transition: transform 0.15s ease;
+            color: var(--text-secondary);
+        }
+
+        .task-row.expanded td:first-child::before {
+            transform: rotate(90deg);
+        }
+
+        .prompt-row {
+            display: none;
+        }
+
+        .prompt-row.visible {
+            display: table-row;
+        }
+
+        .prompt-cell {
+            padding: 0.8rem 1rem 0.8rem 2.2rem;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-word;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .prompt-hint {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-style: italic;
+            margin-left: 0.5rem;
+        }
+
         footer {
             text-align: center;
             color: var(--text-secondary);
@@ -241,9 +291,9 @@
     <script>
         // Data injected by report.py
         const radarData = {"labels": ["completeness", "correctness", "edge_cases", "pattern_adherence"], "with_values": [1.0, 1.0, 1.0, 1.0], "without_values": [0.35, 0.35, 0.05, 0.05]};
-        const tasksData = {"labels": ["task-01", "task-02", "task-03", "task-04", "task-05"], "deltas": [0.875, 0.8125, 0.8125, 0.5625, 0.9375], "with_avgs": [1.0, 1.0, 1.0, 1.0, 1.0], "without_avgs": [0.125, 0.1875, 0.1875, 0.4375, 0.0625]};
-        const aggregateData = {"total_tasks": 5, "wins": 5, "losses": 0, "ties": 0, "win_rate": 1.0, "overall_delta": 0.8, "num_runs": 1, "dimensions": {"completeness": {"avg_with": 1.0, "avg_without": 0.35, "avg_delta": 0.65}, "correctness": {"avg_with": 1.0, "avg_without": 0.35, "avg_delta": 0.65}, "edge_cases": {"avg_with": 1.0, "avg_without": 0.05, "avg_delta": 0.95}, "pattern_adherence": {"avg_with": 1.0, "avg_without": 0.05, "avg_delta": 0.95}}};
-        const T = {"T_LANG": "pt", "T_TITLE": "Relatório de Benchmark de Skill", "T_TARGET_SKILL": "Skill avaliada", "T_RADAR_TITLE": "Comparação por Dimensão (Radar)", "T_BAR_TITLE": "Delta por Tarefa", "T_DIM_BREAKDOWN": "Detalhamento por Dimensão", "T_TASK_RESULTS": "Resultados por Tarefa", "T_DIMENSION": "Dimensão", "T_WITH_SKILL": "Com Skill", "T_WITHOUT_SKILL": "Sem Skill", "T_DELTA": "Delta", "T_TASK": "Tarefa", "T_WINNER": "Vencedor", "T_TASKS": "Tarefas", "T_OVERALL_DELTA": "Delta Geral", "T_WIN_RATE": "Taxa de Vitória", "T_WINS": "Vitórias", "T_LOSSES": "Derrotas", "T_TIES": "Empates", "T_RUNS_AVERAGED": "Execuções Promediadas", "T_CHART_WITH": "Com Skill", "T_CHART_WITHOUT": "Sem Skill", "T_CHART_DELTA": "Delta (com − sem)", "T_FOOTER": "Gerado por skill-benchmark • Chart.js", "T_WINNER_WITH": "✅ Com", "T_WINNER_WITHOUT": "❌ Sem", "T_WINNER_TIE": "➖ Empate"};
+        const tasksData = {"labels": ["task-01", "task-02", "task-03", "task-04", "task-05"], "deltas": [0.875, 0.8125, 0.8125, 0.5625, 0.9375], "with_avgs": [1.0, 1.0, 1.0, 1.0, 1.0], "without_avgs": [0.125, 0.1875, 0.1875, 0.4375, 0.0625], "prompts": ["Create a VS Code Copilot agent called 'reviewer' that can only read files and search code. It should not be able to edit files or run terminal commands. It serves as a code review assistant that provides feedback without making changes.", "Create an orchestrator agent that coordinates between a 'researcher' sub-agent (read-only access) and a 'coder' sub-agent (full tool access). The orchestrator itself should not edit files \u2014 it only delegates. Include handoff configurations so the orchestrator can pass context to each sub-agent.", "Create a 'security-auditor' agent that has access to search and read tools only, is user-invocable but NOT model-invocable (the user must explicitly select it). It should analyze code for OWASP Top 10 vulnerabilities.", "Create a 'documentation-writer' agent that has access to read, edit, and search tools, but NOT terminal access. Configure it so the model CAN auto-invoke it when the user asks for documentation. Add a handoff to forward complex API documentation tasks to a 'researcher' agent.", "Create an agent that inherits ALL tools from its parent (do not declare tools explicitly). It should have a custom description optimized for discovery when the user asks about 'database migrations'. Include metadata with author and version."]};
+        const aggregateData = {"total_tasks": 5, "wins": 5, "losses": 0, "ties": 0, "win_rate": 1.0, "overall_delta": 0.8, "num_runs": 1, "runs_per_task": 1, "total_calls": 10, "dimensions": {"completeness": {"avg_with": 1.0, "avg_without": 0.35, "avg_delta": 0.65}, "correctness": {"avg_with": 1.0, "avg_without": 0.35, "avg_delta": 0.65}, "edge_cases": {"avg_with": 1.0, "avg_without": 0.05, "avg_delta": 0.95}, "pattern_adherence": {"avg_with": 1.0, "avg_without": 0.05, "avg_delta": 0.95}}};
+        const T = {"T_LANG": "pt", "T_TITLE": "Relatório de Benchmark de Skill", "T_TARGET_SKILL": "Skill avaliada", "T_RADAR_TITLE": "Comparação por Dimensão (Radar)", "T_BAR_TITLE": "Delta por Tarefa", "T_DIM_BREAKDOWN": "Detalhamento por Dimensão", "T_TASK_RESULTS": "Resultados por Tarefa", "T_DIMENSION": "Dimensão", "T_WITH_SKILL": "Com Skill", "T_WITHOUT_SKILL": "Sem Skill", "T_DELTA": "Delta", "T_TASK": "Tarefa", "T_WINNER": "Vencedor", "T_TASKS": "Tarefas", "T_OVERALL_DELTA": "Delta Geral", "T_WIN_RATE": "Taxa de Vitória", "T_WINS": "Vitórias", "T_LOSSES": "Derrotas", "T_TIES": "Empates", "T_RUNS_AVERAGED": "Execuções Promediadas", "T_CHART_WITH": "Com Skill", "T_CHART_WITHOUT": "Sem Skill", "T_CHART_DELTA": "Delta (com − sem)", "T_FOOTER": "Gerado por skill-benchmark • Chart.js", "T_WINNER_WITH": "✅ Com", "T_WINNER_WITHOUT": "❌ Sem", "T_WINNER_TIE": "➖ Empate", "T_PROMPT": "Tarefa Delegada", "T_CLICK_TO_EXPAND": "Clique para expandir", "T_RUNS_PER_TASK": "Exec/Tarefa", "T_TOTAL_CALLS": "Total Chamadas"};
 
         // --- Helpers ---
         function deltaClass(val) {
@@ -277,6 +327,10 @@
             ];
             if (d.num_runs > 1) {
                 cards.push({ value: d.num_runs, label: T.T_RUNS_AVERAGED, cls: '' });
+            }
+            if (d.runs_per_task > 1) {
+                cards.push({ value: d.runs_per_task, label: T.T_RUNS_PER_TASK, cls: '' });
+                cards.push({ value: d.total_calls, label: T.T_TOTAL_CALLS, cls: '' });
             }
             grid.innerHTML = cards.map(c =>
                 `<div class="stat-card"><div class="value ${c.cls}">${c.value}</div><div class="label">${c.label}</div></div>`
@@ -395,23 +449,41 @@
         // --- Task Table ---
         (function renderTaskTable() {
             const tbody = document.querySelector('#taskTable tbody');
-            for (const t of tasksData.labels.map((label, i) => ({
-                label,
-                with_avg: tasksData.with_avgs[i],
-                without_avg: tasksData.without_avgs[i],
-                delta: tasksData.deltas[i],
-            }))) {
+            tasksData.labels.forEach((label, i) => {
+                const t = {
+                    label,
+                    with_avg: tasksData.with_avgs[i],
+                    without_avg: tasksData.without_avgs[i],
+                    delta: tasksData.deltas[i],
+                    prompt: (tasksData.prompts && tasksData.prompts[i]) || '',
+                };
                 const winner = t.delta > 0.01 ? T.T_WINNER_WITH : t.delta < -0.01 ? T.T_WINNER_WITHOUT : T.T_WINNER_TIE;
+                const truncated = t.prompt.length > 200 ? t.prompt.slice(0, 200) + '...' : t.prompt;
+                const hint = t.prompt ? `<span class="prompt-hint">${truncated ? T.T_CLICK_TO_EXPAND : ''}</span>` : '';
+
                 const row = document.createElement('tr');
+                row.className = 'task-row';
                 row.innerHTML = `
-                    <td>${t.label}</td>
+                    <td>${t.label}${hint}</td>
                     <td>${t.with_avg.toFixed(3)}</td>
                     <td>${t.without_avg.toFixed(3)}</td>
                     <td class="${deltaClass(t.delta)}">${formatDelta(t.delta)}</td>
                     <td>${winner}</td>
                 `;
                 tbody.appendChild(row);
-            }
+
+                if (t.prompt) {
+                    const promptRow = document.createElement('tr');
+                    promptRow.className = 'prompt-row';
+                    promptRow.innerHTML = `<td class="prompt-cell" colspan="5"><strong>${T.T_PROMPT}:</strong>\n${t.prompt}</td>`;
+                    tbody.appendChild(promptRow);
+
+                    row.addEventListener('click', () => {
+                        row.classList.toggle('expanded');
+                        promptRow.classList.toggle('visible');
+                    });
+                }
+            });
         })();
     </script>
 </body>
