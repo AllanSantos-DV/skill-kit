@@ -57,6 +57,8 @@ When the user needs document generation, **execute these directly** via `run_in_
 | `generate_docx.py` | JSON/MD → Word | `python scripts/generate_docx.py input.json -t template.docx -o output.docx` |
 | `generate_xlsx.py` | JSON/MD → Excel | `python scripts/generate_xlsx.py input.json -o output.xlsx` |
 | `generate_project.py` | JSON → MSPDI XML | `python scripts/generate_project.py input.json -o output.xml` |
+| `generate_project.py` (inject) | Inject into MSPDI | `python scripts/generate_project.py input.json -t template.xml -o output.xml --mode inject` |
+| `validate_project.py` | Validate MSPDI XML | `python scripts/validate_project.py output.xml` (no Java required) |
 | `generate_pdf.py` | MD/HTML → PDF | `python scripts/generate_pdf.py input.md -o output.pdf --css style.css` |
 | `analyze_template.py` | Extract style profile | `python scripts/analyze_template.py input.pptx -o profile.json` (also .docx, .xlsx, .mpp, .mspdi, .mpx, .xml) |
 | `runtime_resolver.py` | Check runtime deps | `python scripts/runtime_resolver.py java --min-version 11` |
@@ -264,28 +266,113 @@ Supported fields: `title`, `subtitle`, `author`, `date`, `sections` (array of `{
 }
 ```
 
+### XLSX Inject Schema
+
+Used with `--mode inject`. Each sheet entry targets an existing sheet by name. Only sheets present in the JSON are modified — others stay untouched.
+
+```json
+{
+  "sheets": {
+    "Summary": {
+      "start_row": 2,
+      "start_col": 1,
+      "headers": ["Metric", "Value", "Change"],
+      "rows": [
+        ["Revenue", "$2.5M", "+22%"],
+        ["Users", "80,000", "+12%"]
+      ]
+    }
+  }
+}
+```
+
+> **Inject rules:** Only sheets referenced in the JSON are modified — others stay untouched. `start_row` (default: 2) is the first row for data injection. `start_col` (default: 1) is the first column. If `headers` is present, they are injected in the row before `start_row` (preserving formatting). If the template has more data rows than the JSON, leftover cells are cleared (`value=None`) but formatting is preserved. Merged cells, charts, formulas, and conditional formatting are not disturbed.
+
 ### MSPDI (Project) Schema
 
 ```json
 {
   "tasks": [
     {
-      "name": "Project Planning",
+      "name": "Project Phase 1",
       "start": "2026-04-01",
-      "duration": "5d",
+      "duration": "30d",
       "predecessors": [],
-      "resources": ["Project Manager"]
-    },
-    {
-      "name": "Development Phase",
-      "start": "2026-04-08",
-      "duration": "20d",
-      "predecessors": [1],
-      "resources": ["Dev Team"]
+      "resources": ["PM"],
+      "outline_level": 1,
+      "summary": true,
+      "children": [
+        {
+          "name": "Design",
+          "start": "2026-04-01",
+          "duration": "10d",
+          "predecessors": [],
+          "resources": ["Designer"],
+          "notes": "Include mockups",
+          "percent_complete": 50,
+          "constraint_type": "SNET",
+          "constraint_date": "2026-04-01",
+          "priority": 500,
+          "custom_fields": {
+            "text1": "Category A",
+            "number1": 42,
+            "flag1": true
+          }
+        },
+        {
+          "name": "Development",
+          "duration": "15d",
+          "predecessors": [
+            {"task": 2, "type": "FS", "lag": "2d"},
+            {"task": 3, "type": "SS"}
+          ],
+          "resources": ["Dev Team"]
+        }
+      ]
     }
+  ],
+  "resources": [
+    {"name": "PM", "type": "work", "group": "Management", "standard_rate": 100, "max_units": 100},
+    {"name": "Designer", "type": "work", "group": "Design"},
+    {"name": "Dev Team", "type": "work"}
+  ],
+  "calendar": {
+    "name": "Standard",
+    "working_days": ["MON", "TUE", "WED", "THU", "FRI"],
+    "hours": {"start": "08:00", "end": "17:00"}
+  }
+}
+```
+
+**New fields (all optional — simple JSON still works):**
+- `children` — nested subtasks (WBS hierarchy)
+- `outline_level` — explicit WBS level (1-based)
+- `summary` — mark as summary/group task
+- `predecessors` — integers (backward compat) OR `{"task": id, "type": "FS"|"SS"|"FF"|"SF", "lag": "2d"}`
+- `notes` — task notes text
+- `percent_complete` — integer 0-100
+- `constraint_type` — ASAP, ALAP, SNET, SNLT, FNET, FNLT, MSO, MFO
+- `constraint_date` — date for the constraint
+- `priority` — integer (0-1000, default 500)
+- `custom_fields` — `text1`-`text5`, `number1`-`number5`, `flag1`-`flag5`
+- `resources` (top-level) — enriched resource definitions with `type`, `group`, `standard_rate`, `max_units`
+- `calendar` — project calendar with working days and hours
+
+### MSPDI Inject Schema
+
+Used with `--mode inject`. Each entry targets an existing task by UID, name, or adds a new task.
+
+```json
+{
+  "tasks": [
+    {"task_uid": 5, "name": "Updated Name", "duration": "8d", "percent_complete": 75},
+    {"task_name": "Design Phase", "notes": "Updated notes", "custom_fields": {"text1": "Modified"}},
+    {"name": "Brand New Task", "duration": "3d", "start": "2026-05-01", "resources": ["New Resource"]}
   ]
 }
 ```
+
+> **Inject rules:** `task_uid` matches by UID (most precise). `task_name` matches by name (first match). Neither → task is appended as new. Fields not mentioned in the JSON stay untouched. If Java/MPXJ fails, an XML fallback using `xml.etree` handles `.xml`/`.mspdi` files (not `.mpp`).
 
 ## Runtime Dependency Discovery
 
@@ -363,7 +450,7 @@ pandoc input.md -o output.docx --reference-doc=template.docx
 
 ### Excel (.xlsx)
 
-**With template:**
+**With template (generate mode — default):**
 1. Prepare JSON matching the XLSX schema
 2. Run: `python scripts/generate_xlsx.py data.json -t template.xlsx -o output.xlsx`
 3. The script opens the template and fills cells starting from specified positions
@@ -374,18 +461,54 @@ pandoc input.md -o output.docx --reference-doc=template.docx
 
 **Features:** Bold headers, auto-width columns, basic number formatting.
 
+**Inject mode (preserve formatting from corporate templates):**
+
+Use `--mode inject` when you have a fully-designed XLSX template and want to replace only cell values while preserving **100% of the visual formatting** (fonts, fills, borders, number formats, alignment, merged cells, charts).
+
+1. Prepare JSON matching the XLSX Inject Schema (see above)
+2. Run: `python scripts/generate_xlsx.py data.json -t template.xlsx -o output.xlsx --mode inject`
+3. The script captures each cell's formatting before writing, then restores it after — no styles are lost
+
+Key differences from generate mode:
+- Preserves all cell formatting: font, fill, border, number_format, alignment, protection
+- Merged cells are never broken or displaced
+- Charts and formulas referencing data cells are not disturbed
+- Sheets not referenced in the JSON remain untouched
+- Leftover data rows (template has more rows than JSON data) are cleared but keep their formatting
+
 ### MS Project (.mspdi)
 
 **Requires Java 11+.** The script checks automatically via `runtime_resolver.py`.
 
 > **Inform the user:** This skill generates MSPDI XML (`.xml`), not `.mpp` directly. The `.mpp` format is proprietary and cannot be written by open-source tools. However, **MS Project imports MSPDI XML natively with full fidelity** — all tasks, durations, predecessors, resources, and assignments are preserved. The user opens the `.xml` in Project and saves as `.mpp` if needed. If the user has MS Project installed and wants direct `.mpp` output, COM Automation (`win32com`) is an alternative path but requires the application installed locally.
 
-1. Prepare JSON matching the MSPDI schema
+**Generate mode (default):**
+1. Prepare JSON matching the MSPDI schema (supports WBS hierarchy, custom fields, constraints, enriched resources, calendar)
 2. Run: `python scripts/generate_project.py tasks.json -o project.xml`
 3. Output is MSPDI XML — open directly in MS Project, Project Professional, or ProjectLibre
 4. Save as `.mpp` from within the application if the binary format is needed
 
-If Java is not found, the script prints installation instructions and exits.
+**Inject mode (modify existing projects):**
+
+Use `--mode inject` to modify tasks in an existing MSPDI XML file while preserving all other data.
+
+1. Prepare JSON matching the MSPDI Inject Schema (`task_uid`, `task_name`, or new tasks)
+2. Run: `python scripts/generate_project.py inject.json -t existing.xml -o output.xml --mode inject`
+3. Tasks matched by UID or name are updated; unmatched entries are added as new tasks
+4. Fields not mentioned in the JSON stay untouched (full preservation)
+
+> If Java/MPXJ is unavailable, inject falls back to `xml.etree` for `.xml`/`.mspdi` files (not `.mpp`).
+
+**Validate output:**
+
+After generating or injecting, validate the result:
+```bash
+python scripts/validate_project.py output.xml
+python scripts/validate_project.py output.xml --json    # JSON output
+python scripts/validate_project.py output.xml --strict   # warnings = errors
+```
+
+If Java is not found, the generate script prints installation instructions and exits.
 
 ### PDF (.pdf)
 
@@ -448,23 +571,24 @@ pandoc input.md -o output.pdf --pdf-engine=weasyprint --css=style.css
 
 ## QA Pipeline
 
-After generating a PPTX (especially in inject mode), run the QA scripts to catch issues before delivery:
+After generating a PPTX, XLSX, or MSPDI (especially in inject mode), run the QA scripts to catch issues before delivery:
 
 ```bash
-# Step 1: Generate the document
+# PPTX pipeline
 python scripts/generate_pptx.py input.json -t template.pptx -o output.pptx --mode inject
-
-# Step 2: Check for text overflow
 python scripts/audit_overflow.py output.pptx
-
-# Step 3: Check for leftover placeholders
 python scripts/check_placeholders.py output.pptx --strict
+
+# MSPDI pipeline
+python scripts/generate_project.py tasks.json -o project.xml
+python scripts/validate_project.py project.xml
 ```
 
 | Script | What it checks | Exit code |
 |--------|---------------|----------|
 | `audit_overflow.py` | Text boxes where content exceeds estimated capacity | 1 if any OVERFLOW, 0 otherwise |
 | `check_placeholders.py` | Leftover template text ("Click to add", "Lorem ipsum", demo names) | 1 if any found, 0 if clean |
+| `validate_project.py` | MSPDI XML: predecessors, cycles, durations, WBS, assignments | 1 if errors, 0 if warnings/info only |
 
 **`audit_overflow.py` flags:**
 - `--budget 0.8` — capacity threshold for "AT RISK" warning (default: 80%)

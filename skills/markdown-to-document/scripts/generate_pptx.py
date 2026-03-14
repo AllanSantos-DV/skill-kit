@@ -298,30 +298,46 @@ def inject(slides: list[dict], template_path: Path, output_path: Path) -> None:
 
         slide = template_slides[target_idx]
 
-        # Title
-        title_text = slide_data.get("title")
-        if title_text and slide.shapes.title:
-            _inject_text_preserve_format(slide.shapes.title, title_text)
+        # Identify title and body shapes robustly
+        title_shape = slide.shapes.title  # placeholder-based title (may be None)
+        body_shape = None
 
-        # Body — find the first non-title placeholder or text shape
-        body_text = slide_data.get("body")
-        if body_text:
-            body_shape = None
+        if title_shape is None:
+            # Heuristic: find title among textbox shapes.
+            # The title is typically the topmost text shape (smallest top value).
+            text_shapes = [
+                s for s in slide.shapes
+                if s.has_text_frame and not s.has_chart and not s.has_table
+            ]
+            if text_shapes:
+                text_shapes.sort(key=lambda s: (s.top or 0, s.left or 0))
+                title_shape = text_shapes[0]
+                if len(text_shapes) > 1:
+                    body_shape = text_shapes[1]
+        else:
+            # Title exists as placeholder — find body via placeholders first
             for ph in slide.placeholders:
-                if ph != slide.shapes.title and ph.has_text_frame:
+                if ph != title_shape and ph.has_text_frame:
                     body_shape = ph
                     break
             if body_shape is None:
-                # Fallback: first non-title shape with text
                 for shape in slide.shapes:
-                    if shape != slide.shapes.title and shape.has_text_frame:
+                    if shape != title_shape and shape.has_text_frame:
                         body_shape = shape
                         break
-            if body_shape:
-                if '\n' in body_text:
-                    _inject_body_preserve_format(body_shape, body_text)
-                else:
-                    _inject_text_preserve_format(body_shape, body_text)
+
+        # Inject title
+        title_text = slide_data.get("title")
+        if title_text and title_shape:
+            _inject_text_preserve_format(title_shape, title_text)
+
+        # Inject body
+        body_text = slide_data.get("body")
+        if body_text and body_shape:
+            if '\n' in body_text:
+                _inject_body_preserve_format(body_shape, body_text)
+            else:
+                _inject_text_preserve_format(body_shape, body_text)
 
         # Speaker notes
         notes_text = slide_data.get("notes")

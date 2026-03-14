@@ -161,7 +161,10 @@ def analyze_pptx(path: Path) -> dict:
             if not hasattr(shape, "text_frame"):
                 continue
 
-            is_title = hasattr(shape, "placeholder_format") and shape.placeholder_format and shape.placeholder_format.idx == 0
+            try:
+                is_title = shape.is_placeholder and shape.placeholder_format.idx == 0
+            except (ValueError, AttributeError):
+                is_title = False
 
             for p in shape.text_frame.paragraphs:
                 text = p.text.strip()
