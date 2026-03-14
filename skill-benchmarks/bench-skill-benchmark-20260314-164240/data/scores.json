@@ -1,0 +1,165 @@
+{
+  "skill": "skill-benchmark",
+  "summary": {
+    "total_tasks": 5,
+    "wins": 5,
+    "losses": 0,
+    "ties": 0,
+    "win_rate": 1.0,
+    "overall_delta": 0.6875
+  },
+  "dimensions": {
+    "completeness": {
+      "avg_with": 0.95,
+      "avg_without": 0.4,
+      "avg_delta": 0.55
+    },
+    "correctness": {
+      "avg_with": 1.0,
+      "avg_without": 0.5,
+      "avg_delta": 0.5
+    },
+    "edge_cases": {
+      "avg_with": 1.0,
+      "avg_without": 0.15,
+      "avg_delta": 0.85
+    },
+    "pattern_adherence": {
+      "avg_with": 1.0,
+      "avg_without": 0.15,
+      "avg_delta": 0.85
+    }
+  },
+  "tasks": [
+    {
+      "task_id": "self-01",
+      "prompt": "Here is a skill about Docker Compose best practices:\n\n---\nname: docker-compose\ndescription: Best practices for multi-container Docker Compose setups.\n---\n\n# Docker Compose Best Practices\n\n## Service Dependencies\nAlways use `depends_on` with health checks rather than fixed delays.\n\n## Networking\nCreate explicit networks instead of relying on the default bridge network.\n\n## Volumes\nUse named volumes for persistent data. Bind mounts are for development only.\n\n## Environment\nNever hard-code secrets in docker-compose.yml. Use .env files or external secret managers.\n\nDesign 3 benchmark tasks with rubrics to evaluate this skill's effectiveness. Each task must include a realistic prompt and scoring criteria for correctness, completeness, pattern_adherence, and edge_cases.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.25,
+        "completeness": 0.25,
+        "pattern_adherence": 0.25,
+        "edge_cases": 0.0
+      },
+      "average_with": 1.0,
+      "average_without": 0.1875,
+      "delta": 0.8125,
+      "per_dimension_delta": {
+        "correctness": 0.75,
+        "completeness": 0.75,
+        "pattern_adherence": 0.75,
+        "edge_cases": 1.0
+      },
+      "winner": "with"
+    },
+    {
+      "task_id": "self-02",
+      "prompt": "Review these two agent outputs for the same task and assign scores on a 0.0–1.0 scale with justification for each dimension.\n\n**Task prompt:** Write a retry mechanism for an HTTP client that handles transient failures.\n\n**Rubric:**\n- correctness: Implements exponential backoff with jitter\n- completeness: Covers timeout, 429, 5xx, and network errors\n- pattern_adherence: Uses the decorator/wrapper pattern\n- edge_cases: Handles max retries exceeded and non-retryable errors\n\n**Output A (with skill):**\n```python\nimport time, random\n\ndef retry(max_retries=3, base_delay=1.0):\n    def decorator(func):\n        def wrapper(*args, **kwargs):\n            for attempt in range(max_retries):\n                try:\n                    return func(*args, **kwargs)\n                except (TimeoutError, ConnectionError) as e:\n                    if attempt == max_retries - 1:\n                        raise\n                    delay = base_delay * (2 ** attempt) + random.uniform(0, 0.5)\n                    time.sleep(delay)\n        return wrapper\n    return decorator\n```\n\n**Output B (without skill):**\n```python\nimport time\n\ndef call_with_retry(func, retries=3):\n    for i in range(retries):\n        try:\n            return func()\n        except Exception:\n            time.sleep(1)\n    raise Exception('All retries failed')\n```",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 0.75,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.5,
+        "completeness": 0.25,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.0
+      },
+      "average_with": 0.9375,
+      "average_without": 0.1875,
+      "delta": 0.75,
+      "per_dimension_delta": {
+        "correctness": 0.5,
+        "completeness": 0.5,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "winner": "with"
+    },
+    {
+      "task_id": "self-03",
+      "prompt": "Analyze this scores.json and provide an interpretation: which dimensions are strong, which need improvement, and what specific changes to the skill would help.\n\n```json\n{\n  \"skill\": \"api-error-handling\",\n  \"summary\": {\n    \"tasks_evaluated\": 5,\n    \"avg_delta\": 0.18,\n    \"win_rate\": 0.6\n  },\n  \"dimensions\": {\n    \"correctness\": { \"with\": 0.85, \"without\": 0.55, \"delta\": 0.30 },\n    \"completeness\": { \"with\": 0.70, \"without\": 0.60, \"delta\": 0.10 },\n    \"pattern_adherence\": { \"with\": 0.80, \"without\": 0.35, \"delta\": 0.45 },\n    \"edge_cases\": { \"with\": 0.40, \"without\": 0.50, \"delta\": -0.10 }\n  }\n}\n```",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.75,
+        "completeness": 0.5,
+        "pattern_adherence": 0.25,
+        "edge_cases": 0.5
+      },
+      "average_with": 1.0,
+      "average_without": 0.5,
+      "delta": 0.5,
+      "per_dimension_delta": {
+        "correctness": 0.25,
+        "completeness": 0.5,
+        "pattern_adherence": 0.75,
+        "edge_cases": 0.5
+      },
+      "winner": "with"
+    },
+    {
+      "task_id": "self-04",
+      "prompt": "Create a complete evaluation rubric for a skill about 'Git workflow management'. Define criteria for correctness, completeness, pattern_adherence, and edge_cases. The skill teaches: conventional commits, branch naming conventions, PR review checklists, rebase vs. merge strategy, and handling merge conflicts.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.25,
+        "completeness": 0.5,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.0
+      },
+      "average_with": 1.0,
+      "average_without": 0.1875,
+      "delta": 0.8125,
+      "per_dimension_delta": {
+        "correctness": 0.75,
+        "completeness": 0.5,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "winner": "with"
+    },
+    {
+      "task_id": "self-05",
+      "prompt": "Given benchmark results showing a -0.1 delta on completeness but +0.4 on pattern_adherence, explain what this means for the skill and recommend improvements. The skill being tested is about 'Database query optimization' and teaches: indexing strategies, query plan analysis, N+1 detection, and connection pooling.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.75,
+        "completeness": 0.5,
+        "pattern_adherence": 0.25,
+        "edge_cases": 0.25
+      },
+      "average_with": 1.0,
+      "average_without": 0.4375,
+      "delta": 0.5625,
+      "per_dimension_delta": {
+        "correctness": 0.25,
+        "completeness": 0.5,
+        "pattern_adherence": 0.75,
+        "edge_cases": 0.75
+      },
+      "winner": "with"
+    }
+  ]
+}

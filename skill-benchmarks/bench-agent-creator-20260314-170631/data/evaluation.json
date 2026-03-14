@@ -1,0 +1,127 @@
+{
+  "skill": "agent-creator",
+  "total_tasks": 5,
+  "instructions": "For each task, read both outputs and the rubric criteria. Assign a score from 0.0 to 1.0 for each dimension in scores_with and scores_without. Replace null values with numeric scores.",
+  "evaluations": [
+    {
+      "task_id": "task-01",
+      "prompt": "Create a VS Code Copilot agent called 'reviewer' that can only read files and search code. It should not be able to edit files or run terminal commands. It serves as a code review assistant that provides feedback without making changes.",
+      "rubric": {
+        "correctness": "YAML frontmatter is syntactically valid. The `tools` field declares only read-only tool sets (e.g., `search`, `read`). The `name` field is 'reviewer'. No invalid tool set names are used.",
+        "completeness": "Both required fields (`name`, `description`) are present. The `tools` field is explicitly declared (not omitted). The body contains instructions for code review behavior, including what the agent does and what it NEVER does.",
+        "pattern_adherence": "Tools are DECLARED (not omitted) to enforce read-only access — follows the agent-creator principle that read-only agents must explicitly restrict tools. Description is role-focused and under 200 chars. Body uses imperative voice.",
+        "edge_cases": "Does NOT omit `tools` (which would inherit edit+terminal from parent). Does NOT include `edit` or `terminal` in the tools list. Combines hard constraint (tool restriction) with soft constraint (body instructions saying NEVER edit)."
+      },
+      "output_with_skill": "[see results/task-01-with.md]",
+      "output_without_skill": "[see results/task-01-without.md]",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.25,
+        "completeness": 0.25,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.0
+      }
+    },
+    {
+      "task_id": "task-02",
+      "prompt": "Create an orchestrator agent that coordinates between a 'researcher' sub-agent (read-only access) and a 'coder' sub-agent (full tool access). The orchestrator itself should not edit files — it only delegates. Include handoff configurations so the orchestrator can pass context to each sub-agent.",
+      "rubric": {
+        "correctness": "YAML frontmatter is syntactically valid. The `agents` field lists both sub-agents. Handoff objects have required fields (`label`, `agent`). Tool set names used (if any) are valid VS Code Copilot tool sets.",
+        "completeness": "Has `name`, `description`, `agents` list, and `handoffs` array. Handoffs include `prompt` fields with specific context (not generic). Body contains orchestrator behavioral constraints (NEVER edit, NEVER run commands).",
+        "pattern_adherence": "Orchestrator OMITS `tools` (does not declare them) so sub-agents inherit all tools. Constraint is behavioral via body instructions, not tool restrictions. This follows the critical anti-pattern rule: declaring tools on an orchestrator poisons the inheritance chain for full-access sub-agents.",
+        "edge_cases": "Does NOT declare `tools` on the orchestrator (which would restrict what sub-agents inherit). Handoffs use `send: false` (letting user review before sending). Label conventions use directional arrows (forward arrows for forward handoffs). The `coder` sub-agent should omit tools to inherit all, while `researcher` should declare read-only tools."
+      },
+      "output_with_skill": "[see results/task-02-with.md]",
+      "output_without_skill": "[see results/task-02-without.md]",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.5,
+        "completeness": 0.25,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.0
+      }
+    },
+    {
+      "task_id": "task-03",
+      "prompt": "Create a 'security-auditor' agent that has access to search and read tools only, is user-invocable but NOT model-invocable (the user must explicitly select it). It should analyze code for OWASP Top 10 vulnerabilities.",
+      "rubric": {
+        "correctness": "YAML frontmatter is syntactically valid. `tools` declares only `search` and `read` (possibly `web`). `disable-model-invocation` is set to `true`. `user-invocable` is either `true` or omitted (default is true). Field names and types match the agent-creator spec.",
+        "completeness": "Required fields `name` and `description` are present. `tools`, `disable-model-invocation` are set. Body includes security audit instructions mentioning OWASP Top 10. Description mentions security analysis capability.",
+        "pattern_adherence": "Uses `disable-model-invocation: true` (correct field name), NOT some invented field. Tools are explicitly declared for read-only enforcement. Description is dense and role-focused. Body uses imperative voice with clear role framing.",
+        "edge_cases": "Correctly uses `disable-model-invocation: true` (not `model-invocable: false` or any other invented syntax). Does NOT set `user-invocable: false` (which would hide it from the picker entirely). Does NOT omit `tools` (which would give it edit+terminal access)."
+      },
+      "output_with_skill": "[see results/task-03-with.md]",
+      "output_without_skill": "[see results/task-03-without.md]",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.25,
+        "completeness": 0.5,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.0
+      }
+    },
+    {
+      "task_id": "task-04",
+      "prompt": "Create a 'documentation-writer' agent that has access to read, edit, and search tools, but NOT terminal access. Configure it so the model CAN auto-invoke it when the user asks for documentation. Add a handoff to forward complex API documentation tasks to a 'researcher' agent.",
+      "rubric": {
+        "correctness": "YAML frontmatter is syntactically valid. `tools` includes `search`, `read`, `edit` but NOT `terminal`. Handoff object has `label`, `agent` (pointing to 'researcher'), and a `prompt` field. No invalid field names.",
+        "completeness": "Has `name`, `description`, `tools`, and `handoffs`. `disable-model-invocation` is either `false` or omitted (default is false, allowing model invocation). Body contains documentation-writing instructions and output format.",
+        "pattern_adherence": "Tools are explicitly declared to exclude `terminal` — principle of least privilege. Handoff prompt carries specific context about what the researcher should investigate. Description includes capability keywords for discovery (documentation, writing). Forward handoff uses arrow convention in label.",
+        "edge_cases": "Does NOT include `terminal` in tools. Does NOT set `disable-model-invocation: true` (which would prevent auto-invocation). Handoff prompt is specific (not generic 'do the task above'). Uses `send: false` on the handoff for user review."
+      },
+      "output_with_skill": "[see results/task-04-with.md]",
+      "output_without_skill": "[see results/task-04-without.md]",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.75,
+        "completeness": 0.5,
+        "pattern_adherence": 0.25,
+        "edge_cases": 0.25
+      }
+    },
+    {
+      "task_id": "task-05",
+      "prompt": "Create an agent that inherits ALL tools from its parent (do not declare tools explicitly). It should have a custom description optimized for discovery when the user asks about 'database migrations'. Include metadata with author and version.",
+      "rubric": {
+        "correctness": "YAML frontmatter is syntactically valid. The `tools` field is completely OMITTED (not set to empty array, not set to ['*']). `name` and `description` are present. No use of `tools: ['*']` which does not exist in the spec.",
+        "completeness": "Has `name` and `description`. Description is optimized for discovery with keywords like 'database', 'migration', 'schema'. Body contains relevant instructions for database migration work.",
+        "pattern_adherence": "Correctly omits `tools` to inherit all from parent — the ONLY way to get all tools. Does NOT use `tools: ['*']` (which is invalid). Description front-loads the role and includes capability keywords for discovery routing.",
+        "edge_cases": "Does NOT declare `tools: ['*']` (non-existent syntax). Does NOT declare `tools: []` (which would give zero tools). The `tools` key must be entirely absent from the frontmatter to trigger inheritance. Any extra metadata fields do not break YAML parsing."
+      },
+      "output_with_skill": "[see results/task-05-with.md]",
+      "output_without_skill": "[see results/task-05-without.md]",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.0,
+        "completeness": 0.25,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.0
+      }
+    }
+  ]
+}
