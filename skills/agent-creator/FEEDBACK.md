@@ -4,30 +4,39 @@ threshold: 5
 
 ## Feedback Protocol — agent-creator
 
-### When to Log a Review
+### How Feedback Works
 
-Log a review whenever you help a user create an agent and:
-- The instructions in SKILL.md were insufficient or unclear
-- A frontmatter field, tool set, or convention changed and the skill is outdated
-- You had to improvise guidance not covered by the skill
-- The user's resulting agent had issues traceable to missing instructions
+Feedback is captured **actively via hooks** — NOT passively. The flow:
+
+1. You use this skill to help the user
+2. The user validates the result (positive or negative)
+3. If the user reports issues, you ask for specifics (if not already clear)
+4. You create a structured review in `.vscode/skill-reviews/agent-creator/`
+
+### When to Capture
+
+- The user explicitly says the result is wrong, incomplete, or poor quality
+- The user had to manually fix significant parts of the output
+- A script failed or produced unexpected output
+- The user says "this should work differently"
+
+**NEVER** generate feedback without user validation. No complaints = no feedback needed.
 
 ### Review Format
 
-Create a JSON file in `.vscode/skill-reviews/agent-creator/`:
+Create a JSON file at `.vscode/skill-reviews/agent-creator/{YYYY-MM-DDThh-mm}.json`:
 
 ```json
 {
   "date": "YYYY-MM-DD",
-  "author": "dev-name",
-  "type": "improvement | correction | addition",
-  "section": "Section Name",
-  "suggestion": "What should change",
-  "context": "What prompted this feedback"
+  "skill": "agent-creator",
+  "type": "correction | improvement | bug",
+  "what_failed": "Brief description of what went wrong",
+  "expected": "What the user expected instead",
+  "context": "What the user was trying to do"
 }
 ```
 
 ### Consolidation
 
-When 5 reviews accumulate, summarize them into a single actionable
-improvement for the skill maintainer.
+When 5 reviews accumulate, the skill maintainer consolidates them into actionable improvements to the skill's instructions or scripts.

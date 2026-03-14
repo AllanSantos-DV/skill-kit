@@ -4,35 +4,39 @@ threshold: 5
 
 ## Feedback Protocol — doc-to-markdown
 
-### When to Log a Review
+### How Feedback Works
 
-Log a review whenever you help a user convert documents and:
-- markitdown produced poor output for a supported format
-- A fallback tool was needed but not documented in the skill
-- The format → tool mapping table was inaccurate or missing an entry
-- The batch conversion script failed for a specific edge case
-- A new version of markitdown added or changed format support
-- The troubleshooting guide didn't cover an encountered issue
+Feedback is captured **actively via hooks** — NOT passively. The flow:
+
+1. You use this skill to help the user
+2. The user validates the result (positive or negative)
+3. If the user reports issues, you ask for specifics (if not already clear)
+4. You create a structured review in `.vscode/skill-reviews/doc-to-markdown/`
+
+### When to Capture
+
+- The user explicitly says the result is wrong, incomplete, or poor quality
+- The user had to manually fix significant parts of the output
+- A script failed or produced unexpected output
+- The user says "this should work differently"
+
+**NEVER** generate feedback without user validation. No complaints = no feedback needed.
 
 ### Review Format
 
-Create a JSON file in `.vscode/skill-reviews/doc-to-markdown/`:
+Create a JSON file at `.vscode/skill-reviews/doc-to-markdown/{YYYY-MM-DDThh-mm}.json`:
 
 ```json
 {
   "date": "YYYY-MM-DD",
-  "author": "dev-name",
-  "type": "improvement | correction | addition",
-  "section": "Section Name",
-  "suggestion": "What should change",
-  "context": "What prompted this feedback"
+  "skill": "doc-to-markdown",
+  "type": "correction | improvement | bug",
+  "what_failed": "Brief description of what went wrong",
+  "expected": "What the user expected instead",
+  "context": "What the user was trying to do"
 }
 ```
 
 ### Consolidation
 
-When 5 reviews accumulate, summarize them into a single actionable
-improvement for the skill maintainer. Focus on:
-- Are the tool recommendations still accurate?
-- Has markitdown's format support changed?
-- Are there new tools that should replace current fallbacks?
+When 5 reviews accumulate, the skill maintainer consolidates them into actionable improvements to the skill's instructions or scripts.

@@ -4,33 +4,39 @@ threshold: 5
 
 ## Feedback Protocol — task-map
 
-### When to Log
+### How Feedback Works
 
-Log feedback when the task-map skill is applied and:
-- A map was produced that a future task actually used (chain worked)
-- A map was NOT produced and a future task suffered from missing context (chain broken)
-- The map format was too heavy or too light for the task
-- The "For Next" section was actually useful vs. generic filler
-- The map took disproportionate time relative to the task
+Feedback is captured **actively via hooks** — NOT passively. The flow:
+
+1. You use this skill to help the user
+2. The user validates the result (positive or negative)
+3. If the user reports issues, you ask for specifics (if not already clear)
+4. You create a structured review in `.vscode/skill-reviews/task-map/`
+
+### When to Capture
+
+- The user explicitly says the result is wrong, incomplete, or poor quality
+- The user had to manually fix significant parts of the output
+- A script failed or produced unexpected output
+- The user says "this should work differently"
+
+**NEVER** generate feedback without user validation. No complaints = no feedback needed.
 
 ### Review Format
 
-Create a JSON file in `.vscode/skill-reviews/task-map/`:
+Create a JSON file at `.vscode/skill-reviews/task-map/{YYYY-MM-DDThh-mm}.json`:
 
 ```json
 {
   "date": "YYYY-MM-DD",
-  "author": "dev-name",
-  "type": "improvement | correction | friction",
-  "chain-used": true,
-  "observation": "What happened",
-  "suggestion": "What should change in the skill"
+  "skill": "task-map",
+  "type": "correction | improvement | bug",
+  "what_failed": "Brief description of what went wrong",
+  "expected": "What the user expected instead",
+  "context": "What the user was trying to do"
 }
 ```
 
 ### Consolidation
 
-When 5 reviews accumulate, summarize patterns into actionable improvements:
-- Are maps being produced at the right frequency? (too many = friction, too few = gaps)
-- Is the 4-section format right or does it need sections added/removed?
-- Is "For Next" actually being read by subsequent tasks?
+When 5 reviews accumulate, the skill maintainer consolidates them into actionable improvements to the skill's instructions or scripts.
