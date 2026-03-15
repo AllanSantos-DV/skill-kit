@@ -1,4 +1,7 @@
-# PreToolUse hook: block git commit/push/tag until tests pass and user confirms
+# PreToolUse hook: guard git commit/push/tag
+# - commit: deny unless -m with conventional commit message; allow if valid
+# - push/tag: ask user for confirmation
+# - other commands: passthrough
 try {
     $rawInput = @($input) -join "`n"
     if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
@@ -23,12 +26,58 @@ if ($cmd -notmatch 'git\s+(-[^\s]+\s+)*(commit|push|tag)') {
     exit 0
 }
 
-# Always block — agent must run tests and get user confirmation first
+$gitAction = $Matches[2]
+
+if ($gitAction -eq 'push') {
+    $result = @{
+        hookSpecificOutput = @{
+            permissionDecision = "ask"
+            additionalContext = "git push requires user confirmation"
+        }
+    } | ConvertTo-Json -Depth 3
+    Write-Output $result
+    exit 0
+}
+
+if ($gitAction -eq 'tag') {
+    $result = @{
+        hookSpecificOutput = @{
+            permissionDecision = "ask"
+            additionalContext = "git tag requires user confirmation"
+        }
+    } | ConvertTo-Json -Depth 3
+    Write-Output $result
+    exit 0
+}
+
+# git commit — check for conventional commit message
+if ($cmd -match '-m\s+["''](.+?)["'']' -or $cmd -match '-m\s+(\S+)') {
+    $commitMsg = $Matches[1]
+    if ($commitMsg -match '^(feat|fix|docs|chore|refactor|test|ci|build|perf|style)(\(.+\))?(!)?\:\s+.+') {
+        $result = @{
+            hookSpecificOutput = @{
+                permissionDecision = "allow"
+            }
+        } | ConvertTo-Json -Depth 3
+        Write-Output $result
+        exit 0
+    } else {
+        $result = @{
+            hookSpecificOutput = @{
+                permissionDecision = "deny"
+                additionalContext = "Commit message must follow conventional commits pattern (e.g. feat: add feature, fix(scope): description)"
+            }
+        } | ConvertTo-Json -Depth 3
+        Write-Output $result
+        exit 0
+    }
+}
+
+# No -m flag
 $result = @{
     hookSpecificOutput = @{
         permissionDecision = "deny"
-        additionalContext = "BLOCKED: Before committing/pushing, you MUST: 1) Run the project tests and confirm they pass. 2) Ask the user for explicit permission to commit/push. Do NOT retry until BOTH conditions are met."
+        additionalContext = "Commit must include -m with a conventional commit message"
     }
 } | ConvertTo-Json -Depth 3
-
 Write-Output $result
