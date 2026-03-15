@@ -10,7 +10,7 @@ try {
 }
 
 # Only intercept terminal commands
-if ($input_json.tool_name -ne 'run_in_terminal') {
+if ($input_json.tool_name -ne 'run_in_terminal' -and $input_json.tool_name -ne 'Bash') {
     exit 0
 }
 
@@ -25,8 +25,10 @@ if ($cmd -notmatch 'git\s+(-[^\s]+\s+)*(commit|push|tag)') {
 
 # Always block — agent must run tests and get user confirmation first
 $result = @{
-    permissionDecision = "deny"
-    additionalContext = "BLOCKED: Before committing/pushing, you MUST: 1) Run the project tests and confirm they pass. 2) Ask the user for explicit permission to commit/push. Do NOT retry until BOTH conditions are met."
+    hookSpecificOutput = @{
+        permissionDecision = "deny"
+        additionalContext = "BLOCKED: Before committing/pushing, you MUST: 1) Run the project tests and confirm they pass. 2) Ask the user for explicit permission to commit/push. Do NOT retry until BOTH conditions are met."
+    }
 } | ConvertTo-Json -Depth 3
 
 Write-Output $result
