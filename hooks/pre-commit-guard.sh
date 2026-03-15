@@ -9,7 +9,7 @@ else
 fi
 
 # Only intercept terminal commands
-if [ "$TOOL" != "run_in_terminal" ]; then
+if [ "$TOOL" != "run_in_terminal" ] && [ "$TOOL" != "Bash" ]; then
   exit 0
 fi
 
@@ -28,7 +28,9 @@ fi
 # Always block — agent must run tests and get user confirmation first
 cat <<'EOF'
 {
-  "permissionDecision": "deny",
-  "additionalContext": "BLOCKED: Before committing/pushing, you MUST: 1) Run the project tests and confirm they pass. 2) Ask the user for explicit permission to commit/push. Do NOT retry until BOTH conditions are met."
+  "hookSpecificOutput": {
+    "permissionDecision": "deny",
+    "additionalContext": "BLOCKED: Before committing/pushing, you MUST: 1) Run the project tests and confirm they pass. 2) Ask the user for explicit permission to commit/push. Do NOT retry until BOTH conditions are met."
+  }
 }
 EOF
