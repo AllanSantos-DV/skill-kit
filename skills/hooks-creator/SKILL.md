@@ -291,7 +291,7 @@ When creating hooks that work on both platforms, be aware of these differences:
 | Aspect | VS Code Copilot | Claude Code |
 |--------|----------------|-------------|
 | Terminal tool name | `run_in_terminal` | `Bash` (also accepts `run_in_terminal`) |
-| Stop hook enforcement | `hookSpecificOutput.systemMessage` — informational only, agent can ignore | `decision: "block"` — actually blocks the agent from stopping |
+| Stop hook enforcement | `hookSpecificOutput.decision: "block"` — blocks the agent from stopping. `systemMessage` — injected as warning but non-blocking | `decision: "block"` — also blocks the agent from stopping |
 | Windows config field | `windows:` in JSON/YAML | `command_win32` in `hooks-config.json` (not officially documented) |
 | Global hooks location | `~/.copilot/hooks/scripts/` | `~/.claude/hooks-scripts/` |
 | Matcher support | Ignored — filter inside script | Supported (regex on tool_name) |
