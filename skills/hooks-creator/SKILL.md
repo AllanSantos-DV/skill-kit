@@ -76,6 +76,26 @@ When targeting VS Code only, use the 8 shared events. When targeting Claude Code
 
 **Precedence**: Agent-scoped hooks (frontmatter) run in addition to workspace hooks (`.github/hooks/`). They do NOT replace each other — both execute.
 
+## Multiple Hooks Behavior
+
+When multiple hooks are defined for the same event (either multiple entries in the array, or workspace + agent-scoped):
+
+- **All hooks execute** — no short-circuit. Even if hook 1 returns `deny`, hook 2 still runs.
+- **Most restrictive wins**: `deny` > `ask` > `allow`. If any hook denies, the tool call is denied.
+- **Independent evaluation**: each hook receives the original tool input. One hook's output does NOT affect another hook's input.
+- **Synchronous execution** (VS Code): hooks run sequentially, not in parallel. The agent waits for each to complete.
+- **Additive across scopes**: agent-scoped hooks run IN ADDITION TO workspace hooks — they don't replace each other.
+
+| Hook A | Hook B | Result |
+|--------|--------|--------|
+| allow  | allow  | allow  |
+| allow  | deny   | deny   |
+| allow  | ask    | ask    |
+| deny   | ask    | deny   |
+| deny   | deny   | deny   |
+
+**Implication**: A security hook that returns `deny` cannot be overridden by another hook returning `allow`. This makes `deny` hooks reliable safety nets.
+
 ## Hook Configuration Format
 
 ### VS Code JSON (workspace hooks in `.github/hooks/`)
@@ -149,9 +169,35 @@ Hooks receive JSON via **stdin** and return JSON via **stdout**.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `permissionDecision` | string | `"allow"`, `"deny"`, or `"ask"` |
+| `permissionDecision` | string | See values below |
 | `updatedInput` | object | Modified tool arguments |
 | `additionalContext` | string | Extra context for the agent |
+
+**`permissionDecision` values:**
+
+| Value | Behavior |
+|-------|----------|
+| `"allow"` | Auto-approve the tool call — no user prompt |
+| `"deny"` | Block the tool call. Agent receives `additionalContext` and must adapt. |
+| `"ask"` | VS Code shows a confirmation prompt to the user. If user approves, tool executes. If user denies, tool is blocked. |
+
+> **⚠️ PreToolUse fields (`permissionDecision`, `updatedInput`, `additionalContext`) MUST be inside `hookSpecificOutput`.** Placing them at the JSON top-level causes VS Code to silently ignore the output — the tool call proceeds as if no hook existed. This is the most common PreToolUse hook bug.
+>
+> ```json
+> // ❌ WRONG — VS Code ignores these fields at top-level
+> {
+>   "permissionDecision": "deny",
+>   "additionalContext": "reason"
+> }
+>
+> // ✅ CORRECT — fields inside hookSpecificOutput
+> {
+>   "hookSpecificOutput": {
+>     "permissionDecision": "deny",
+>     "additionalContext": "reason"
+>   }
+> }
+> ```
 
 ### Stop-Specific Output
 
@@ -265,6 +311,43 @@ Ready-to-use recipes (see `references/examples.md` for complete implementations)
 | Task completion reminder | Stop | Remind agent to produce task map |
 | Subagent audit | SubagentStart | Log which subagent was invoked |
 | Output format enforcement | Stop | Remind of required output template |
+| Conditional git guard | PreToolUse | Different decisions per git action (commit/push/tag) |
+
+## Conditional Hook Logic
+
+When a hook needs different decisions for different scenarios, implement decision tree logic **inside the script** rather than using multiple hooks (since multiple hooks aggregate with "most restrictive wins", they can't implement priority/fallback logic).
+
+Example: git guard with conventional commit validation:
+- `git commit` + conventional message → `allow`
+- `git commit` + bad message → `deny`
+- `git push` / `git tag` → `ask` (user confirmation)
+
+### PowerShell pattern (abbreviated)
+
+```powershell
+# Extract git action from regex match
+$gitAction = $Matches[2]  # commit, push, or tag
+
+if ($gitAction -eq 'push' -or $gitAction -eq 'tag') {
+    # Ask user for confirmation
+    @{ hookSpecificOutput = @{ permissionDecision = "ask"; additionalContext = "git $gitAction requires user confirmation" } } | ConvertTo-Json -Depth 3 | Write-Output
+    exit 0
+}
+
+# git commit — validate message pattern
+if ($cmd -match '-m\s+["\x27](.+?)["\x27]') {
+    $msg = $Matches[1]
+    if ($msg -match '^(feat|fix|docs|chore|refactor|test|ci|build|perf|style)(\(.+\))?(!)?\.?\:\s+.+') {
+        @{ hookSpecificOutput = @{ permissionDecision = "allow" } } | ConvertTo-Json -Depth 3 | Write-Output
+    } else {
+        @{ hookSpecificOutput = @{ permissionDecision = "deny"; additionalContext = "Commit must follow conventional commits" } } | ConvertTo-Json -Depth 3 | Write-Output
+    }
+} else {
+    @{ hookSpecificOutput = @{ permissionDecision = "deny"; additionalContext = "Commit must include -m with message" } } | ConvertTo-Json -Depth 3 | Write-Output
+}
+```
+
+Key insight: a single script with branching logic is more expressive than multiple hooks, because multiple hooks can only **tighten** permissions (most restrictive wins), never **loosen** them.
 
 ## Security Best Practices
 
@@ -292,6 +375,7 @@ Hook scripts run with **the user's permissions**. A malicious hook in a cloned r
 | Marker file for "retry guard" hooks | Marker auto-bypass lets agent pass on 2nd attempt without real verification — always block, let the agent demonstrate compliance |
 | Claude Code terminal tool is `Bash`, not `run_in_terminal` | Check for both: `$tool -notin @('Bash', 'run_in_terminal')` |
 | `INPUT=$(cat)` hanging if stdin empty | Use `INPUT=$(cat 2>/dev/null || true)` |
+| PreToolUse fields at JSON top-level | Wrap in `hookSpecificOutput` — VS Code ignores top-level PreToolUse fields |
 | Claude hooks bleeding into VS Code Copilot sessions | `chat.useClaudeHooks: true` in VS Code imports ALL hooks from `~/.claude/settings.json` as global hooks — they fire for every agent, ignoring agent scoping. If hooks are already in agent frontmatter, set `chat.useClaudeHooks: false` to avoid duplication and unscoped blocking. **Tell the user** to check this setting if they report hooks firing from unexpected agents. |
 
 ## Claude Code vs Copilot — Key Differences for Hook Scripts
@@ -358,6 +442,50 @@ Without distribution, hook scripts must be manually copied to each machine. With
 - **New team member** installs the extension → pulls → agents + hooks are ready
 - **Hook update** pushed to repo → next pull automatically updates scripts everywhere
 - **Cross-platform** — both `.sh` and `.ps1` variants are synced
+
+## Advanced Patterns
+
+### Policy Engine (Declarative Rules)
+
+Separate rules (WHAT to enforce) from the executor (HOW to enforce). The hook becomes a generic engine that reads rules from a file:
+
+```
+Hook script → reads rules.json → evaluates input → returns decision
+```
+
+Rules can be:
+- Local file (`~/.copilot/rules.json`) — synced via Skill Manager
+- Repo file (`.github/hooks/rules.json`) — per-project
+- Both (with inheritance/merge)
+
+This enables standardized policies across teams without editing hook scripts.
+
+### Server-Side Validation (Tamper-Proof)
+
+For scenarios where the LLM must not be able to bypass the validation logic, move all decision-making to an external HTTP server. The hook becomes a thin client:
+
+```powershell
+$rawInput = @($input) -join "`n"
+if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
+$response = Invoke-RestMethod -Uri "$env:HOOK_API_URL/validate" -Method POST -ContentType "application/json" -Body $rawInput
+$response | ConvertTo-Json -Depth 3 | Write-Output
+```
+
+Benefits:
+- LLM cannot read server-side logic (blackbox)
+- Rules update without redeploying hooks
+- Centralized audit trail
+
+Trade-offs:
+- Requires network connectivity
+- Adds latency (~100-200ms per hook call)
+- Server must be maintained
+
+### Compiled Blackbox Hooks
+
+An alternative to server-side: compile the hook script to a binary (Go, Rust, C#). The LLM can see the binary exists but cannot read its logic. The binary reads secrets from environment variables at runtime, making the validation logic opaque.
+
+Note: This is less practical than server-side for most teams but useful for offline/airgapped environments.
 
 ## Companion Skills
 
