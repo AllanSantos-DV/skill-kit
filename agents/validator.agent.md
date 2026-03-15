@@ -29,6 +29,10 @@ hooks:
       command: "bash ~/.copilot/hooks/scripts/context-confidence-check.sh"
       windows: "powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\context-confidence-check.ps1'\""
       timeout: 10
+    - type: command
+      command: "bash ~/.copilot/hooks/scripts/skill-feedback.sh"
+      windows: "powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\skill-feedback.ps1'\""
+      timeout: 5
 ---
 
 # Validator — Analyze and Verify Before Implementing

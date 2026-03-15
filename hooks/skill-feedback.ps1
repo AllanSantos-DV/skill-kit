@@ -24,9 +24,7 @@ IMPORTANT: Do NOT generate feedback autonomously. Only capture feedback that the
 "@
 
 $reminder = @{
-    hookSpecificOutput = @{
-        systemMessage = $message
-    }
+    systemMessage = $message
 } | ConvertTo-Json -Depth 3
 
 Write-Output $reminder
