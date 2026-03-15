@@ -14,8 +14,6 @@ fi
 
 cat <<EOF
 {
-  "hookSpecificOutput": {
-    "systemMessage": "Verify your output follows the required format: Research Summary (researcher) or Validation Report (validator) with all mandatory sections."
-  }
+  "systemMessage": "Verify your output follows the required format: Research Summary (researcher) or Validation Report (validator) with all mandatory sections."
 }
 EOF
