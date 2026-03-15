@@ -97,6 +97,18 @@ For each axis, classify your confidence level:
 | 🟡 Medium | I have partial or possibly outdated knowledge | **Research actively**: use available tools (fetch docs, search repos, read specs) to upgrade to 🟢. If tools exhausted and still 🟡, flag for human validation. |
 | 🔴 Low | I lack sufficient data or know it's outdated | **Stop. Research actively** using every available tool before proceeding. Fetch official docs. Search repos. Read specs. Query APIs. Only after exhausting available research paths: escalate to human. Declaring "unknown" without research effort is a failure mode, not an answer. |
 
+#### Tool Evidence (anti-hallucination)
+
+For every axis classified as 🟡 or 🔴, you MUST list in the Phase 2 table which tools you used to research before accepting that classification. The `Tools used` column accepts: `tool_name("argument")` format.
+
+Accepted tools: `read_file`, `grep_search`, `semantic_search`, `fetch_webpage`, `run_in_terminal`, `file_search`, `list_dir`.
+
+- 🟢 axis: `Tools used` = `—` (no evidence needed)
+- 🟡 axis: at least 1 tool call listed AND actually executed
+- 🔴 axis: at least 1 tool call listed AND actually executed, plus explicit statement of what's still missing
+
+**A Stop hook cross-checks the listed tools against the session transcript. Listing a tool you didn't actually call will trigger a block.**
+
 ### Phase 3 — Action Plan
 
 Based on the analysis, generate:
@@ -155,7 +167,7 @@ Before delivering the analysis, verify:
 - [ ] Questions are context-specific (not generic)?
 - [ ] Each risk has a concrete consequence (not just "could cause problems")?
 - [ ] Explicitly declared what you don't know?
-- [ ] For every 🟡/🔴 classification: did you attempt active research with available tools before accepting it?
+- [ ] For every 🟡/🔴 classification: did you list the tools used in the Phase 2 table? (hook validates against transcript)
 
 If any item fails, refine the analysis before delivering. Consult [good vs. bad analysis examples](./references/examples.md) to calibrate.
 

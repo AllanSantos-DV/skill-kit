@@ -47,14 +47,16 @@
 
 > ⚠️ Model estimate. LLMs tend to be overconfident. Always validate with a human before high-impact decisions.
 
-| Axis | Confidence | Justification |
-|------|------------|---------------|
-| Assumptions | 🟢/🟡/🔴 | |
-| Scope | 🟢/🟡/🔴 | |
-| Dependencies | 🟢/🟡/🔴 | |
-| Sources of Truth | 🟢/🟡/🔴 | |
-| Failure Modes | 🟢/🟡/🔴 | |
-| Stakeholders | 🟢/🟡/🔴 | |
+| Axis | Confidence | Justification | Tools used |
+|------|------------|---------------|------------|
+| Assumptions | 🟢/🟡/🔴 | | |
+| Scope | 🟢/🟡/🔴 | | |
+| Dependencies | 🟢/🟡/🔴 | | |
+| Sources of Truth | 🟢/🟡/🔴 | | |
+| Failure Modes | 🟢/🟡/🔴 | | |
+| Stakeholders | 🟢/🟡/🔴 | | |
+
+> **Tool evidence rule**: For axes classified as 🟡 or 🔴, list the actual tool calls used to research before accepting the classification. Format: `tool_name("argument")` — e.g., `grep_search("auth pattern")`, `read_file("src/auth.ts#L1-50")`, `fetch_webpage("https://docs.example.com")`. For 🟢 axes, tools column may be `—` (no research needed). **The anti-hallucination hook validates listed tools against the session transcript.**
 
 **Overall confidence**: 🟢/🟡/🔴
 
