@@ -181,7 +181,7 @@ INPUT=$(cat 2>/dev/null || true)
 TOOL=$(echo "$INPUT" | grep -o '"tool_name"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
 
 # Only check terminal/command tools
-if [[ "$TOOL" != "run_in_terminal" && "$TOOL" != "run_command" ]]; then
+if [[ "$TOOL" != "run_in_terminal" && "$TOOL" != "Bash" ]]; then
   exit 0
 fi
 
@@ -232,7 +232,7 @@ try {
 $tool = $input_json.tool_name
 
 # Only check terminal/command tools
-if ($tool -notin @('run_in_terminal', 'run_command')) {
+if ($tool -notin @('run_in_terminal', 'Bash')) {
     exit 0
 }
 
