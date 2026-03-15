@@ -14,8 +14,6 @@ fi
 
 cat <<'EOF'
 {
-  "hookSpecificOutput": {
-    "systemMessage": "SKILL FEEDBACK CHECK: If you used any skill that contains a \"Feedback Protocol\" section in this session AND the user expressed dissatisfaction or corrections were needed:\n\n1. Ask the user what specifically didn't work well (if they haven't already said)\n2. Once the user confirms the issues, follow the Feedback Protocol described in the skill's instructions to create a structured review\n3. Create the review directory if it doesn't exist\n\nIMPORTANT: Do NOT generate feedback autonomously. Only capture feedback that the user explicitly validated. If the session went well and the user didn't complain, skip this entirely."
-  }
+  "systemMessage": "SKILL FEEDBACK CHECK: If you used any skill that contains a \"Feedback Protocol\" section in this session AND the user expressed dissatisfaction or corrections were needed:\n\n1. Ask the user what specifically didn't work well (if they haven't already said)\n2. Once the user confirms the issues, follow the Feedback Protocol described in the skill's instructions to create a structured review\n3. Create the review directory if it doesn't exist\n\nIMPORTANT: Do NOT generate feedback autonomously. Only capture feedback that the user explicitly validated. If the session went well and the user didn't complain, skip this entirely."
 }
 EOF
