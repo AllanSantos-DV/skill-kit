@@ -36,6 +36,10 @@ hooks:
       command: "bash ~/.copilot/hooks/scripts/verify-claims.sh"
       windows: "powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\verify-claims.ps1'\""
       timeout: 5
+    - type: command
+      command: "bash ~/.copilot/hooks/scripts/context-confidence-check.sh"
+      windows: "powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\context-confidence-check.ps1'\""
+      timeout: 10
 ---
 
 # Orchestrator — Assess, Decide, Coordinate
