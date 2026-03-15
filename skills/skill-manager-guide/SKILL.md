@@ -24,8 +24,12 @@ A **skill** is a Markdown file (`SKILL.md`) that gives you (the AI agent) domain
 | `Skills: Pull Repo` | Syncs skills from a specific repo |
 | `Skills: Push Feedback` | Sends local feedback to the repo via branch + PR |
 | `Skills: Status` | Shows sync status of all skills |
-| `Skills: Enable Skill` | Re-enables a disabled skill |
+| `Skills: Enable Skill` | Re-enables a disabled skill (including workspace-disabled) |
 | `Skills: Disable Skill` | Disables a skill without deleting it |
+| `Skills: Enable Agent` | Re-enables a disabled agent (including workspace-disabled) |
+| `Skills: Disable Agent` | Disables an agent without deleting it |
+| `Skills: Move Agent to Workspace` | Moves an agent from global to the current workspace |
+| `Skills: Move Agent to Global` | Moves an agent from workspace back to global |
 | `Skills: Browse Catalog` | Opens the skill catalog in the browser |
 
 ## How Sync Works
@@ -105,6 +109,33 @@ If a skill has `FEEDBACK.md`, users can submit improvements:
 - The **Skill Manager** sidebar shows all skills grouped by repo
 - Icons indicate state: ✓ synced, ↑ local-only, ⊘ disabled
 - The status bar shows overall sync state: synced, divergent, error, or syncing
+- Skills with benchmark reports show a 📊 icon; reports are centralized in `~/.copilot/skill-benchmarks/`
+
+## Scoped Disable & Remove (Skills and Agents)
+
+When disabling or removing a **global** skill or agent, the extension prompts "Global or this workspace?":
+
+- **Global** — disables/removes for all workspaces. Persisted in `placements.json` (survives `.excluded.json` cleanup).
+- **This workspace** — disables only in the current workspace. The item remains visible in other workspaces.
+
+Re-enabling a workspace-disabled item (via `Enable Skill` or `Enable Agent`) reactivates it by removing the workspace entry from `placements.json`.
+
+## Moving Agents Between Scopes
+
+Just like skills, agents can be moved between global and workspace scope:
+
+- **Move to Workspace** — copies the agent file to `.github/agents/` in the current workspace and removes from global. Tracked in `placements.json`.
+- **Move to Global** — copies the agent file back to `~/.copilot/agents/` and removes from workspace. Tracked in `placements.json`.
+
+On next `Pull`, the sync respects these decisions — an agent moved to a workspace is not reinstalled globally.
+
+## Benchmark Reports
+
+Benchmark reports are centralized in `~/.copilot/skill-benchmarks/`. When pulling from a repo that contains benchmarks (under `skill-benchmarks/`), results are:
+
+1. Copied to the global benchmarks directory
+2. Registered in `placements.json` for quick lookup
+3. Accessible from the sidebar via the 📊 icon or the benchmark command
 
 ## When the User Asks for Help
 
