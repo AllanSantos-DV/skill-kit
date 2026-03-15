@@ -165,6 +165,21 @@ Hooks receive JSON via **stdin** and return JSON via **stdout**.
 | `systemMessage` | string | Message injected into agent context |
 | `hookSpecificOutput` | object | Event-specific data (wrapped output) |
 
+### What Reaches the Agent vs. UI-Only
+
+Not all output mechanisms inject content into the agent's context. Some only display warnings in the VS Code UI that the user sees but the agent does not.
+
+| Mechanism | Agent sees it? | Use case |
+|-----------|:--------------:|----------|
+| `hookSpecificOutput.additionalContext` | ✅ Yes | Inject context (SessionStart, PreToolUse, PostToolUse, SubagentStart) |
+| `hookSpecificOutput.decision: "block"` + `reason` | ✅ Yes | Force agent to act before stopping (Stop, SubagentStop, PostToolUse) |
+| `hookSpecificOutput.permissionDecision` + `additionalContext` | ✅ Yes | Control tool approval with context (PreToolUse) |
+| Exit code `2` + stderr | ✅ Yes | Block operation, stderr shown to model (any event) |
+| `systemMessage` (top-level) | ❌ No — UI only | Visual warning for the user |
+| `continue: false` + `stopReason` | ❌ No — UI only | Stop session, reason shown to user |
+
+**Critical implication**: If you want the agent to react to a Stop hook message (e.g., "run tests before finishing"), use `hookSpecificOutput.decision: "block"` with `reason` — NOT `systemMessage`. The `systemMessage` field only shows a warning banner in the VS Code chat UI; the agent never sees it.
+
 ### PreToolUse-Specific Output
 
 | Field | Type | Description |
@@ -206,7 +221,7 @@ Hooks receive JSON via **stdin** and return JSON via **stdout**.
 | `decision` | string | `"block"` — prevents the agent from stopping |
 | `reason` | string | Required when decision is "block". Tells the agent why it should continue |
 
-> **⚠️ `systemMessage` goes at the JSON top-level, NOT inside `hookSpecificOutput`.** Putting `systemMessage` inside `hookSpecificOutput` for Stop hooks causes unintended blocking because it is not a recognized field there. Use top-level `systemMessage` for non-blocking warnings, or `hookSpecificOutput.decision: "block"` with `reason` for intentional blocking.
+> **⚠️ `systemMessage` is UI-only — the agent never sees it.** It displays a warning banner in the chat for the user. If you need the agent to act on a Stop hook, use `hookSpecificOutput.decision: "block"` with `reason` — this IS injected into the agent's context. Putting `systemMessage` inside `hookSpecificOutput` is never valid — it's not a recognized field there and causes unintended blocking.
 
 ## Cross-Platform Scripts
 
@@ -385,7 +400,7 @@ When creating hooks that work on both platforms, be aware of these differences:
 | Aspect | VS Code Copilot | Claude Code |
 |--------|----------------|-------------|
 | Terminal tool name | `run_in_terminal` | `Bash` (also accepts `run_in_terminal`) |
-| Stop hook enforcement | `hookSpecificOutput.decision: "block"` + `reason` — blocks the agent. Top-level `systemMessage` — rendered as warning (non-blocking). **Never** put `systemMessage` inside `hookSpecificOutput` — causes silent blocking | `decision: "block"` — blocks the agent from stopping |
+| Stop hook enforcement | `hookSpecificOutput.decision: "block"` + `reason` — blocks the agent AND injects reason into agent context. Top-level `systemMessage` — rendered as warning in UI only (agent does NOT see it). **Never** put `systemMessage` inside `hookSpecificOutput` — it's not a valid field there. | `decision: "block"` — blocks the agent from stopping |
 | Windows config field | `windows:` in JSON/YAML | `command_win32` in `hooks-config.json` (not officially documented) |
 | Global hooks location | `~/.copilot/hooks/scripts/` | `~/.claude/hooks-scripts/` |
 | Matcher support | Ignored — filter inside script | Supported (regex on tool_name) |
