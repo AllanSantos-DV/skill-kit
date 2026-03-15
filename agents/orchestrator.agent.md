@@ -21,6 +21,11 @@ handoffs:
     prompt: "Implement the task described above."
     send: false
 hooks:
+  SessionStart:
+    - type: command
+      command: "bash ~/.copilot/hooks/scripts/test-prompt-inject.sh"
+      windows: "powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\test-prompt-inject.ps1'\""
+      timeout: 5
   PreToolUse:
     - type: command
       command: "bash ~/.copilot/hooks/scripts/pre-commit-guard.sh"

@@ -12,8 +12,11 @@ if [ -n "$INPUT" ]; then
   fi
 fi
 
-cat <<EOF
+cat <<'EOF'
 {
-  "systemMessage": "Before finishing: 1) Did you run tests? 2) Did you produce a task map (if decisions were made)? 3) Is the quality checklist satisfied?"
+  "hookSpecificOutput": {
+    "decision": "block",
+    "reason": "Before finishing: 1) Did you run tests? 2) Did you produce a task map (if decisions were made)? 3) Is the quality checklist satisfied?"
+  }
 }
 EOF

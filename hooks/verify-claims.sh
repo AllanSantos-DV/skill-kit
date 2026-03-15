@@ -14,6 +14,9 @@ fi
 
 cat <<'EOF'
 {
-  "systemMessage": "VERIFICATION CHECK: Review every factual claim you made in this session. Was each one verified using tools (read_file, grep_search, run_in_terminal, semantic_search)? If any claim was assumed without tool verification — correct it now or explicitly mark it as unverified. Never present assumptions as facts."
+  "hookSpecificOutput": {
+    "decision": "block",
+    "reason": "VERIFICATION CHECK: Review every factual claim you made in this session. Was each one verified using tools (read_file, grep_search, run_in_terminal, semantic_search)? If any claim was assumed without tool verification — correct it now or explicitly mark it as unverified. Never present assumptions as facts."
+  }
 }
 EOF
