@@ -153,6 +153,15 @@ Hooks receive JSON via **stdin** and return JSON via **stdout**.
 | `updatedInput` | object | Modified tool arguments |
 | `additionalContext` | string | Extra context for the agent |
 
+### Stop-Specific Output
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `decision` | string | `"block"` — prevents the agent from stopping |
+| `reason` | string | Required when decision is "block". Tells the agent why it should continue |
+
+> **⚠️ `systemMessage` goes at the JSON top-level, NOT inside `hookSpecificOutput`.** Putting `systemMessage` inside `hookSpecificOutput` for Stop hooks causes unintended blocking because it is not a recognized field there. Use top-level `systemMessage` for non-blocking warnings, or `hookSpecificOutput.decision: "block"` with `reason` for intentional blocking.
+
 ## Cross-Platform Scripts
 
 Always provide both `command` (Linux/macOS default) and `windows` override for portability:
@@ -283,6 +292,7 @@ Hook scripts run with **the user's permissions**. A malicious hook in a cloned r
 | Marker file for "retry guard" hooks | Marker auto-bypass lets agent pass on 2nd attempt without real verification — always block, let the agent demonstrate compliance |
 | Claude Code terminal tool is `Bash`, not `run_in_terminal` | Check for both: `$tool -notin @('Bash', 'run_in_terminal')` |
 | `INPUT=$(cat)` hanging if stdin empty | Use `INPUT=$(cat 2>/dev/null || true)` |
+| Claude hooks bleeding into VS Code Copilot sessions | `chat.useClaudeHooks: true` in VS Code imports ALL hooks from `~/.claude/settings.json` as global hooks — they fire for every agent, ignoring agent scoping. If hooks are already in agent frontmatter, set `chat.useClaudeHooks: false` to avoid duplication and unscoped blocking. **Tell the user** to check this setting if they report hooks firing from unexpected agents. |
 
 ## Claude Code vs Copilot — Key Differences for Hook Scripts
 
@@ -291,10 +301,11 @@ When creating hooks that work on both platforms, be aware of these differences:
 | Aspect | VS Code Copilot | Claude Code |
 |--------|----------------|-------------|
 | Terminal tool name | `run_in_terminal` | `Bash` (also accepts `run_in_terminal`) |
-| Stop hook enforcement | `hookSpecificOutput.decision: "block"` — blocks the agent from stopping. `systemMessage` — injected as warning but non-blocking | `decision: "block"` — also blocks the agent from stopping |
+| Stop hook enforcement | `hookSpecificOutput.decision: "block"` + `reason` — blocks the agent. Top-level `systemMessage` — rendered as warning (non-blocking). **Never** put `systemMessage` inside `hookSpecificOutput` — causes silent blocking | `decision: "block"` — blocks the agent from stopping |
 | Windows config field | `windows:` in JSON/YAML | `command_win32` in `hooks-config.json` (not officially documented) |
 | Global hooks location | `~/.copilot/hooks/scripts/` | `~/.claude/hooks-scripts/` |
 | Matcher support | Ignored — filter inside script | Supported (regex on tool_name) |
+| Hook import setting | `chat.useClaudeHooks` — when `true`, imports `~/.claude/settings.json` hooks as **global** (not agent-scoped). Default: `false` | N/A — Claude Code uses its own `~/.claude/settings.json` natively |
 
 **Tool name check pattern** (handles both platforms):
 ```bash
