@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guia de Hooks</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+      font-size: var(--vscode-font-size, 13px);
+      color: var(--vscode-editor-foreground, #ccc);
+      background: var(--vscode-editor-background, #1e1e1e);
+      padding: 32px 24px;
+      max-width: 900px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .header {
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.25));
+    }
+    .header h1 {
+      font-size: 1.6em;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+    .header p {
+      color: var(--vscode-descriptionForeground, #999);
+      font-size: 0.95em;
+      line-height: 1.5;
+    }
+    .header p + p {
+      margin-top: 10px;
+    }
+    .card {
+      background: var(--vscode-editorWidget-background, #252526);
+      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.2));
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: border-color 0.15s;
+    }
+    .card:hover {
+      border-color: var(--vscode-textLink-foreground, #4a9cd6);
+    }
+    .card.event-PreToolUse { border-left: 4px solid #4a9cd6; }
+    .card.event-Stop { border-left: 4px solid #d6944a; }
+    .card.event-SubagentStart { border-left: 4px solid #9b59b6; }
+    .card.event-SessionStart { border-left: 4px solid #4aad5b; }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .card-icon {
+      font-size: 1.3em;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: rgba(128,128,128,0.1);
+      flex-shrink: 0;
+    }
+    .card-header h3 {
+      font-size: 1.1em;
+      font-weight: 600;
+      flex: 1;
+    }
+    .event-badge {
+      font-size: 0.7em;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .event-badge-PreToolUse { background: #4a9cd6; }
+    .event-badge-Stop { background: #d6944a; }
+    .event-badge-SubagentStart { background: #9b59b6; }
+    .event-badge-SessionStart { background: #4aad5b; }
+    .card-desc {
+      color: var(--vscode-descriptionForeground, #999);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    .section-label {
+      font-size: 0.8em;
+      font-weight: 600;
+      color: var(--vscode-descriptionForeground, #999);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
+    .agent-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .tag-agent {
+      font-size: 0.82em;
+      padding: 2px 9px;
+      border-radius: 4px;
+      border: 1px solid rgba(74, 156, 214, 0.4);
+      color: #4a9cd6;
+      background: rgba(74, 156, 214, 0.08);
+    }
+    .output-box {
+      background: rgba(128,128,128,0.06);
+      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.15));
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-top: 6px;
+      font-size: 0.88em;
+      line-height: 1.6;
+    }
+    .output-box code {
+      font-family: var(--vscode-editor-font-family, 'Cascadia Code', Consolas, monospace);
+      background: rgba(128,128,128,0.12);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 0.92em;
+    }
+    .output-mechanism {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .output-mechanism .arrow {
+      color: var(--vscode-textLink-foreground, #4a9cd6);
+      font-weight: 700;
+      font-size: 1.1em;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .trigger-example {
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: rgba(128,128,128,0.05);
+      border-left: 3px solid var(--vscode-descriptionForeground, rgba(128,128,128,0.3));
+      border-radius: 0 4px 4px 0;
+      font-size: 0.88em;
+      color: var(--vscode-descriptionForeground, #999);
+      line-height: 1.5;
+    }
+    .trigger-example strong {
+      color: var(--vscode-editor-foreground, #ccc);
+    }
+    .count-badge {
+      display: inline-block;
+      background: var(--vscode-badge-background, #4d4d4d);
+      color: var(--vscode-badge-foreground, #fff);
+      font-size: 0.8em;
+      padding: 2px 10px;
+      border-radius: 12px;
+      margin-left: 8px;
+      font-weight: 600;
+    }
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: var(--vscode-editorWidget-background, #252526);
+      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.2));
+      border-radius: 6px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85em;
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .logic-list {
+      list-style: none;
+      padding: 0;
+      margin-top: 4px;
+    }
+    .logic-list li {
+      font-size: 0.88em;
+      padding: 4px 0;
+      padding-left: 16px;
+      position: relative;
+      line-height: 1.5;
+    }
+    .logic-list li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--vscode-textLink-foreground, #4a9cd6);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>⚡ Guia de Hooks <span class="count-badge">7</span></h1>
+    <p>
+      Hooks são comandos shell determinísticos executados em eventos específicos do ciclo de vida
+      de uma sessão de agente. Diferente de instruções (que o agente pode ignorar), hooks
+      <strong>garantem execução</strong> — rodam como processos reais, recebem JSON via stdin e
+      retornam JSON via stdout.
+    </p>
+    <p>
+      O output do hook comunica uma decisão ao agente. As formas principais são:
+      <code>permissionDecision</code> (allow/deny/ask) para PreToolUse,
+      <code>decision: "block"</code> + <code>reason</code> para Stop (força o agente a reconsiderar),
+      e <code>additionalContext</code> para injetar contexto adicional.
+    </p>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot" style="background:#4a9cd6"></span> PreToolUse</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#d6944a"></span> Stop</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#9b59b6"></span> SubagentStart</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#4aad5b"></span> SessionStart</div>
+    </div>
+  </div>
+
+  <!-- pre-commit-guard -->
+  <div class="card event-PreToolUse">
+    <div class="card-header">
+      <span class="card-icon">🛡️</span>
+      <h3>pre-commit-guard</h3>
+      <span class="event-badge event-badge-PreToolUse">PreToolUse</span>
+    </div>
+    <p class="card-desc">
+      Guarda contra operações git perigosas. Intercepta chamadas a <code>run_in_terminal</code>
+      que envolvem <code>git commit</code>, <code>git push</code> ou <code>git tag</code> e aplica
+      regras diferentes para cada uma.
+    </p>
+
+    <div class="section-label">Lógica detalhada</div>
+    <ul class="logic-list">
+      <li><strong>git commit</strong>: verifica se tem flag <code>-m</code> com mensagem conventional commits (feat, fix, docs, chore, etc.). Se válido → <code>allow</code>. Se inválido ou sem <code>-m</code> → <code>deny</code></li>
+      <li><strong>git push</strong>: sempre retorna <code>ask</code> — pede confirmação do usuário</li>
+      <li><strong>git tag</strong>: sempre retorna <code>ask</code> — pede confirmação do usuário</li>
+      <li><strong>Outros comandos</strong>: passthrough silencioso (exit 0)</li>
+    </ul>
+
+    <div class="section-label">Usado por</div>
+    <div class="agent-tags">
+      <span class="tag-agent">orchestrator</span>
+      <span class="tag-agent">implementor</span>
+    </div>
+
+    <div class="section-label">Como o output chega ao agente</div>
+    <div class="output-box">
+      <div class="output-mechanism">
+        <span class="arrow">→</span>
+        <span>Retorna <code>hookSpecificOutput.permissionDecision</code> com valores <code>"allow"</code>, <code>"deny"</code>, ou <code>"ask"</code>. O campo <code>additionalContext</code> fornece a razão (ex: "Commit message must follow conventional commits pattern").</span>
+      </div>
+    </div>
+
+    <div class="trigger-example">
+      <strong>Exemplo de trigger:</strong> O agente tenta executar <code>git commit -m "added stuff"</code> →
+      hook intercepta, detecta que a mensagem não segue conventional commits → retorna <code>deny</code> com explicação.
+      O agente reformula para <code>git commit -m "feat: add new feature"</code> → hook retorna <code>allow</code>.
+    </div>
+  </div>
+
+  <!-- context-confidence-check -->
+  <div class="card event-Stop">
+    <div class="card-header">
+      <span class="card-icon">📊</span>
+      <h3>context-confidence-check</h3>
+      <span class="event-badge event-badge-Stop">Stop</span>
+    </div>
+    <p class="card-desc">
+      Valida que a tabela de confiança da Phase 2 (skill contextação) tem evidência de ferramentas
+      para cada eixo 🟡 (Médio) ou 🔴 (Baixo). Cross-referencia as ferramentas listadas com o
+      transcript da sessão para confirmar que foram realmente usadas.
+    </p>
+
+    <div class="section-label">Lógica detalhada</div>
+    <ul class="logic-list">
+      <li>Busca no transcript o padrão de tabela: <code>| Axis | Confidence | Justification | Tools used |</code></li>
+      <li>Para cada eixo 🟡/🔴: verifica se a coluna "Tools used" não está vazia</li>
+      <li>Para cada ferramenta listada: confirma que aparece no transcript como chamada real</li>
+      <li>Eixos 🟢 (Alta) são ignorados — não requerem evidência de ferramenta</li>
+      <li>Se não há tabela de confiança no output → passthrough (exit 0)</li>
+    </ul>
+
+    <div class="section-label">Usado por</div>
+    <div class="agent-tags">
+      <span class="tag-agent">orchestrator</span>
+      <span class="tag-agent">implementor</span>
+      <span class="tag-agent">researcher</span>
+      <span class="tag-agent">validator</span>
+    </div>
+
+    <div class="section-label">Como o output chega ao agente</div>
+    <div class="output-box">
+      <div class="output-mechanism">
+        <span class="arrow">→</span>
+        <span>Retorna <code>decision: "block"</code> + <code>reason</code> se algum eixo 🟡/🔴 não tem evidência de ferramentas, ou se uma ferramenta listada não aparece no transcript. O agente é forçado a corrigir antes de finalizar.</span>
+      </div>
+    </div>
+
+    <div class="trigger-example">
+      <strong>Exemplo de trigger:</strong> O researcher entrega uma análise com eixo "Dependencies" classificado 🟡
+      mas a coluna "Tools used" está vazia → hook bloqueia e exige que o agente pesquise com ferramentas antes de aceitar a classificação.
+    </div>
+  </div>
+
+  <!-- output-format -->
+  <div class="card event-Stop">
+    <div class="card-header">
+      <span class="card-icon">📋</span>
+      <h3>output-format</h3>
+      <span class="event-badge event-badge-Stop">Stop</span>
+    </div>
+    <p class="card-desc">
+      Lembra o agente de seguir o formato de output correto: Research Summary (para o researcher)
+      ou Validation Report (para o validator). Garante que a entrega sempre inclua as seções
+      obrigatórias definidas no output template de cada agente.
+    </p>
+
+    <div class="section-label">Lógica detalhada</div>
+    <ul class="logic-list">
+      <li>Sempre retorna <code>block</code> com reminder sobre o formato obrigatório</li>
+      <li>Protege contra loop infinito: se <code>stop_hook_active</code> está true, faz exit 0</li>
+      <li>Não valida o conteúdo — apenas lembra o formato esperado</li>
+    </ul>
+
+    <div class="section-label">Usado por</div>
+    <div class="agent-tags">
+      <span class="tag-agent">researcher</span>
+      <span class="tag-agent">validator</span>
+    </div>
+
+    <div class="section-label">Como o output chega ao agente</div>
+    <div class="output-box">
+      <div class="output-mechanism">
+        <span class="arrow">→</span>
+        <span>Retorna <code>decision: "block"</code> + <code>reason</code> com mensagem: "Verify your output follows the required format: Research Summary (researcher) or Validation Report (validator) with all mandatory sections." O agente revisa seu output antes de entregar.</span>
+      </div>
+    </div>
+
+    <div class="trigger-example">
+      <strong>Exemplo de trigger:</strong> O researcher prepara uma resposta sem o formato "Research Summary"
+      com seções obrigatórias (Key Findings, Open Questions, Assumptions) → hook bloqueia e pede revisão do formato.
+    </div>
+  </div>
+
+  <!-- skill-feedback -->
+  <div class="card event-Stop">
+    <div class="card-header">
+      <span class="card-icon">💬</span>
+      <h3>skill-feedback</h3>
+      <span class="event-badge event-badge-Stop">Stop</span>
+    </div>
+    <p class="card-desc">
+      Captura feedback de skills quando o usuário expressou insatisfação ou correções foram necessárias.
+      Lembra o agente de seguir o Feedback Protocol descrito na skill para criar reviews estruturados —
+      mas somente quando validado pelo usuário, nunca autonomamente.
+    </p>
+
+    <div class="section-label">Lógica detalhada</div>
+    <ul class="logic-list">
+      <li>Sempre retorna <code>block</code> com instrução de checagem de feedback</li>
+      <li>O agente deve verificar: alguma skill com Feedback Protocol foi usada? O usuário reclamou?</li>
+      <li>Se houve insatisfação → perguntar ao usuário o que falhou → criar review estruturado</li>
+      <li>Se a sessão foi bem → ignorar completamente</li>
+      <li>NUNCA gera feedback sem validação do usuário</li>
+    </ul>
+
+    <div class="section-label">Usado por</div>
+    <div class="agent-tags">
+      <span class="tag-agent">orchestrator</span>
+      <span class="tag-agent">implementor</span>
+      <span class="tag-agent">researcher</span>
+      <span class="tag-agent">validator</span>
+    </div>
+
+    <div class="section-label">Como o output chega ao agente</div>
+    <div class="output-box">
+      <div class="output-mechanism">
+        <span class="arrow">→</span>
+        <span>Retorna <code>decision: "block"</code> + <code>reason</code> com instrução completa sobre quando e como capturar feedback. O agente avalia a sessão e, se houve problemas, segue o Feedback Protocol da skill usada para criar o review em <code>.vscode/skill-reviews/</code>.</span>
+      </div>
+    </div>
+
+    <div class="trigger-example">
+      <strong>Exemplo de trigger:</strong> O agente usou a skill task-intent mas pulou a etapa de confirmar intent,
+      e o usuário reclamou que implementou a coisa errada → hook bloqueia e pede ao agente para perguntar
+      o que especificamente falhou e criar um review seguindo o protocolo da skill.
+    </div>
+  </div>
+
+  <!-- stop-checklist -->
+  <div class="card event-Stop">
+    <div class="card-header">
+      <span class="card-icon">✅</span>
+      <h3>stop-checklist</h3>
+      <span class="event-badge event-badge-Stop">Stop</span>
+    </div>
+    <p class="card-desc">
+      Lembra o implementor de completar seu checklist de qualidade antes de finalizar: rodar testes,
+      produzir task map (se decisões foram tomadas) e verificar que o quality checklist está satisfeito.
+    </p>
+
+    <div class="section-label">Lógica detalhada</div>
+    <ul class="logic-list">
+      <li>Sempre retorna <code>block</code> com 3 perguntas de checklist</li>
+      <li>1) "Você rodou os testes?" — garante que testes foram executados</li>
+      <li>2) "Produziu task map?" — se decisões foram tomadas, exige documentação</li>
+      <li>3) "Quality checklist satisfeito?" — verifica conformidade final</li>
+      <li>Protege contra loop infinito via <code>stop_hook_active</code></li>
+    </ul>
+
+    <div class="section-label">Usado por</div>
+    <div class="agent-tags">
+      <span class="tag-agent">implementor</span>
+    </div>
+
+    <div class="section-label">Como o output chega ao agente</div>
+    <div class="output-box">
+      <div class="output-mechanism">
+        <span class="arrow">→</span>
+        <span>Retorna <code>decision: "block"</code> + <code>reason</code>: "Before finishing: 1) Did you run tests? 2) Did you produce a task map (if decisions were made)? 3) Is the quality checklist satisfied?" O agente avalia cada ponto antes de entregar.</span>
+      </div>
+    </div>
+
+    <div class="trigger-example">
+      <strong>Exemplo de trigger:</strong> O implementor termina uma refatoração significativa e tenta finalizar →
+      hook bloqueia e pergunta se testes foram rodados e se um task map foi criado para documentar as decisões.
+    </div>
+  </div>
+
+  <!-- subagent-audit -->
+  <div class="card event-SubagentStart">
+    <div class="card-header">
+      <span class="card-icon">📝</span>
+      <h3>subagent-audit</h3>
+      <span class="event-badge event-badge-SubagentStart">SubagentStart</span>
+    </div>
+    <p class="card-desc">
+      Loga decisões de roteamento de sub-agentes. Sempre que um sub-agente é criado, registra o
+      nome e timestamp em stderr para auditoria. Não interfere no fluxo — retorna JSON vazio
+      para permitir a execução normalmente.
+    </p>
+
+    <div class="section-label">Lógica detalhada</div>
+    <ul class="logic-list">
+      <li>Lê o campo <code>agentName</code> do JSON de input</li>
+      <li>Gera timestamp no formato <code>yyyy-MM-dd HH:mm:ss</code></li>
+      <li>Escreve log para stderr: <code>[timestamp] Subagent started: agentName</code></li>
+      <li>Retorna <code>{}</code> — não bloqueia, não injeta contexto</li>
+      <li>Usar stderr garante que o log não afeta o output do hook</li>
+    </ul>
+
+    <div class="section-label">Usado por</div>
+    <div class="agent-tags">
+      <span class="tag-agent">orchestrator</span>
+    </div>
+
+    <div class="section-label">Como o output chega ao agente</div>
+    <div class="output-box">
+      <div class="output-mechanism">
+        <span class="arrow">→</span>
+        <span>Retorna <code>{}</code> (JSON vazio) — passthrough completo. O agente não recebe nenhuma instrução adicional. O valor é o log em stderr, útil para debugging e auditoria das decisões de roteamento do orchestrator.</span>
+      </div>
+    </div>
+
+    <div class="trigger-example">
+      <strong>Exemplo de trigger:</strong> O orchestrator decide delegar para o researcher → hook escreve
+      <code>[2026-03-16 14:30:22] Subagent started: researcher</code> em stderr → sub-agente inicia normalmente.
+    </div>
+  </div>
+
+  <!-- verify-claims -->
+  <div class="card event-Stop">
+    <div class="card-header">
+      <span class="card-icon">🔍</span>
+      <h3>verify-claims</h3>
+      <span class="event-badge event-badge-Stop">Stop</span>
+    </div>
+    <p class="card-desc">
+      Força verificação de claims factuais. Antes de finalizar, o agente deve revisar cada afirmação
+      factual feita durante a sessão e confirmar que foi verificada com ferramentas (read_file,
+      grep_search, run_in_terminal, semantic_search). Claims não verificados devem ser corrigidos
+      ou marcados explicitamente como não verificados.
+    </p>
+
+    <div class="section-label">Lógica detalhada</div>
+    <ul class="logic-list">
+      <li>Sempre retorna <code>block</code> com instrução de checagem de verificação</li>
+      <li>Exige que o agente revise CADA claim factual feito na sessão</li>
+      <li>Claims verificados com ferramentas → ok</li>
+      <li>Claims assumidos sem verificação → corrigir agora ou marcar como "unverified"</li>
+      <li>Princípio: nunca apresentar premissas como fatos</li>
+    </ul>
+
+    <div class="section-label">Usado por</div>
+    <div class="agent-tags">
+      <span class="tag-agent">orchestrator</span>
+      <span class="tag-agent">implementor</span>
+      <span class="tag-agent">researcher</span>
+      <span class="tag-agent">validator</span>
+    </div>
+
+    <div class="section-label">Como o output chega ao agente</div>
+    <div class="output-box">
+      <div class="output-mechanism">
+        <span class="arrow">→</span>
+        <span>Retorna <code>decision: "block"</code> + <code>reason</code>: "VERIFICATION CHECK: Review every factual claim you made in this session. Was each one verified using tools? If any claim was assumed without tool verification — correct it now or explicitly mark it as unverified." O agente é forçado a auditar seus próprios claims.</span>
+      </div>
+    </div>
+
+    <div class="trigger-example">
+      <strong>Exemplo de trigger:</strong> O agente afirmou "essa API retorna 200 em caso de sucesso"
+      sem ter consultado a documentação → hook bloqueia e exige que o agente verifique a afirmação
+      ou a marque como "não verificado — premissa baseada em padrão comum".
+    </div>
+  </div>
+
+</body>
+</html>

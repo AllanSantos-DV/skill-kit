@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guia de Agentes</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+      font-size: var(--vscode-font-size, 13px);
+      color: var(--vscode-editor-foreground, #ccc);
+      background: var(--vscode-editor-background, #1e1e1e);
+      padding: 32px 24px;
+      max-width: 900px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .header {
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.25));
+    }
+    .header h1 {
+      font-size: 1.6em;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+    .header p {
+      color: var(--vscode-descriptionForeground, #999);
+      font-size: 0.95em;
+      line-height: 1.5;
+    }
+    .card {
+      background: var(--vscode-editorWidget-background, #252526);
+      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.2));
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: border-color 0.15s;
+    }
+    .card:hover {
+      border-color: var(--vscode-textLink-foreground, #4a9cd6);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .card-icon {
+      font-size: 1.3em;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: rgba(128,128,128,0.1);
+      flex-shrink: 0;
+    }
+    .card-header h3 {
+      font-size: 1.1em;
+      font-weight: 600;
+      flex: 1;
+    }
+    .access-badge {
+      font-size: 0.7em;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+    .access-full {
+      background: rgba(76, 175, 80, 0.15);
+      color: #4caf50;
+      border: 1px solid rgba(76, 175, 80, 0.3);
+    }
+    .access-readonly {
+      background: rgba(214, 148, 74, 0.15);
+      color: #d6944a;
+      border: 1px solid rgba(214, 148, 74, 0.3);
+    }
+    .access-coordinator {
+      background: rgba(155, 89, 182, 0.15);
+      color: #b07ed4;
+      border: 1px solid rgba(155, 89, 182, 0.3);
+    }
+    .card-desc {
+      color: var(--vscode-descriptionForeground, #999);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    .section-label {
+      font-size: 0.8em;
+      font-weight: 600;
+      color: var(--vscode-descriptionForeground, #999);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
+    .meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+    .meta-label {
+      font-size: 0.85em;
+      font-weight: 600;
+      color: var(--vscode-descriptionForeground, #999);
+      min-width: 110px;
+    }
+    .tag {
+      font-size: 0.82em;
+      padding: 2px 9px;
+      border-radius: 4px;
+      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.3));
+      color: var(--vscode-editor-foreground, #ccc);
+      background: rgba(128,128,128,0.08);
+    }
+    .tag-agent {
+      border-color: rgba(74, 156, 214, 0.4);
+      color: #4a9cd6;
+      background: rgba(74, 156, 214, 0.08);
+    }
+    .hook-tag {
+      font-size: 0.82em;
+      padding: 2px 9px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    .hook-PreToolUse { background: rgba(74, 156, 214, 0.12); color: #4a9cd6; border: 1px solid rgba(74, 156, 214, 0.3); }
+    .hook-Stop { background: rgba(214, 148, 74, 0.12); color: #d6944a; border: 1px solid rgba(214, 148, 74, 0.3); }
+    .hook-SubagentStart { background: rgba(155, 89, 182, 0.12); color: #b07ed4; border: 1px solid rgba(155, 89, 182, 0.3); }
+    .hook-SessionStart { background: rgba(74, 173, 91, 0.12); color: #4aad5b; border: 1px solid rgba(74, 173, 91, 0.3); }
+    .handoff-list {
+      list-style: none;
+      padding: 0;
+      margin-top: 4px;
+    }
+    .handoff-list li {
+      font-size: 0.88em;
+      padding: 6px 12px;
+      margin-bottom: 4px;
+      border-radius: 4px;
+      background: rgba(128,128,128,0.06);
+      border-left: 3px solid var(--vscode-textLink-foreground, #4a9cd6);
+      line-height: 1.5;
+    }
+    .handoff-label {
+      font-weight: 600;
+      color: var(--vscode-textLink-foreground, #4a9cd6);
+    }
+    .handoff-target {
+      color: var(--vscode-descriptionForeground, #999);
+    }
+    .when-list {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .when-list li {
+      font-size: 0.85em;
+      padding: 3px 10px;
+      border-radius: 4px;
+      background: var(--vscode-badge-background, #4d4d4d);
+      color: var(--vscode-badge-foreground, #fff);
+    }
+    .count-badge {
+      display: inline-block;
+      background: var(--vscode-badge-background, #4d4d4d);
+      color: var(--vscode-badge-foreground, #fff);
+      font-size: 0.8em;
+      padding: 2px 10px;
+      border-radius: 12px;
+      margin-left: 8px;
+      font-weight: 600;
+    }
+    .hook-detail {
+      font-size: 0.85em;
+      color: var(--vscode-descriptionForeground, #999);
+      margin-top: 2px;
+      padding-left: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🤖 Guia de Agentes <span class="count-badge">4</span></h1>
+    <p>
+      Agentes são arquivos <code>.agent.md</code> que definem personas especializadas de IA com instruções
+      próprias, acesso a ferramentas e capacidade de delegar trabalho. Cada agente aparece como um modo
+      selecionável no VS Code Copilot Chat. O sistema usa um padrão de orquestração onde o orchestrator
+      avalia e roteia, e os especialistas executam dentro de suas disciplinas.
+    </p>
+  </div>
+
+  <!-- orchestrator -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">🎭</span>
+      <h3>orchestrator</h3>
+      <span class="access-badge access-coordinator">Coordenador</span>
+    </div>
+    <p class="card-desc">
+      Coordenador inteligente. Avalia cada requisição, coleta contexto suficiente e roteia para o
+      especialista certo — ou resolve trabalho leve diretamente. Tem autonomia para análise e
+      planejamento, mas NUNCA edita arquivos, roda comandos ou escreve código.
+    </p>
+
+    <div class="section-label">Acesso a ferramentas</div>
+    <div class="meta-row">
+      <span class="tag">tools: omitido (herda TODAS)</span>
+    </div>
+    <div class="hook-detail">
+      Herda todas as ferramentas, mas é restrito via instruções no corpo a usar apenas ferramentas de leitura e busca para assessment.
+    </div>
+
+    <div class="section-label">Sub-agentes</div>
+    <div class="meta-row">
+      <span class="tag tag-agent">researcher</span>
+      <span class="tag tag-agent">validator</span>
+      <span class="tag tag-agent">implementor</span>
+    </div>
+
+    <div class="section-label">Handoffs</div>
+    <ul class="handoff-list">
+      <li><span class="handoff-label">Research This</span> <span class="handoff-target">→ researcher</span> — Pesquisar e coletar contexto para a tarefa</li>
+      <li><span class="handoff-label">Validate This</span> <span class="handoff-target">→ validator</span> — Validar a análise e premissas</li>
+      <li><span class="handoff-label">Implement This</span> <span class="handoff-target">→ implementor</span> — Implementar a tarefa descrita</li>
+    </ul>
+
+    <div class="section-label">Hooks configurados</div>
+    <div class="meta-row">
+      <span class="hook-tag hook-PreToolUse">PreToolUse</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">pre-commit-guard — Guarda contra commits/push/tags sem aprovação</span>
+    </div>
+    <div class="meta-row">
+      <span class="hook-tag hook-SubagentStart">SubagentStart</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">subagent-audit — Loga decisões de roteamento de sub-agentes</span>
+    </div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">verify-claims — Verifica que claims factuais foram tool-checked</span>
+    </div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">context-confidence-check — Valida evidência de ferramentas na tabela de confiança</span>
+    </div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">skill-feedback — Captura feedback de skills quando houve insatisfação</span>
+    </div>
+
+    <div class="section-label">Quando usar</div>
+    <ul class="when-list">
+      <li>Entrada padrão para qualquer requisição</li>
+      <li>Escopo ambíguo que precisa assessment</li>
+      <li>Roteamento para o especialista certo</li>
+      <li>Trabalho leve (perguntas simples, breakdowns)</li>
+    </ul>
+  </div>
+
+  <!-- implementor -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">⚡</span>
+      <h3>implementor</h3>
+      <span class="access-badge access-full">Acesso Total</span>
+    </div>
+    <p class="card-desc">
+      Agente de implementação disciplinado. Planeja antes de codificar, raciocina em decisões,
+      verifica fatos externos e documenta com task maps. Tem acesso total a ferramentas —
+      pode editar arquivos, rodar comandos, criar artefatos e executar testes.
+    </p>
+
+    <div class="section-label">Acesso a ferramentas</div>
+    <div class="meta-row">
+      <span class="tag">tools: omitido (herda TODAS)</span>
+    </div>
+    <div class="hook-detail">
+      Herda todas as ferramentas do pai. Acesso irrestrito a edit, terminal, search, read, web, etc.
+    </div>
+
+    <div class="section-label">Sub-agentes</div>
+    <div class="meta-row">
+      <span class="tag tag-agent">researcher</span>
+      <span class="tag tag-agent">validator</span>
+    </div>
+
+    <div class="section-label">Handoffs</div>
+    <ul class="handoff-list">
+      <li><span class="handoff-label">← Research More</span> <span class="handoff-target">→ researcher</span> — Enviar gaps para mais pesquisa</li>
+      <li><span class="handoff-label">← Validate Output</span> <span class="handoff-target">→ validator</span> — Revisar implementação e verificar qualidade</li>
+    </ul>
+
+    <div class="section-label">Hooks configurados</div>
+    <div class="meta-row">
+      <span class="hook-tag hook-PreToolUse">PreToolUse</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">pre-commit-guard — Guarda contra commits/push/tags sem aprovação</span>
+    </div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">stop-checklist — Lembra de rodar testes e produzir task map</span>
+    </div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">verify-claims — Verifica que claims factuais foram tool-checked</span>
+    </div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">context-confidence-check — Valida evidência de ferramentas na tabela de confiança</span>
+    </div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">skill-feedback — Captura feedback de skills quando houve insatisfação</span>
+    </div>
+
+    <div class="section-label">Quando usar</div>
+    <ul class="when-list">
+      <li>Escopo claro e tarefa definida</li>
+      <li>Mudanças mecânicas e bem compreendidas</li>
+      <li>Trabalho pronto para implementação</li>
+      <li>Quando veio de pesquisa/validação prévia</li>
+    </ul>
+  </div>
+
+  <!-- researcher -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">🔬</span>
+      <h3>researcher</h3>
+      <span class="access-badge access-readonly">Somente Leitura</span>
+    </div>
+    <p class="card-desc">
+      Agente de pesquisa. Investiga intenção, coleta contexto, verifica fatos — tudo antes de qualquer
+      código. É <strong>read-only</strong>: pode buscar, ler e navegar, mas não pode editar arquivos
+      nem executar comandos. Entrega Research Summary estruturado.
+    </p>
+
+    <div class="section-label">Acesso a ferramentas</div>
+    <div class="meta-row">
+      <span class="tag">search</span>
+      <span class="tag">read</span>
+      <span class="tag">web</span>
+      <span class="tag">todo</span>
+    </div>
+    <div class="hook-detail">
+      Ferramentas declaradas explicitamente — sobrescreve herança com set restrito de somente leitura.
+    </div>
+
+    <div class="section-label">Sub-agentes</div>
+    <div class="meta-row">
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground); font-style:italic;">Nenhum — agents: []</span>
+    </div>
+
+    <div class="section-label">Handoffs</div>
+    <ul class="handoff-list">
+      <li><span class="handoff-label">Validate Context →</span> <span class="handoff-target">→ validator</span> — Validar a pesquisa, checar premissas e classificar confiança</li>
+    </ul>
+
+    <div class="section-label">Hooks configurados</div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">output-format — Verifica que o output segue formato Research Summary</span>
+    </div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">verify-claims — Verifica que claims factuais foram tool-checked</span>
+    </div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">context-confidence-check — Valida evidência de ferramentas na tabela de confiança</span>
+    </div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">skill-feedback — Captura feedback de skills quando houve insatisfação</span>
+    </div>
+
+    <div class="section-label">Quando usar</div>
+    <ul class="when-list">
+      <li>Escopo incerto ou causa desconhecida</li>
+      <li>Decisões de design necessárias</li>
+      <li>Múltiplas abordagens válidas</li>
+      <li>Investigação profunda antes de agir</li>
+    </ul>
+  </div>
+
+  <!-- validator -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">✅</span>
+      <h3>validator</h3>
+      <span class="access-badge access-readonly">Somente Leitura</span>
+    </div>
+    <p class="card-desc">
+      Agente de validação e análise estruturada. Pega output de pesquisa e faz
+      stress-test — questiona premissas, classifica confiança em 6 eixos, realiza pesquisa ativa
+      nos gaps e produz Validation Report. É <strong>read-only</strong>.
+    </p>
+
+    <div class="section-label">Acesso a ferramentas</div>
+    <div class="meta-row">
+      <span class="tag">search</span>
+      <span class="tag">read</span>
+      <span class="tag">web</span>
+      <span class="tag">todo</span>
+    </div>
+    <div class="hook-detail">
+      Ferramentas declaradas explicitamente — sobrescreve herança com set restrito de somente leitura.
+    </div>
+
+    <div class="section-label">Sub-agentes</div>
+    <div class="meta-row">
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground); font-style:italic;">Nenhum — agents: []</span>
+    </div>
+
+    <div class="section-label">Handoffs</div>
+    <ul class="handoff-list">
+      <li><span class="handoff-label">Implement →</span> <span class="handoff-target">→ implementor</span> — Implementar o plano validado, seguindo decisões e restrições</li>
+    </ul>
+
+    <div class="section-label">Hooks configurados</div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">output-format — Verifica que o output segue formato Validation Report</span>
+    </div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">verify-claims — Verifica que claims factuais foram tool-checked</span>
+    </div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">context-confidence-check — Valida evidência de ferramentas na tabela de confiança</span>
+    </div>
+    <div class="meta-row">
+      <span class="hook-tag hook-Stop">Stop</span>
+      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">skill-feedback — Captura feedback de skills quando houve insatisfação</span>
+    </div>
+
+    <div class="section-label">Quando usar</div>
+    <ul class="when-list">
+      <li>Verificar planos antes de implementar</li>
+      <li>Revisar output de pesquisa</li>
+      <li>Checar abordagens antes de executar</li>
+      <li>Stress-test de premissas e decisões</li>
+    </ul>
+  </div>
+
+</body>
+</html>
