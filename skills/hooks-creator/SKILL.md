@@ -410,6 +410,7 @@ Hook scripts run with **the user's permissions**. A malicious hook in a cloned r
 | PreToolUse fields at JSON top-level | Wrap in `hookSpecificOutput` — VS Code ignores top-level PreToolUse fields |
 | Stop hook `decision`/`reason` only inside `hookSpecificOutput` for custom agents | VS Code treats custom agent Stop hooks as SubagentStop — needs `decision`/`reason` at **top-level**. Always output at both levels for safety |
 | Claude hooks bleeding into VS Code Copilot sessions | `chat.useClaudeHooks: true` in VS Code imports ALL hooks from `~/.claude/settings.json` as global hooks — they fire for every agent, ignoring agent scoping. If hooks are already in agent frontmatter, set `chat.useClaudeHooks: false` to avoid duplication and unscoped blocking. **Tell the user** to check this setting if they report hooks firing from unexpected agents. |
+| PS 7-only syntax in hook scripts | Windows ships with PS 5.1 (Windows PowerShell). Avoid: `` `u{XXXX} `` (Unicode escape — PS7+), `$var = if (...) {} else {}` (ternary assignment — PS7+), `??` and `?.` (null-coalescing — PS7+). Use instead: `[char]::ConvertFromUtf32(0xXXXX)`, `if (...) { $var = ... } else { $var = ... }`, explicit null checks. Use `[Environment]::NewLine` instead of backtick-n in complex string concatenation. |
 
 ## Claude Code vs Copilot — Key Differences for Hook Scripts
 
@@ -519,6 +520,109 @@ Trade-offs:
 An alternative to server-side: compile the hook script to a binary (Go, Rust, C#). The LLM can see the binary exists but cannot read its logic. The binary reads secrets from environment variables at runtime, making the validation logic opaque.
 
 Note: This is less practical than server-side for most teams but useful for offline/airgapped environments.
+
+### Transcript-Aware Hooks (Smart Detection)
+
+Instead of always blocking or always reminding, hooks can **analyze the session transcript** to make context-aware decisions. The VS Code Copilot transcript is a JSONL file where each line is a JSON event.
+
+**Transcript location**: `%APPDATA%\Code\User\workspaceStorage\<id>\GitHub.copilot-chat\transcripts\*.jsonl`
+
+The hook receives the transcript path via `transcript_path` in the stdin JSON.
+
+**Event types in the transcript JSONL:**
+
+| Event | Purpose |
+|-------|--------|
+| `session.start` | Session begins (1 per file) |
+| `user.message` | User sends a message |
+| `assistant.turn_start` | Agent turn begins |
+| `assistant.message` | Agent response (contains `content` and `toolRequests`) |
+| `tool.execution_start` | Tool invocation (contains `toolName` and `arguments`) |
+| `tool.execution_complete` | Tool finished |
+| `assistant.turn_end` | Agent turn ends |
+
+Each interaction cycle: `user.message` → `assistant.turn_start` → `assistant.message` (with tool calls) → `assistant.turn_end`.
+
+**Scoping to current interaction:**
+
+A critical pattern — without scoping, hooks re-analyze the entire transcript and produce "sticky" false positives from old turns. Always find the **last `user.message`** and only process from there:
+
+```powershell
+# PowerShell — scope to current interaction
+$startIdx = 0
+for ($i = $lines.Count - 1; $i -ge 0; $i--) {
+    if ($lines[$i] -like '*"user.message"*') {
+        $startIdx = $i
+        break
+    }
+}
+for ($i = $startIdx; $i -lt $lines.Count; $i++) {
+    # Process only events from this interaction
+}
+```
+
+```bash
+# Bash — scope to current interaction
+START_LINE=1
+LAST_USER_MSG=$(grep -n '"user\.message"' "$TRANSCRIPT_PATH" | tail -1 | cut -d: -f1 || true)
+if [ -n "$LAST_USER_MSG" ]; then
+  START_LINE=$LAST_USER_MSG
+fi
+tail -n +"$START_LINE" "$TRANSCRIPT_PATH" | while IFS= read -r line; do
+  # Process only events from this interaction
+done
+```
+
+**Example: Smart skill-feedback (only block when feedback-protocol skills were used)**
+
+Instead of always reminding about feedback, the hook checks if a SKILL.md with "Feedback Protocol" was actually read during the session:
+
+```powershell
+# Find SKILL.md reads in tool.execution_start events
+for ($i = $startIdx; $i -lt $lines.Count; $i++) {
+    $line = $lines[$i]
+    if ($line -notlike '*"tool.execution_start"*') { continue }
+    $evt = $line | ConvertFrom-Json -ErrorAction Stop
+    if ($evt.data.toolName -eq 'read_file') {
+        $fp = $evt.data.arguments.filePath
+        if ($fp -match '[\\/]skills[\\/]' -and $fp -match 'SKILL\.md$') {
+            # Check actual file for "Feedback Protocol"
+            $content = Get-Content $fp -Raw -ErrorAction SilentlyContinue
+            if ($content -match 'Feedback Protocol') {
+                # This skill has feedback — block with reminder
+            }
+        }
+    }
+}
+```
+
+**Example: File reference verification (only block for unverified paths)**
+
+The hook collects paths accessed via tools (`read_file`, `grep_search`, `file_search`, etc.) and compares against paths mentioned in `assistant.message` content. Only unverified mentions trigger a block:
+
+```powershell
+# Collect accessed paths from tool calls
+if ($evt.type -eq 'tool.execution_start' -and $evt.data.toolName -in $fileTools) {
+    if ($evt.data.arguments.filePath) {
+        [void]$accessedPaths.Add($evt.data.arguments.filePath)
+    }
+}
+
+# Extract mentioned paths from assistant content
+$mentioned = [regex]::Matches($content, $relPathRegex)
+foreach ($m in $mentioned) {
+    if (-not (Test-Accessed $m.Value)) {
+        $unverified.Add($m.Value)
+    }
+}
+```
+
+**Key design principles for transcript-aware hooks:**
+- **Scope narrowly** — always use `user.message` boundary to avoid sticky false positives
+- **Exit 0 when condition not met** — silent passthrough is the default; only block when there's a real finding
+- **Read actual files when needed** — the transcript shows which tools were called, but checking file content (e.g., for "Feedback Protocol") requires reading the file from disk
+- **Require `jq` in bash** — JSONL parsing without `jq` is fragile; fall back to a static reminder if `jq` is unavailable
+- **PS 5.1 compatible** — avoid `u{}` escapes, ternary assignment, null-coalescing operators
 
 ## Companion Skills
 
