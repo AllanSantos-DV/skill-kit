@@ -34,7 +34,7 @@ hooks:
   Stop:
     - type: command
       command: "bash ~/.copilot/hooks/scripts/verify-claims.sh"
-      windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\.copilot\hooks\scripts\verify-claims.ps1'\""
+      windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\.copilot\hooks\scripts\\verify-claims.ps1'\""
       timeout: 5
     - type: command
       command: "bash ~/.copilot/hooks/scripts/context-confidence-check.sh"
