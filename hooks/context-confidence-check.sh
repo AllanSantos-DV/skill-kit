@@ -135,7 +135,10 @@ fi
 
 cat <<EOF
 {
+  "decision": "block",
+  "reason": "${REASON}",
   "hookSpecificOutput": {
+    "hookEventName": "Stop",
     "decision": "block",
     "reason": "${REASON}"
   }

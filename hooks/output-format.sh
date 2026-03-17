@@ -14,7 +14,10 @@ fi
 
 cat <<'EOF'
 {
+  "decision": "block",
+  "reason": "Verify your output follows the required format: Research Summary (researcher) or Validation Report (validator) with all mandatory sections.",
   "hookSpecificOutput": {
+    "hookEventName": "Stop",
     "decision": "block",
     "reason": "Verify your output follows the required format: Research Summary (researcher) or Validation Report (validator) with all mandatory sections."
   }
