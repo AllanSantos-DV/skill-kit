@@ -254,36 +254,36 @@ Always provide both `command` (Linux/macOS default) and `windows` override for p
 
 ### Windows Quoting — Critical
 
-The `windows:` field passes through multiple escaping layers. Getting this wrong causes PowerShell `TerminatorExpectedAtEndOfString` errors.
+The `windows:` field passes through multiple escaping layers. Getting this wrong causes PowerShell errors.
 
 **For workspace hooks (JSON config):** Simple — use `-File` for relative paths:
 ```json
 "windows": "powershell -ExecutionPolicy Bypass -File .github\\hooks\\scripts\\my-hook.ps1"
 ```
 
-**For global scripts (agent frontmatter YAML):** Use `-File` with `%USERPROFILE%`:
+**For global scripts (agent frontmatter YAML):** Use `-Command` with `$HOME`:
 ```yaml
-windows: "powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.copilot\\hooks\\scripts\\my-hook.ps1\""
+windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\my-hook.ps1'\""
 ```
 
 After YAML parsing, this becomes:
 ```
-powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\.copilot\hooks\scripts\my-hook.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "& '$HOME\.copilot\hooks\scripts\my-hook.ps1'"
 ```
 
-**Why `-File` with `%USERPROFILE%` instead of `-Command` with `$HOME`?**
-- `-Command "& '...'"` does NOT pass stdin to the script — `$input` and `[Console]::In` receive nothing. This silently breaks all hooks that read stdin.
-- `-File` correctly passes piped stdin to the script, so `$input` and `[Console]::In.ReadToEnd()` work as expected.
-- `%USERPROFILE%` is expanded by `cmd.exe` (the shell VS Code uses to spawn processes on Windows) before PowerShell even starts, so the path resolves correctly.
-- `$HOME` is a PowerShell variable — `-File` treats it as a literal string. But `%USERPROFILE%` is an environment variable expanded by the OS shell, which works with `-File`.
+**Why `-Command` with `$HOME`?**
+- `-Command "& '...'"` correctly passes piped stdin to the script — `$input` and `[Console]::In.ReadToEnd()` both work (tested 2026-03-17).
+- `$HOME` is a PowerShell automatic variable that resolves at runtime to the user's home directory.
+- `%USERPROFILE%` is NOT expanded by PowerShell (VS Code calls PowerShell directly, not via `cmd.exe`).
+- `-File` treats `$HOME` as literal text, so it cannot resolve variable paths.
 
-> **⚠️ CRITICAL**: Never use `-Command "& '...'"` for hooks that read stdin. It silently drops all input. Always use `-File` with `%USERPROFILE%` on Windows.
+> **⚠️ YAML ESCAPE TRAP**: In YAML double-quoted strings, `\v` is a valid escape sequence (vertical tab). If a script name starts with `v` (e.g., `verify-claims`), the path `\scripts\verify-claims.ps1` becomes `\scripts` + vertical-tab + `erify-claims.ps1`. **Fix:** double-escape with `\\v` in the YAML source → `\\verify-claims.ps1`. The same applies to any YAML escape: `\n`, `\t`, `\b`, `\f`, `\r`, `\e`, `\a`, `\0`.
 
 | Context | Recommended Pattern |
 |---------|-------------------|
 | JSON config, relative path | `powershell -ExecutionPolicy Bypass -File scripts\\my-hook.ps1` |
-| JSON config, global path | `powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\\.copilot\\hooks\\scripts\\my-hook.ps1"` |
-| YAML frontmatter, global path | `"powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.copilot\\hooks\\scripts\\my-hook.ps1\""` |
+| JSON config, global path | `powershell -NoProfile -ExecutionPolicy Bypass -Command "& '$HOME\\.copilot\\hooks\\scripts\\my-hook.ps1'"` |
+| YAML frontmatter, global path | `"powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\my-hook.ps1'\""` |
 
 **Rules:**
 - Bash scripts: always start with `#!/bin/bash`
@@ -402,7 +402,8 @@ Hook scripts run with **the user's permissions**. A malicious hook in a cloned r
 | Hook script not executable on Linux | Run `chmod +x` on bash scripts |
 | Long-running hooks blocking the agent | Set appropriate `timeout` values |
 | Agent-scoped hooks not working | Enable `chat.useCustomAgentHooks: true` in VS Code User Settings (global) |
-| Using `-File` with `$HOME` variable paths | `-File` treats `$HOME` literally — use `-Command "& '...'"` instead |
+| Using `-File` with `$HOME` variable paths | `-File` treats `$HOME` literally — use `-Command "& '...'"` with `$HOME` instead |
+| YAML `\v` escape in script paths | In double-quoted YAML, `\v` = vertical tab. Script names starting with `v` (e.g., `verify-claims`) need `\\v` escaping: `\\verify-claims.ps1`. Same for `\n`, `\t`, `\b`, `\f`, `\r`, `\e`, `\a` |
 | Marker file for "retry guard" hooks | Marker auto-bypass lets agent pass on 2nd attempt without real verification — always block, let the agent demonstrate compliance |
 | Claude Code terminal tool is `Bash`, not `run_in_terminal` | Check for both: `$tool -notin @('Bash', 'run_in_terminal')` |
 | `INPUT=$(cat)` hanging if stdin empty | Use `INPUT=$(cat 2>/dev/null || true)` |
