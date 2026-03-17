@@ -24,7 +24,10 @@ IMPORTANT: Do NOT generate feedback autonomously. Only capture feedback that the
 "@
 
 $reminder = @{
+    decision = "block"
+    reason = $message
     hookSpecificOutput = @{
+        hookEventName = "Stop"
         decision = "block"
         reason = $message
     }

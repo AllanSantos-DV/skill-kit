@@ -136,7 +136,10 @@ if ($violations.Count -gt 1) {
 }
 
 $result = @{
+    decision = "block"
+    reason = $reason
     hookSpecificOutput = @{
+        hookEventName = "Stop"
         decision = "block"
         reason = $reason
     }

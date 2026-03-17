@@ -65,7 +65,7 @@ When targeting VS Code only, use the 8 shared events. When targeting Claude Code
 - Agent-scoped hooks (frontmatter) reference **shell scripts by path**. If the scripts live inside the workspace (e.g., `.github/hooks/scripts/`), they only work in that workspace.
 - **Recommended for portable agents**: store hook scripts in a **global user directory** (e.g., `~/.copilot/hooks/scripts/`) and reference them with portable paths:
   - **bash/macOS/Linux**: `bash ~/.copilot/hooks/scripts/<script>.sh` — `~` expands at runtime
-  - **Windows**: `powershell -ExecutionPolicy Bypass -Command "& '$HOME\.copilot\hooks\scripts\<script>.ps1'"` — `$HOME` resolves at runtime
+  - **Windows**: `powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\.copilot\hooks\scripts\<script>.ps1"` — `%USERPROFILE%` is expanded by `cmd.exe` (the shell VS Code uses to spawn hooks on Windows), and `-File` preserves stdin passthrough
 - This way, agents synced to any workspace always find their hook scripts. No per-workspace setup needed.
 - **Workspace hooks** (`.github/hooks/*.json`) should keep scripts inside the project — they are project-specific by nature (e.g., injecting git context).
 
@@ -172,7 +172,8 @@ Not all output mechanisms inject content into the agent's context. Some only dis
 | Mechanism | Agent sees it? | Use case |
 |-----------|:--------------:|----------|
 | `hookSpecificOutput.additionalContext` | ✅ Yes | Inject context (SessionStart, PreToolUse, PostToolUse, SubagentStart) |
-| `hookSpecificOutput.decision: "block"` + `reason` | ✅ Yes | Force agent to act before stopping (Stop, SubagentStop, PostToolUse) |
+| `hookSpecificOutput.decision: "block"` + `reason` | ✅ Yes | Force agent to act before stopping (workspace Stop, PostToolUse) |
+| Top-level `decision: "block"` + `reason` | ✅ Yes | Force agent to act before stopping (SubagentStop, custom agent Stop) |
 | `hookSpecificOutput.permissionDecision` + `additionalContext` | ✅ Yes | Control tool approval with context (PreToolUse) |
 | Exit code `2` + stderr | ✅ Yes | Block operation, stderr shown to model (any event) |
 | `systemMessage` (top-level) | ❌ No — UI only | Visual warning for the user |
@@ -221,7 +222,23 @@ Not all output mechanisms inject content into the agent's context. Some only dis
 | `decision` | string | `"block"` — prevents the agent from stopping |
 | `reason` | string | Required when decision is "block". Tells the agent why it should continue |
 
-> **⚠️ `systemMessage` is UI-only — the agent never sees it.** It displays a warning banner in the chat for the user. If you need the agent to act on a Stop hook, use `hookSpecificOutput.decision: "block"` with `reason` — this IS injected into the agent's context. Putting `systemMessage` inside `hookSpecificOutput` is never valid — it's not a recognized field there and causes unintended blocking.
+> **⚠️ Custom agent Stop hooks are treated as SubagentStop.** When a Stop hook is scoped to a custom agent (defined in `.agent.md` frontmatter), VS Code treats it as a `SubagentStop` event. The SubagentStop format expects `decision` and `reason` at the **JSON top-level**, not inside `hookSpecificOutput`. If you only put them inside `hookSpecificOutput`, the hook fires but the agent **ignores the output** — the block instruction never reaches the agent's context.
+>
+> **Best practice:** Always output `decision`/`reason` at **both** top-level AND inside `hookSpecificOutput`. This ensures the hook works whether VS Code routes it as Stop or SubagentStop:
+>
+> ```json
+> {
+>   "decision": "block",
+>   "reason": "Run tests before finishing.",
+>   "hookSpecificOutput": {
+>     "hookEventName": "Stop",
+>     "decision": "block",
+>     "reason": "Run tests before finishing."
+>   }
+> }
+> ```
+
+> **⚠️ `systemMessage` is UI-only — the agent never sees it.** It displays a warning banner in the chat for the user. If you need the agent to act on a Stop hook, use `decision: "block"` with `reason` — this IS injected into the agent's context. Putting `systemMessage` inside `hookSpecificOutput` is never valid — it's not a recognized field there and causes unintended blocking.
 
 ## Cross-Platform Scripts
 
@@ -244,30 +261,29 @@ The `windows:` field passes through multiple escaping layers. Getting this wrong
 "windows": "powershell -ExecutionPolicy Bypass -File .github\\hooks\\scripts\\my-hook.ps1"
 ```
 
-**For global scripts with `$HOME` (agent frontmatter YAML):** Use `-Command` with single quotes around the path:
+**For global scripts (agent frontmatter YAML):** Use `-File` with `%USERPROFILE%`:
 ```yaml
-windows: "powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\my-hook.ps1'\""
+windows: "powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.copilot\\hooks\\scripts\\my-hook.ps1\""
 ```
 
 After YAML parsing, this becomes:
 ```
-powershell -ExecutionPolicy Bypass -Command "& '$HOME\.copilot\hooks\scripts\my-hook.ps1'"
+powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\.copilot\hooks\scripts\my-hook.ps1"
 ```
 
-**Why NOT `-File` for global paths?**
-- `-File` treats `$HOME` as a **literal string** — it does NOT expand PowerShell variables
-- `-Command` runs the argument as PowerShell code, so `$HOME` resolves correctly
-- Single quotes around the path avoid nested double-quote escaping hell
+**Why `-File` with `%USERPROFILE%` instead of `-Command` with `$HOME`?**
+- `-Command "& '...'"` does NOT pass stdin to the script — `$input` and `[Console]::In` receive nothing. This silently breaks all hooks that read stdin.
+- `-File` correctly passes piped stdin to the script, so `$input` and `[Console]::In.ReadToEnd()` work as expected.
+- `%USERPROFILE%` is expanded by `cmd.exe` (the shell VS Code uses to spawn processes on Windows) before PowerShell even starts, so the path resolves correctly.
+- `$HOME` is a PowerShell variable — `-File` treats it as a literal string. But `%USERPROFILE%` is an environment variable expanded by the OS shell, which works with `-File`.
 
-**Why NOT double quotes around the path?**
-- Double quotes like `\"$HOME\\.copilot\\...\"` require triple-escaping in YAML (`\\\"...\\\"`)`, which is fragile
-- If the script contains single quotes internally (e.g., `'run_in_terminal'`), the double-quote wrapping can interact badly with how Copilot invokes the command
+> **⚠️ CRITICAL**: Never use `-Command "& '...'"` for hooks that read stdin. It silently drops all input. Always use `-File` with `%USERPROFILE%` on Windows.
 
 | Context | Recommended Pattern |
 |---------|-------------------|
 | JSON config, relative path | `powershell -ExecutionPolicy Bypass -File scripts\\my-hook.ps1` |
-| JSON config, global path | `powershell -ExecutionPolicy Bypass -Command "& '$HOME\\.copilot\\hooks\\scripts\\my-hook.ps1'"` |
-| YAML frontmatter, global path | `"powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\my-hook.ps1'\""` |
+| JSON config, global path | `powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\\.copilot\\hooks\\scripts\\my-hook.ps1"` |
+| YAML frontmatter, global path | `"powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.copilot\\hooks\\scripts\\my-hook.ps1\""` |
 
 **Rules:**
 - Bash scripts: always start with `#!/bin/bash`
@@ -391,6 +407,7 @@ Hook scripts run with **the user's permissions**. A malicious hook in a cloned r
 | Claude Code terminal tool is `Bash`, not `run_in_terminal` | Check for both: `$tool -notin @('Bash', 'run_in_terminal')` |
 | `INPUT=$(cat)` hanging if stdin empty | Use `INPUT=$(cat 2>/dev/null || true)` |
 | PreToolUse fields at JSON top-level | Wrap in `hookSpecificOutput` — VS Code ignores top-level PreToolUse fields |
+| Stop hook `decision`/`reason` only inside `hookSpecificOutput` for custom agents | VS Code treats custom agent Stop hooks as SubagentStop — needs `decision`/`reason` at **top-level**. Always output at both levels for safety |
 | Claude hooks bleeding into VS Code Copilot sessions | `chat.useClaudeHooks: true` in VS Code imports ALL hooks from `~/.claude/settings.json` as global hooks — they fire for every agent, ignoring agent scoping. If hooks are already in agent frontmatter, set `chat.useClaudeHooks: false` to avoid duplication and unscoped blocking. **Tell the user** to check this setting if they report hooks firing from unexpected agents. |
 
 ## Claude Code vs Copilot — Key Differences for Hook Scripts
@@ -400,7 +417,7 @@ When creating hooks that work on both platforms, be aware of these differences:
 | Aspect | VS Code Copilot | Claude Code |
 |--------|----------------|-------------|
 | Terminal tool name | `run_in_terminal` | `Bash` (also accepts `run_in_terminal`) |
-| Stop hook enforcement | `hookSpecificOutput.decision: "block"` + `reason` — blocks the agent AND injects reason into agent context. Top-level `systemMessage` — rendered as warning in UI only (agent does NOT see it). **Never** put `systemMessage` inside `hookSpecificOutput` — it's not a valid field there. | `decision: "block"` — blocks the agent from stopping |
+| Stop hook enforcement | For **workspace hooks** (`.github/hooks/`): `hookSpecificOutput.decision: "block"` + `reason`. For **custom agent hooks** (frontmatter): output `decision`/`reason` at **top-level** (SubagentStop format) — VS Code treats agent-scoped Stop as SubagentStop. **Best practice:** always include both top-level AND `hookSpecificOutput` for compatibility. Top-level `systemMessage` — rendered as warning in UI only (agent does NOT see it). | `decision: "block"` — blocks the agent from stopping |
 | Windows config field | `windows:` in JSON/YAML | `command_win32` in `hooks-config.json` (not officially documented) |
 | Global hooks location | `~/.copilot/hooks/scripts/` | `~/.claude/hooks-scripts/` |
 | Matcher support | Ignored — filter inside script | Supported (regex on tool_name) |

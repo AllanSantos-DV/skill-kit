@@ -19,19 +19,19 @@ hooks:
   Stop:
     - type: command
       command: "bash ~/.copilot/hooks/scripts/output-format.sh"
-      windows: "powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\output-format.ps1'\""
+      windows: "powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.copilot\\hooks\\scripts\\output-format.ps1\""
       timeout: 10
     - type: command
       command: "bash ~/.copilot/hooks/scripts/verify-claims.sh"
-      windows: "powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\verify-claims.ps1'\""
+      windows: "powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.copilot\\hooks\\scripts\\verify-claims.ps1\""
       timeout: 5
     - type: command
       command: "bash ~/.copilot/hooks/scripts/context-confidence-check.sh"
-      windows: "powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\context-confidence-check.ps1'\""
+      windows: "powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.copilot\\hooks\\scripts\\context-confidence-check.ps1\""
       timeout: 10
     - type: command
       command: "bash ~/.copilot/hooks/scripts/skill-feedback.sh"
-      windows: "powershell -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\skill-feedback.ps1'\""
+      windows: "powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.copilot\\hooks\\scripts\\skill-feedback.ps1\""
       timeout: 5
 ---
 

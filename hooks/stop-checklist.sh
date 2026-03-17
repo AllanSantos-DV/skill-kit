@@ -14,7 +14,10 @@ fi
 
 cat <<'EOF'
 {
+  "decision": "block",
+  "reason": "Before finishing: 1) Did you run tests? 2) Did you produce a task map (if decisions were made)? 3) Is the quality checklist satisfied?",
   "hookSpecificOutput": {
+    "hookEventName": "Stop",
     "decision": "block",
     "reason": "Before finishing: 1) Did you run tests? 2) Did you produce a task map (if decisions were made)? 3) Is the quality checklist satisfied?"
   }
