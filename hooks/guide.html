@@ -492,19 +492,22 @@
       <span class="event-badge event-badge-Stop">Stop</span>
     </div>
     <p class="card-desc">
-      Força verificação de claims factuais. Antes de finalizar, o agente deve revisar cada afirmação
-      factual feita durante a sessão e confirmar que foi verificada com ferramentas (read_file,
-      grep_search, run_in_terminal, semantic_search). Claims não verificados devem ser corrigidos
-      ou marcados explicitamente como não verificados.
+      Verifica referências a arquivos nas mensagens do assistant contra chamadas reais de ferramentas
+      no transcript. Analisa apenas a <strong>interação atual</strong> (do último <code>user.message</code>
+      em diante), evitando falsos positivos de menções antigas. No bash, requer <code>jq</code> — sem
+      ele, faz fallback para um reminder estático.
     </p>
 
     <div class="section-label">Lógica detalhada</div>
     <ul class="logic-list">
-      <li>Sempre retorna <code>block</code> com instrução de checagem de verificação</li>
-      <li>Exige que o agente revise CADA claim factual feito na sessão</li>
-      <li>Claims verificados com ferramentas → ok</li>
-      <li>Claims assumidos sem verificação → corrigir agora ou marcar como "unverified"</li>
-      <li>Princípio: nunca apresentar premissas como fatos</li>
+      <li>Lê o transcript JSONL da sessão via <code>transcript_path</code> do hook input</li>
+      <li>Escopo: encontra o último <code>user.message</code> no transcript e analisa só dali em diante</li>
+      <li>Coleta paths acessados por ferramentas: <code>read_file</code>, <code>grep_search</code>, <code>file_search</code>, <code>semantic_search</code>, <code>run_in_terminal</code>, <code>list_dir</code>, <code>create_file</code>, etc.</li>
+      <li>Extrai paths mencionados no <code>content</code> de <code>assistant.message</code> via regex (absolutos e relativos)</li>
+      <li>Compara: paths mencionados que não foram acessados por nenhuma ferramenta → unverified</li>
+      <li>Paths curtos (&lt;6 chars) são ignorados. Matching usa endsWith bidirecional</li>
+      <li>Se todos os paths foram verificados → passthrough silencioso (exit 0)</li>
+      <li>Se há unverified → <code>block</code> com lista dos paths não verificados (máx. 10)</li>
     </ul>
 
     <div class="section-label">Usado por</div>
@@ -519,14 +522,15 @@
     <div class="output-box">
       <div class="output-mechanism">
         <span class="arrow">→</span>
-        <span>Retorna <code>decision: "block"</code> + <code>reason</code>: "VERIFICATION CHECK: Review every factual claim you made in this session. Was each one verified using tools? If any claim was assumed without tool verification — correct it now or explicitly mark it as unverified." O agente é forçado a auditar seus próprios claims.</span>
+        <span>Retorna <code>decision: "block"</code> + <code>reason</code> listando os paths mencionados sem verificação prévia: "UNVERIFIED FILE REFERENCES — these paths were mentioned without prior tool verification: [lista]. Verify with tools (read_file, grep_search, list_dir) or mark as assumed." O agente deve verificar cada path com ferramentas ou marcar como assumed.</span>
       </div>
     </div>
 
     <div class="trigger-example">
-      <strong>Exemplo de trigger:</strong> O agente afirmou "essa API retorna 200 em caso de sucesso"
-      sem ter consultado a documentação → hook bloqueia e exige que o agente verifique a afirmação
-      ou a marque como "não verificado — premissa baseada em padrão comum".
+      <strong>Exemplo de trigger:</strong> O agente menciona <code>src/utils/helpers.ts</code> na resposta
+      sem ter chamado <code>read_file</code>, <code>grep_search</code> ou qualquer tool nesse arquivo →
+      hook bloqueia e lista o path. O agente então usa <code>read_file</code> para verificar ou marca
+      explicitamente como "assumed".
     </div>
   </div>
 
