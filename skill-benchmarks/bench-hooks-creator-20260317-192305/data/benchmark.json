@@ -1,0 +1,104 @@
+{
+  "skill": "hooks-creator",
+  "skill_description": "**WORKFLOW SKILL** — Create and configure agent hooks for VS Code Copilot and Claude Code. USE FOR: creating hook scripts, configuring lifecycle hooks (SessionStart, PreToolUse, PostToolUse, Stop), adding hooks to agent frontmatter, cross-platform hook scripts, security best practices. DO NOT USE FOR: general coding, creating agents (use agent-creator), creating skills (use skill-creator).",
+  "metadata": {
+    "headings": [
+      "Hooks Creator — Complete Guide to Agent Lifecycle Hooks",
+      "What are Hooks?",
+      "Platform Detection",
+      "Lifecycle Events",
+      "Configuration Locations",
+      "Multiple Hooks Behavior",
+      "Hook Configuration Format",
+      "VS Code JSON (workspace hooks in `.github/hooks/`)",
+      "Agent Frontmatter (agent-scoped hooks)",
+      "Input/Output Contract",
+      "Exit Codes",
+      "Key Input Fields",
+      "Key Output Fields",
+      "What Reaches the Agent vs. UI-Only",
+      "PreToolUse-Specific Output"
+    ],
+    "key_concepts": [
+      "deterministic shell commands",
+      "guarantee execution",
+      "Detection strategy",
+      "ask the user",
+      "Scope rules:",
+      "per-workspace",
+      "workspace hooks",
+      "user-global",
+      "Global vs workspace scripts for agent-scoped hooks:",
+      "shell scripts by path",
+      "Recommended for portable agents",
+      "global user directory",
+      "bash/macOS/Linux",
+      "Windows",
+      "`chat.useCustomAgentHooks` setting:"
+    ],
+    "pitfalls": [
+      "| ✅ | Tool needs permission |",
+      "| ✅ | Tool fails |",
+      "| ✅ | Status notification |",
+      "| ✅ | Task finishes |",
+      "| ✅ | Various |",
+      "No — UI only | Visual warning for the user |",
+      "No — UI only | Stop session, reason shown to user |",
+      "WRONG — VS Code ignores these fields at top-level",
+      "Don't | ✅ Do |",
+      "Pitfall | ✅ Fix |"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "task-01",
+      "prompt": "Create a Stop hook for a custom agent (.agent.md) that blocks the agent from finishing if it hasn't run any tests during the session. The hook should be configured in the agent's frontmatter and reference a global script at ~/.copilot/hooks/scripts/stop-require-tests.ps1 (Windows) and ~/.copilot/hooks/scripts/stop-require-tests.sh (bash). Provide: (1) the YAML frontmatter config, (2) the PowerShell script, (3) the bash script. The hook should output a message telling the agent to run tests before finishing.",
+      "rubric": {
+        "correctness": "Stop hook outputs decision/reason at BOTH top-level AND inside hookSpecificOutput (required because VS Code treats custom agent Stop as SubagentStop). Does NOT use systemMessage to communicate with the agent (systemMessage is UI-only).",
+        "completeness": "Provides all 3 deliverables: YAML frontmatter hook config, PowerShell script, and bash script. Scripts read stdin JSON, check for test tool calls, and return proper JSON stdout.",
+        "pattern_adherence": "YAML frontmatter uses -Command with $HOME for Windows (not -File, not %USERPROFILE%). Bash uses '~' expansion. YAML double-quoted strings properly escape backslash sequences. PowerShell reads stdin with pipeline-then-console fallback pattern.",
+        "edge_cases": "PowerShell script is PS 5.1 compatible (no ternary assignment, no `u{} Unicode escapes, no ?? operator). Bash uses 'cat 2>/dev/null || true' for stdin. Hook handles case where transcript_path is missing or empty."
+      }
+    },
+    {
+      "id": "task-02",
+      "prompt": "Create a PreToolUse hook that blocks dangerous terminal commands (rm -rf /, DROP TABLE, git push --force) and asks for user confirmation on git push and git tag. Configure it as a workspace hook in .github/hooks/security.json with cross-platform support. Provide the JSON config and both script files.",
+      "rubric": {
+        "correctness": "PreToolUse output fields (permissionDecision, additionalContext) are INSIDE hookSpecificOutput — NOT at JSON top-level. Uses correct permissionDecision values: 'deny' for dangerous commands, 'ask' for git push/tag, implicit allow for everything else.",
+        "completeness": "Provides JSON hook config with both command (bash) and windows (PowerShell) fields. Both scripts implement the same decision logic: deny dangerous patterns, ask for git push/tag, allow everything else.",
+        "pattern_adherence": "Scripts filter by tool_name inside the script (not relying on matchers — VS Code ignores them). Checks for both 'run_in_terminal' and 'Bash' tool names for cross-platform compat. Uses conditional logic pattern (single script with branching, not multiple hooks).",
+        "edge_cases": "PowerShell uses PS 5.1 compatible syntax throughout. Bash falls back to grep/sed if jq is unavailable. Scripts handle missing or empty stdin gracefully (exit 0). Handles edge cases like commands in single vs double quotes."
+      }
+    },
+    {
+      "id": "task-03",
+      "prompt": "I have a custom agent called 'reviewer.agent.md' that lives in .github/agents/. I want to add a SessionStart hook that injects the project's README.md and CONTRIBUTING.md content as context when the agent starts. The hook scripts should be stored globally at ~/.copilot/hooks/scripts/inject-project-docs.ps1 and .sh. Show me the complete setup: agent frontmatter hooks section, both scripts, and any VS Code settings needed.",
+      "rubric": {
+        "correctness": "SessionStart hook returns additionalContext inside hookSpecificOutput — this is what gets injected into the agent's context. Does NOT use systemMessage (UI-only, agent never sees it). Scripts read actual file contents from the workspace (using cwd from stdin JSON).",
+        "completeness": "Delivers: (1) YAML hooks section for .agent.md frontmatter, (2) PowerShell script, (3) bash script, (4) mentions chat.useCustomAgentHooks: true setting requirement. Scripts compose additionalContext from README.md + CONTRIBUTING.md content.",
+        "pattern_adherence": "Windows command in YAML uses -Command with $HOME (not -File with variable paths). YAML escaping is correct (double-escaped backslashes where needed). PowerShell stdin reading uses pipeline-then-console fallback. JSON output uses ConvertTo-Json -Depth 3.",
+        "edge_cases": "Scripts handle missing files gracefully (README or CONTRIBUTING might not exist). PowerShell is PS 5.1 compatible. Bash uses cat 2>/dev/null || true for stdin. If cwd field is missing from input, falls back to current directory."
+      }
+    },
+    {
+      "id": "task-04",
+      "prompt": "Create a PreToolUse hook that enforces conventional commits. When the agent tries to run 'git commit', the hook should validate the commit message follows the pattern 'type(scope): description' where type is one of feat/fix/docs/chore/refactor/test/ci/build/perf/style. If the message is valid, allow automatically. If invalid, deny with an explanation. For git push and git tag, ask the user for confirmation. Configure this as a workspace hook in .github/hooks/.",
+      "rubric": {
+        "correctness": "PreToolUse fields (permissionDecision, additionalContext) are inside hookSpecificOutput. Decision tree: valid commit → allow, invalid commit → deny with explanation, push/tag → ask. Regex correctly matches conventional commit format including optional scope and breaking change indicator.",
+        "completeness": "Provides JSON hook config and both PS1/bash scripts. Scripts extract git subcommand and commit message from tool_input. Handles all three branches: commit validation, push/tag confirmation, and passthrough for non-git tools.",
+        "pattern_adherence": "Filters tool_name inside script (not relying on matchers). Single script with conditional branching (not multiple hooks). Checks both run_in_terminal and Bash tool names. Uses the conditional hook logic pattern from the skill.",
+        "edge_cases": "Handles commit messages in both single and double quotes. Handles -m flag with space or = separator. PS 5.1 compatible (no ternary, no null-coalescing). Handles case where git command has no -m flag (e.g., git commit without message → deny). Bash jq fallback with grep/sed."
+      }
+    },
+    {
+      "id": "task-05",
+      "prompt": "Create a transcript-aware Stop hook that analyzes the VS Code Copilot session transcript (JSONL) and blocks the agent from finishing if it mentioned file paths in its responses that it never actually accessed via read_file, grep_search, or file_search tools. The hook should only analyze the CURRENT interaction (from the last user.message), not the entire transcript history. Provide cross-platform scripts (PS1 + bash) and the .github/hooks/verify-references.json config.",
+      "rubric": {
+        "correctness": "Hook reads transcript JSONL file (path from stdin). Scopes analysis to current interaction by finding last user.message line. Collects accessed paths from tool.execution_start events for file tools. Extracts mentioned paths from assistant.message content. Compares sets and blocks only if unverified paths found. Uses decision: block + reason (not systemMessage).",
+        "completeness": "Provides: JSON hook config, PowerShell script, bash script. Scripts implement full pipeline: parse transcript, scope to current interaction, collect tool paths, extract mentioned paths, diff, and return appropriate JSON output.",
+        "pattern_adherence": "Transcript scoping uses the last-user-message boundary pattern. PowerShell reads JSONL with ConvertFrom-Json per line. Stop hook output uses dual-level pattern (top-level + hookSpecificOutput). File path regex handles both forward and backslash separators.",
+        "edge_cases": "PS 5.1 compatible syntax throughout. YAML escape trap: config filename contains 'verify' starting with v — if in YAML double-quoted string, \\v must be escaped. Handles empty transcript or missing transcript_path (exit 0). Bash requires jq check with fallback. Handles case where no assistant.message events exist in current interaction."
+      }
+    }
+  ]
+}

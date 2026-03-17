@@ -1,0 +1,272 @@
+{
+  "skill": "hooks-creator",
+  "summary": {
+    "total_tasks": 5,
+    "runs_per_task": 1,
+    "total_calls": 10,
+    "wins": 5,
+    "losses": 0,
+    "ties": 0,
+    "win_rate": 1.0,
+    "overall_delta": 0.845
+  },
+  "dimensions": {
+    "completeness": {
+      "avg_with": 1.0,
+      "avg_without": 0.5,
+      "avg_delta": 0.5
+    },
+    "correctness": {
+      "avg_with": 1.0,
+      "avg_without": 0.0,
+      "avg_delta": 1.0
+    },
+    "edge_cases": {
+      "avg_with": 0.98,
+      "avg_without": 0.1,
+      "avg_delta": 0.88
+    },
+    "pattern_adherence": {
+      "avg_with": 1.0,
+      "avg_without": 0.0,
+      "avg_delta": 1.0
+    }
+  },
+  "tasks": [
+    {
+      "task_id": "task-01",
+      "prompt": "Create a Stop hook for a custom agent (.agent.md) that blocks the agent from finishing if it hasn't run any tests during the session. The hook should be configured in the agent's frontmatter and reference a global script at ~/.copilot/hooks/scripts/stop-require-tests.ps1 (Windows) and ~/.copilot/hooks/scripts/stop-require-tests.sh (bash). Provide: (1) the YAML frontmatter config, (2) the PowerShell script, (3) the bash script. The hook should output a message telling the agent to run tests before finishing.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.0,
+        "completeness": 0.5,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.25
+      },
+      "average_with": 1.0,
+      "average_without": 0.1875,
+      "delta": 0.8125,
+      "per_dimension_delta": {
+        "correctness": 1.0,
+        "completeness": 0.5,
+        "pattern_adherence": 1.0,
+        "edge_cases": 0.75
+      },
+      "winner": "with",
+      "runs_count": 1,
+      "per_run_scores": [
+        {
+          "run": 1,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.0,
+            "completeness": 0.5,
+            "pattern_adherence": 0.0,
+            "edge_cases": 0.25
+          },
+          "average_with": 1.0,
+          "average_without": 0.1875,
+          "delta": 0.8125
+        }
+      ]
+    },
+    {
+      "task_id": "task-02",
+      "prompt": "Create a PreToolUse hook that blocks dangerous terminal commands (rm -rf /, DROP TABLE, git push --force) and asks for user confirmation on git push and git tag. Configure it as a workspace hook in .github/hooks/security.json with cross-platform support. Provide the JSON config and both script files.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 0.95
+      },
+      "scores_without": {
+        "correctness": 0.0,
+        "completeness": 0.5,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.0
+      },
+      "average_with": 0.9875,
+      "average_without": 0.125,
+      "delta": 0.8625,
+      "per_dimension_delta": {
+        "correctness": 1.0,
+        "completeness": 0.5,
+        "pattern_adherence": 1.0,
+        "edge_cases": 0.95
+      },
+      "winner": "with",
+      "runs_count": 1,
+      "per_run_scores": [
+        {
+          "run": 1,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 0.95
+          },
+          "scores_without": {
+            "correctness": 0.0,
+            "completeness": 0.5,
+            "pattern_adherence": 0.0,
+            "edge_cases": 0.0
+          },
+          "average_with": 0.9875,
+          "average_without": 0.125,
+          "delta": 0.8625
+        }
+      ]
+    },
+    {
+      "task_id": "task-03",
+      "prompt": "I have a custom agent called 'reviewer.agent.md' that lives in .github/agents/. I want to add a SessionStart hook that injects the project's README.md and CONTRIBUTING.md content as context when the agent starts. The hook scripts should be stored globally at ~/.copilot/hooks/scripts/inject-project-docs.ps1 and .sh. Show me the complete setup: agent frontmatter hooks section, both scripts, and any VS Code settings needed.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.0,
+        "completeness": 0.5,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.25
+      },
+      "average_with": 1.0,
+      "average_without": 0.1875,
+      "delta": 0.8125,
+      "per_dimension_delta": {
+        "correctness": 1.0,
+        "completeness": 0.5,
+        "pattern_adherence": 1.0,
+        "edge_cases": 0.75
+      },
+      "winner": "with",
+      "runs_count": 1,
+      "per_run_scores": [
+        {
+          "run": 1,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.0,
+            "completeness": 0.5,
+            "pattern_adherence": 0.0,
+            "edge_cases": 0.25
+          },
+          "average_with": 1.0,
+          "average_without": 0.1875,
+          "delta": 0.8125
+        }
+      ]
+    },
+    {
+      "task_id": "task-04",
+      "prompt": "Create a PreToolUse hook that enforces conventional commits. When the agent tries to run 'git commit', the hook should validate the commit message follows the pattern 'type(scope): description' where type is one of feat/fix/docs/chore/refactor/test/ci/build/perf/style. If the message is valid, allow automatically. If invalid, deny with an explanation. For git push and git tag, ask the user for confirmation. Configure this as a workspace hook in .github/hooks/.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 0.95
+      },
+      "scores_without": {
+        "correctness": 0.0,
+        "completeness": 0.5,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.0
+      },
+      "average_with": 0.9875,
+      "average_without": 0.125,
+      "delta": 0.8625,
+      "per_dimension_delta": {
+        "correctness": 1.0,
+        "completeness": 0.5,
+        "pattern_adherence": 1.0,
+        "edge_cases": 0.95
+      },
+      "winner": "with",
+      "runs_count": 1,
+      "per_run_scores": [
+        {
+          "run": 1,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 0.95
+          },
+          "scores_without": {
+            "correctness": 0.0,
+            "completeness": 0.5,
+            "pattern_adherence": 0.0,
+            "edge_cases": 0.0
+          },
+          "average_with": 0.9875,
+          "average_without": 0.125,
+          "delta": 0.8625
+        }
+      ]
+    },
+    {
+      "task_id": "task-05",
+      "prompt": "Create a transcript-aware Stop hook that analyzes the VS Code Copilot session transcript (JSONL) and blocks the agent from finishing if it mentioned file paths in its responses that it never actually accessed via read_file, grep_search, or file_search tools. The hook should only analyze the CURRENT interaction (from the last user.message), not the entire transcript history. Provide cross-platform scripts (PS1 + bash) and the .github/hooks/verify-references.json config.",
+      "scores_with": {
+        "correctness": 1.0,
+        "completeness": 1.0,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "scores_without": {
+        "correctness": 0.0,
+        "completeness": 0.5,
+        "pattern_adherence": 0.0,
+        "edge_cases": 0.0
+      },
+      "average_with": 1.0,
+      "average_without": 0.125,
+      "delta": 0.875,
+      "per_dimension_delta": {
+        "correctness": 1.0,
+        "completeness": 0.5,
+        "pattern_adherence": 1.0,
+        "edge_cases": 1.0
+      },
+      "winner": "with",
+      "runs_count": 1,
+      "per_run_scores": [
+        {
+          "run": 1,
+          "scores_with": {
+            "correctness": 1.0,
+            "completeness": 1.0,
+            "pattern_adherence": 1.0,
+            "edge_cases": 1.0
+          },
+          "scores_without": {
+            "correctness": 0.0,
+            "completeness": 0.5,
+            "pattern_adherence": 0.0,
+            "edge_cases": 0.0
+          },
+          "average_with": 1.0,
+          "average_without": 0.125,
+          "delta": 0.875
+        }
+      ]
+    }
+  ]
+}
