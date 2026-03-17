@@ -51,6 +51,7 @@
     .card.event-Stop { border-left: 4px solid #d6944a; }
     .card.event-SubagentStart { border-left: 4px solid #9b59b6; }
     .card.event-SessionStart { border-left: 4px solid #4aad5b; }
+    .card.event-UserPromptSubmit { border-left: 4px solid #e67e22; }
     .card-header {
       display: flex;
       align-items: center;
@@ -87,6 +88,7 @@
     .event-badge-Stop { background: #d6944a; }
     .event-badge-SubagentStart { background: #9b59b6; }
     .event-badge-SessionStart { background: #4aad5b; }
+    .event-badge-UserPromptSubmit { background: #e67e22; }
     .card-desc {
       color: var(--vscode-descriptionForeground, #999);
       line-height: 1.6;
@@ -211,7 +213,7 @@
 </head>
 <body>
   <div class="header">
-    <h1>⚡ Guia de Hooks <span class="count-badge">7</span></h1>
+    <h1>⚡ Guia de Hooks <span class="count-badge">8</span></h1>
     <p>
       Hooks são comandos shell determinísticos executados em eventos específicos do ciclo de vida
       de uma sessão de agente. Diferente de instruções (que o agente pode ignorar), hooks
@@ -229,6 +231,7 @@
       <div class="legend-item"><span class="legend-dot" style="background:#d6944a"></span> Stop</div>
       <div class="legend-item"><span class="legend-dot" style="background:#9b59b6"></span> SubagentStart</div>
       <div class="legend-item"><span class="legend-dot" style="background:#4aad5b"></span> SessionStart</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#e67e22"></span> UserPromptSubmit</div>
     </div>
   </div>
 
@@ -481,6 +484,54 @@
     <div class="trigger-example">
       <strong>Exemplo de trigger:</strong> O orchestrator decide delegar para o researcher → hook escreve
       <code>[2026-03-16 14:30:22] Subagent started: researcher</code> em stderr → sub-agente inicia normalmente.
+    </div>
+  </div>
+
+  <!-- lesson-injector -->
+  <div class="card event-UserPromptSubmit">
+    <div class="card-header">
+      <span class="card-icon">📚</span>
+      <h3>lesson-injector</h3>
+      <span class="event-badge event-badge-UserPromptSubmit">UserPromptSubmit</span>
+    </div>
+    <p class="card-desc">
+      Injeta lições aprendidas relevantes no contexto do agente antes de cada prompt. Faz keyword matching 
+      bilíngue (pt-BR + en) no prompt do user para extrair tags, busca lições em 
+      <code>~/.copilot/lessons/</code> com frontmatter compatível, e retorna os resumos das top 5 lições 
+      por confidence. O agente pode então usar <code>read_file</code> para acessar detalhes completos.
+    </p>
+
+    <div class="section-label">Lógica detalhada</div>
+    <ul class="logic-list">
+      <li>Lê o prompt do user via stdin JSON (<code>chatMessage</code> com fallbacks)</li>
+      <li>Keyword matching bilíngue: mapeia palavras-chave para tags (ex: "criar"/"new" → <code>create</code>, "corrigir"/"fix" → <code>fix</code>)</li>
+      <li>Se nenhuma tag matched → exit silencioso (não injeta nada)</li>
+      <li>Busca arquivos <code>L*.md</code> em <code>~/.copilot/lessons/</code>, parseia frontmatter YAML via regex</li>
+      <li>Filtra por interseção de tags entre lições e tags matched do prompt</li>
+      <li>Ordena por <code>confidence</code> DESC, pega top 5</li>
+      <li>Injeta resumos (seção <code>## Resumo</code> de cada lição) com limit de 500 chars</li>
+    </ul>
+
+    <div class="section-label">Usado por</div>
+    <div class="agent-tags">
+      <span class="tag-agent">orchestrator</span>
+      <span class="tag-agent">implementor</span>
+      <span class="tag-agent">researcher</span>
+      <span class="tag-agent">validator</span>
+    </div>
+
+    <div class="section-label">Como o output chega ao agente</div>
+    <div class="output-box">
+      <div class="output-mechanism">
+        <span class="arrow">→</span>
+        <span>Retorna <code>decision: "add"</code> + <code>content</code> com formato: "Lições aprendidas relevantes (tags: X, Y): - [L003] resumo... (confidence: 0.8)". O agente lê o resumo e pode fazer <code>read_file ~/.copilot/lessons/L003-*.md</code> se precisar do registro completo.</span>
+      </div>
+    </div>
+
+    <div class="trigger-example">
+      <strong>Exemplo de trigger:</strong> User prompt contém "editar o hook de pre-commit" → tags matched: 
+      <code>modify</code>, <code>hooks</code> → hook encontra L005 com tags [modify, hooks] e confidence 0.8 
+      → injeta resumo no contexto antes do agente processar o prompt.
     </div>
   </div>
 
