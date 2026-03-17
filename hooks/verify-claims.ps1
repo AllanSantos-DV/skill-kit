@@ -64,7 +64,17 @@ function Add-ToolPaths($args_obj) {
 $winPathRe = [regex]'(?i)([a-z]:\\(?:[\w\s._-]+\\)*[\w._-]+\.\w+)'
 $relPathRe = [regex]'(?:^|[\s`"''()\[\]>/])((src|test|docs|dist|lib|utils|commands|services|providers|webview|hooks|skills|agents|resources|config)[\\/][\w._/-]+\.\w+)'
 
-foreach ($line in $lines) {
+# Scope to current interaction: find last user.message
+$startIdx = 0
+for ($i = $lines.Count - 1; $i -ge 0; $i--) {
+    if ($lines[$i] -like '*"user.message"*') {
+        $startIdx = $i
+        break
+    }
+}
+
+for ($i = $startIdx; $i -lt $lines.Count; $i++) {
+    $line = $lines[$i]
     if (-not $line -or $line.Length -lt 20) { continue }
     if ($line -notlike '*"tool.execution_start"*' -and $line -notlike '*"assistant.message"*') { continue }
 
