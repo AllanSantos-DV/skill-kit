@@ -18,7 +18,8 @@ $unverified = [System.Collections.Generic.List[string]]::new()
 $fileTools = @(
     'read_file','create_file','replace_string_in_file','multi_replace_string_in_file',
     'list_dir','create_directory','vscode_listCodeUsages','grep_search',
-    'edit_notebook_file','copilot_getNotebookSummary'
+    'edit_notebook_file','copilot_getNotebookSummary','file_search','semantic_search',
+    'run_in_terminal'
 )
 
 function Norm([string]$p) {
@@ -38,12 +39,24 @@ function Test-Accessed([string]$mention) {
 function Add-ToolPaths($args_obj) {
     if ($args_obj.filePath) { [void]$script:accessedPaths.Add($args_obj.filePath) }
     if ($args_obj.path) { [void]$script:accessedPaths.Add($args_obj.path) }
+    if ($args_obj.query) {
+        # file_search query often contains paths
+        if ($args_obj.query -match '[\\/]') {
+            [void]$script:accessedPaths.Add($args_obj.query)
+        }
+    }
     if ($args_obj.includePattern -and $args_obj.includePattern -match '[\\/]') {
         [void]$script:accessedPaths.Add($args_obj.includePattern)
     }
     if ($args_obj.replacements) {
         foreach ($r in $args_obj.replacements) {
             if ($r.filePath) { [void]$script:accessedPaths.Add($r.filePath) }
+        }
+    }
+    # run_in_terminal: extract paths from the command string
+    if ($args_obj.command) {
+        foreach ($m in $script:winPathRe.Matches($args_obj.command)) {
+            [void]$script:accessedPaths.Add($m.Groups[1].Value)
         }
     }
 }
