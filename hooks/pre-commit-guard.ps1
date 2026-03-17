@@ -51,9 +51,11 @@ if ($gitAction -eq 'tag') {
 }
 
 # git commit — check for conventional commit message
-if ($cmd -match '-m\s+["''](.+?)["'']' -or $cmd -match '-m\s+(\S+)') {
+# Support both -m and -am (combined add+message flag)
+if ($cmd -match '-a?m\s+["''](.+?)["'']' -or $cmd -match '-a?m\s+(\S+)') {
     $commitMsg = $Matches[1]
-    if ($commitMsg -match '^(feat|fix|docs|chore|refactor|test|ci|build|perf|style)(\(.+\))?(!)?\:\s+.+') {
+    # Case-insensitive per spec rule 15; includes revert type per FAQ
+    if ($commitMsg -match '(?i)^(feat|fix|docs|chore|refactor|test|ci|build|perf|style|revert)(\(.+\))?(!)?\:\s+.+') {
         $result = @{
             hookSpecificOutput = @{
                 permissionDecision = "allow"

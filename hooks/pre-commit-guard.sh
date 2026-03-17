@@ -57,13 +57,9 @@ EOF
 fi
 
 # git commit — check for conventional commit message
+# Support both -m and -am (combined add+message flag)
 COMMIT_MSG=""
-if command -v jq &>/dev/null; then
-  # Extract -m argument from the command string
-  COMMIT_MSG=$(echo "$CMD" | grep -oP -- '-m\s+["\x27]?\K(.+?)(?=["\x27](\s|$)|$)')
-else
-  COMMIT_MSG=$(echo "$CMD" | grep -oP -- '-m\s+["\x27]?\K(.+?)(?=["\x27](\s|$)|$)')
-fi
+COMMIT_MSG=$(echo "$CMD" | grep -oP -- '-a?m\s+["\x27]?\K(.+?)(?=["\x27](\s|$)|$)')
 
 if [ -z "$COMMIT_MSG" ]; then
   cat <<'EOF'
@@ -77,8 +73,8 @@ EOF
   exit 0
 fi
 
-# Validate conventional commit pattern
-if echo "$COMMIT_MSG" | grep -qP '^(feat|fix|docs|chore|refactor|test|ci|build|perf|style)(\(.+\))?(!)?\:\s+.+'; then
+# Validate conventional commit pattern (case-insensitive per spec rule 15; includes revert)
+if echo "$COMMIT_MSG" | grep -qiP '^(feat|fix|docs|chore|refactor|test|ci|build|perf|style|revert)(\(.+\))?(!)?\:\s+.+'; then
   cat <<'EOF'
 {
   "hookSpecificOutput": {
