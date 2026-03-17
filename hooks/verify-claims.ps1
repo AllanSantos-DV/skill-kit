@@ -114,8 +114,8 @@ for ($i = $startIdx; $i -lt $lines.Count; $i++) {
 
 if ($unverified.Count -gt 0) {
     $unique = $unverified | Select-Object -Unique | Select-Object -First 10
-    $list = ($unique | ForEach-Object { "  - $_" }) -join "`n"
-    $msg = "UNVERIFIED FILE REFERENCES — these paths were mentioned without prior tool verification:`n$list`nVerify with tools (read_file, grep_search, list_dir) or mark as assumed."
+    $list = ($unique | ForEach-Object { "  - $_" }) -join [Environment]::NewLine
+    $msg = "UNVERIFIED FILE REFERENCES - these paths were mentioned without prior tool verification:" + [Environment]::NewLine + $list + [Environment]::NewLine + "Verify with tools (read_file, grep_search, list_dir) or mark as assumed."
     @{
         decision = "block"
         reason = $msg

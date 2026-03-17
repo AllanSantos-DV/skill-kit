@@ -76,11 +76,12 @@ foreach ($row in $rows) {
     $toolsCell  = $row.Groups[4].Value.Trim()
 
     # Skip 🟢 axes — no tool evidence required
-    if ($emoji -eq "`u{1F7E2}") {
+    # Use char literal instead of `u{} (PS 5.1 compat)
+    if ($emoji -eq [char]::ConvertFromUtf32(0x1F7E2)) {
         continue
     }
 
-    $emojiLabel = if ($emoji -eq "`u{1F7E1}") { "🟡" } else { "🔴" }
+    if ($emoji -eq [char]::ConvertFromUtf32(0x1F7E1)) { $emojiLabel = [char]::ConvertFromUtf32(0x1F7E1) } else { $emojiLabel = [char]::ConvertFromUtf32(0x1F534) }
 
     # Check if tools column is empty or just a dash
     if (-not $toolsCell -or $toolsCell -match '^\s*$' -or $toolsCell -match '^\s*[\-\x{2014}]\s*$') {
