@@ -18,24 +18,24 @@ hooks:
   PreToolUse:
     - type: command
       command: "bash ~/.copilot/hooks/scripts/pre-commit-guard.sh"
-      windows: "powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.copilot\\hooks\\scripts\\pre-commit-guard.ps1\""
+      windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\.copilot\hooks\scripts\pre-commit-guard.ps1'\""
       timeout: 5
   Stop:
     - type: command
       command: "bash ~/.copilot/hooks/scripts/stop-checklist.sh"
-      windows: "powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.copilot\\hooks\\scripts\\stop-checklist.ps1\""
+      windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\.copilot\hooks\scripts\stop-checklist.ps1'\""
       timeout: 10
     - type: command
       command: "bash ~/.copilot/hooks/scripts/verify-claims.sh"
-      windows: "powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.copilot\\hooks\\scripts\\verify-claims.ps1\""
+      windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\.copilot\hooks\scripts\verify-claims.ps1'\""
       timeout: 5
     - type: command
       command: "bash ~/.copilot/hooks/scripts/context-confidence-check.sh"
-      windows: "powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.copilot\\hooks\\scripts\\context-confidence-check.ps1\""
+      windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\.copilot\hooks\scripts\context-confidence-check.ps1'\""
       timeout: 10
     - type: command
       command: "bash ~/.copilot/hooks/scripts/skill-feedback.sh"
-      windows: "powershell -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.copilot\\hooks\\scripts\\skill-feedback.ps1\""
+      windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\.copilot\hooks\scripts\skill-feedback.ps1'\""
       timeout: 5
 ---
 
