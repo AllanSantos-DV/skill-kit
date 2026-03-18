@@ -125,19 +125,19 @@ while IFS= read -r filepath; do
   fi
 
   # Extract id
-  file_id=$(echo "$fm" | grep -E '^id:\s*' | sed 's/^id:\s*//' | tr -d '[:space:]')
+  file_id=$(echo "$fm" | grep -E '^id:\s*' | sed 's/^id:\s*//' | tr -d '[:space:]' || true)
   if [ -z "$file_id" ]; then
     continue
   fi
 
   # Extract tags — format: tags: [tag1, tag2]
-  tags_raw=$(echo "$fm" | grep -E '^tags:\s*\[' | sed 's/^tags:\s*\[//;s/\].*$//' | tr -d '[:space:]')
+  tags_raw=$(echo "$fm" | grep -E '^tags:\s*\[' | sed 's/^tags:\s*\[//;s/\].*$//' | tr -d '[:space:]' || true)
   if [ -z "$tags_raw" ]; then
     continue
   fi
 
   # Extract confidence
-  confidence=$(echo "$fm" | grep -E '^confidence:\s*' | sed 's/^confidence:\s*//' | tr -d '[:space:]')
+  confidence=$(echo "$fm" | grep -E '^confidence:\s*' | sed 's/^confidence:\s*//' | tr -d '[:space:]' || true)
   if [ -z "$confidence" ]; then
     confidence="0.5"
   fi
