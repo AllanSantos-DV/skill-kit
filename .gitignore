@@ -2,5 +2,6 @@
 .venv/
 .vscode/
 __pycache__/
+docs/maps/
 tests/
 !tests/structural/
