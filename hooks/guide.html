@@ -245,7 +245,9 @@
     <p class="card-desc">
       Guarda contra operações git perigosas. Intercepta chamadas a <code>run_in_terminal</code>
       que envolvem <code>git commit</code>, <code>git push</code> ou <code>git tag</code> e aplica
-      regras diferentes para cada uma.
+      regras diferentes para cada uma. Suporta comandos encadeados (<code>;</code>, <code>&&</code>,
+      <code>||</code>) — cada comando git é avaliado independentemente e a decisão mais restritiva
+      vence (deny &gt; ask &gt; allow).
     </p>
 
     <div class="section-label">Lógica detalhada</div>

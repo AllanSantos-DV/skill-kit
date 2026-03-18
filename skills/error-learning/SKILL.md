@@ -125,3 +125,13 @@ Archived: L003, L012, L018 → `~/.copilot/lessons/archive/`
 - **ALWAYS** classify the root cause — "I made a mistake" is not a classification
 - **ALWAYS** generalize beyond the specific case — a lesson that only covers one scenario is a note, not a lesson
 - Confidence starts at 0.7 — only increase when the same lesson prevents a recurrence or the user explicitly validates it as high-value
+
+## Integration with lesson-injector Hook
+
+The **lesson-injector** hook (`~/.copilot/hooks/scripts/lesson-injector.ps1`) automatically injects relevant lessons from `~/.copilot/lessons/` into the agent's context at PreToolUse. This closes the feedback loop:
+
+1. User corrects agent → **error-learning** skill creates a lesson
+2. Next interaction → **lesson-injector** hook injects relevant lessons
+3. Agent avoids repeating the same mistake
+
+You don't need to manually reference lessons — the hook handles injection based on tags and relevance.
