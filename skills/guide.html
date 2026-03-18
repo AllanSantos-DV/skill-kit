@@ -17,6 +17,16 @@
       margin: 0 auto;
       line-height: 1.6;
     }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 12px;
+      color: var(--vscode-textLink-foreground, #3794ff);
+      text-decoration: none;
+      font-size: 0.9em;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
     .header {
       margin-bottom: 32px;
       padding-bottom: 20px;
@@ -147,6 +157,7 @@
 </head>
 <body>
   <div class="header">
+    <a href="../index.html" class="back-link">← Home</a>
     <h1>📦 Guia de Skills <span class="count-badge">12</span></h1>
     <p>
       Skills são arquivos <code>SKILL.md</code> que injetam conhecimento especializado no agente de IA.
