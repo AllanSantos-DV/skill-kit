@@ -1,7 +1,9 @@
-# PreToolUse hook: guard git commit/push/tag
+# PreToolUse hook: guard git commit/push/tag (supports chained commands)
+# - Splits chained commands by ; && || (respecting quoted strings)
 # - commit: deny unless -m with conventional commit message; allow if valid
 # - push/tag: ask user for confirmation
-# - other commands: passthrough
+# - Most restrictive wins: deny > ask > allow
+# - PS 5.1 compatible
 try {
     $rawInput = @($input) -join "`n"
     if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
@@ -21,65 +23,86 @@ if ($input_json.tool_name -ne 'run_in_terminal' -and $input_json.tool_name -ne '
 $cmd = $input_json.tool_input.command
 if (-not $cmd) { exit 0 }
 
-# Check if it's a git commit, push or tag (handles flags like git -C /path commit)
-if ($cmd -notmatch 'git\s+(-[^\s]+\s+)*(commit|push|tag)') {
-    exit 0
-}
-
-$gitAction = $Matches[2]
-
-if ($gitAction -eq 'push') {
-    $result = @{
-        hookSpecificOutput = @{
-            permissionDecision = "ask"
-            additionalContext = "git push requires user confirmation"
+# Split chained commands by ; && || (respecting quoted strings)
+$subCommands = @()
+$current = ''
+$inSingle = $false
+$inDouble = $false
+for ($i = 0; $i -lt $cmd.Length; $i++) {
+    $c = $cmd[$i]
+    if ($c -eq "'" -and -not $inDouble) { $inSingle = -not $inSingle }
+    elseif ($c -eq '"' -and -not $inSingle) { $inDouble = -not $inDouble }
+    elseif (-not $inSingle -and -not $inDouble) {
+        if ($c -eq ';') {
+            $subCommands += $current.Trim()
+            $current = ''
+            continue
         }
-    } | ConvertTo-Json -Depth 3
-    Write-Output $result
-    exit 0
-}
-
-if ($gitAction -eq 'tag') {
-    $result = @{
-        hookSpecificOutput = @{
-            permissionDecision = "ask"
-            additionalContext = "git tag requires user confirmation"
+        if ($c -eq '&' -and ($i + 1) -lt $cmd.Length -and $cmd[$i + 1] -eq '&') {
+            $subCommands += $current.Trim()
+            $current = ''
+            $i++
+            continue
         }
-    } | ConvertTo-Json -Depth 3
-    Write-Output $result
-    exit 0
+        if ($c -eq '|' -and ($i + 1) -lt $cmd.Length -and $cmd[$i + 1] -eq '|') {
+            $subCommands += $current.Trim()
+            $current = ''
+            $i++
+            continue
+        }
+    }
+    $current += $c
 }
+if ($current.Trim()) { $subCommands += $current.Trim() }
 
-# git commit — check for conventional commit message
-# Support both -m and -am (combined add+message flag)
-if ($cmd -match '-a?m\s+["''](.+?)["'']' -or $cmd -match '-a?m\s+(\S+)') {
-    $commitMsg = $Matches[1]
-    # Case-insensitive per spec rule 15; includes revert type per FAQ
-    if ($commitMsg -match '(?i)^(feat|fix|docs|chore|refactor|test|ci|build|perf|style|revert)(\(.+\))?(!)?\:\s+.+') {
-        $result = @{
-            hookSpecificOutput = @{
-                permissionDecision = "allow"
-            }
-        } | ConvertTo-Json -Depth 3
-        Write-Output $result
-        exit 0
+# Evaluate each sub-command for git actions
+$finalDecision = 'allow'
+$contexts = @()
+$hasGitCommand = $false
+
+foreach ($sub in $subCommands) {
+    if ($sub -notmatch 'git\s+(-[^\s]+\s+)*(commit|push|tag)') { continue }
+    $hasGitCommand = $true
+    $action = $Matches[2]
+
+    if ($action -eq 'push') {
+        $contexts += 'git push requires user confirmation'
+        if ($finalDecision -ne 'deny') { $finalDecision = 'ask' }
+        continue
+    }
+
+    if ($action -eq 'tag') {
+        $contexts += 'git tag requires user confirmation'
+        if ($finalDecision -ne 'deny') { $finalDecision = 'ask' }
+        continue
+    }
+
+    # git commit — check for conventional commit message
+    if ($sub -match '-a?m\s+["''](.+?)["'']' -or $sub -match '-a?m\s+(\S+)') {
+        $commitMsg = $Matches[1]
+        if ($commitMsg -match '(?i)^(feat|fix|docs|chore|refactor|test|ci|build|perf|style|revert)(\(.+\))?(!)?\:\s+.+') {
+            # valid conventional commit — allow (don't override higher restriction)
+        } else {
+            $contexts += 'Commit message must follow conventional commits pattern (e.g. feat: add feature, fix(scope): description)'
+            $finalDecision = 'deny'
+        }
     } else {
-        $result = @{
-            hookSpecificOutput = @{
-                permissionDecision = "deny"
-                additionalContext = "Commit message must follow conventional commits pattern (e.g. feat: add feature, fix(scope): description)"
-            }
-        } | ConvertTo-Json -Depth 3
-        Write-Output $result
-        exit 0
+        $contexts += 'Commit must include -m with a conventional commit message'
+        $finalDecision = 'deny'
     }
 }
 
-# No -m flag
+# No git commands found — passthrough
+if (-not $hasGitCommand) { exit 0 }
+
 $result = @{
     hookSpecificOutput = @{
-        permissionDecision = "deny"
-        additionalContext = "Commit must include -m with a conventional commit message"
+        permissionDecision = $finalDecision
     }
-} | ConvertTo-Json -Depth 3
-Write-Output $result
+}
+if ($contexts.Count -gt 0) {
+    $result.hookSpecificOutput['additionalContext'] = ($contexts -join '; ')
+}
+
+$result | ConvertTo-Json -Depth 3
+Write-Output ''

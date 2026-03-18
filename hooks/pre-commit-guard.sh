@@ -1,8 +1,9 @@
 #!/bin/bash
-# PreToolUse hook: guard git commit/push/tag
+# PreToolUse hook: guard git commit/push/tag (supports chained commands)
+# - Splits chained commands by ; && || (respecting quoted strings)
 # - commit: deny unless -m with conventional commit message; allow if valid
 # - push/tag: ask user for confirmation
-# - other commands: passthrough
+# - Most restrictive wins: deny > ask > allow
 INPUT=$(cat 2>/dev/null || true)
 
 # Parse tool_name using jq, fallback to grep
@@ -24,71 +25,164 @@ else
   CMD=$(echo "$INPUT" | grep -o '"command"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
 fi
 
-# Check if it's a git commit, push or tag (handles flags like git -C /path commit)
-if ! echo "$CMD" | grep -qP 'git\s+(-[^ ]+\s+)*(commit|push|tag)'; then
+# Split chained commands by ; && || (respecting quoted strings)
+split_commands() {
+  local input="$1"
+  local len=${#input}
+  local current=""
+  local in_single=false
+  local in_double=false
+  local i=0
+  SUB_COMMANDS=()
+
+  while [ $i -lt $len ]; do
+    local c="${input:$i:1}"
+    if [ "$c" = "'" ] && [ "$in_double" = false ]; then
+      if [ "$in_single" = true ]; then in_single=false; else in_single=true; fi
+      current="${current}${c}"
+    elif [ "$c" = '"' ] && [ "$in_single" = false ]; then
+      if [ "$in_double" = true ]; then in_double=false; else in_double=true; fi
+      current="${current}${c}"
+    elif [ "$in_single" = false ] && [ "$in_double" = false ]; then
+      if [ "$c" = ";" ]; then
+        local trimmed
+        trimmed=$(echo "$current" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        [ -n "$trimmed" ] && SUB_COMMANDS+=("$trimmed")
+        current=""
+      elif [ "$c" = "&" ] && [ "${input:$((i+1)):1}" = "&" ]; then
+        local trimmed
+        trimmed=$(echo "$current" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        [ -n "$trimmed" ] && SUB_COMMANDS+=("$trimmed")
+        current=""
+        i=$((i + 1))
+      elif [ "$c" = "|" ] && [ "${input:$((i+1)):1}" = "|" ]; then
+        local trimmed
+        trimmed=$(echo "$current" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        [ -n "$trimmed" ] && SUB_COMMANDS+=("$trimmed")
+        current=""
+        i=$((i + 1))
+      else
+        current="${current}${c}"
+      fi
+    else
+      current="${current}${c}"
+    fi
+    i=$((i + 1))
+  done
+
+  local trimmed
+  trimmed=$(echo "$current" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+  [ -n "$trimmed" ] && SUB_COMMANDS+=("$trimmed")
+}
+
+# Evaluate a single sub-command; sets eval_decision and eval_context
+evaluate_git_command() {
+  local sub="$1"
+  eval_decision=""
+  eval_context=""
+
+  # Check if this sub-command contains git commit/push/tag
+  if ! echo "$sub" | grep -qP 'git\s+(-[^ ]+\s+)*(commit|push|tag)'; then
+    return 1  # not a git command we care about
+  fi
+
+  local action
+  action=$(echo "$sub" | grep -oP 'git\s+(-[^ ]+\s+)*\K(commit|push|tag)')
+
+  if [ "$action" = "push" ]; then
+    eval_decision="ask"
+    eval_context="git push requires user confirmation"
+    return 0
+  fi
+
+  if [ "$action" = "tag" ]; then
+    eval_decision="ask"
+    eval_context="git tag requires user confirmation"
+    return 0
+  fi
+
+  # git commit — check for conventional commit message
+  local commit_msg=""
+  commit_msg=$(echo "$sub" | grep -oP -- '-a?m\s+["\x27]?\K(.+?)(?=["\x27](\s|$)|$)')
+
+  if [ -z "$commit_msg" ]; then
+    eval_decision="deny"
+    eval_context="Commit must include -m with a conventional commit message"
+    return 0
+  fi
+
+  if echo "$commit_msg" | grep -qiP '^(feat|fix|docs|chore|refactor|test|ci|build|perf|style|revert)(\(.+\))?(!)?\:\s+.+'; then
+    eval_decision="allow"
+    return 0
+  else
+    eval_decision="deny"
+    eval_context="Commit message must follow conventional commits pattern (e.g. feat: add feature, fix(scope): description)"
+    return 0
+  fi
+}
+
+# Split and evaluate
+split_commands "$CMD"
+
+FINAL_DECISION="allow"
+CONTEXTS=""
+HAS_GIT=false
+
+for sub in "${SUB_COMMANDS[@]}"; do
+  if evaluate_git_command "$sub"; then
+    HAS_GIT=true
+
+    # Accumulate context
+    if [ -n "$eval_context" ]; then
+      if [ -n "$CONTEXTS" ]; then
+        CONTEXTS="${CONTEXTS}; ${eval_context}"
+      else
+        CONTEXTS="$eval_context"
+      fi
+    fi
+
+    # Most restrictive wins: deny > ask > allow
+    if [ "$eval_decision" = "deny" ]; then
+      FINAL_DECISION="deny"
+    elif [ "$eval_decision" = "ask" ] && [ "$FINAL_DECISION" != "deny" ]; then
+      FINAL_DECISION="ask"
+    fi
+  fi
+done
+
+# No git commands found — passthrough
+if [ "$HAS_GIT" = false ]; then
   exit 0
 fi
 
-# Extract git action (commit, push, or tag)
-GIT_ACTION=$(echo "$CMD" | grep -oP 'git\s+(-[^ ]+\s+)*\K(commit|push|tag)')
-
-if [ "$GIT_ACTION" = "push" ]; then
-  cat <<'EOF'
+# Build output JSON
+if [ -n "$CONTEXTS" ]; then
+  if command -v jq &>/dev/null; then
+    jq -n --arg decision "$FINAL_DECISION" --arg ctx "$CONTEXTS" \
+      '{"hookSpecificOutput":{"permissionDecision":$decision,"additionalContext":$ctx}}'
+  else
+    # Manual JSON — escape quotes in context
+    ESCAPED_CTX=$(echo "$CONTEXTS" | sed 's/"/\\"/g')
+    cat <<EOJSON
 {
   "hookSpecificOutput": {
-    "permissionDecision": "ask",
-    "additionalContext": "git push requires user confirmation"
+    "permissionDecision": "${FINAL_DECISION}",
+    "additionalContext": "${ESCAPED_CTX}"
   }
 }
-EOF
-  exit 0
-fi
-
-if [ "$GIT_ACTION" = "tag" ]; then
-  cat <<'EOF'
-{
-  "hookSpecificOutput": {
-    "permissionDecision": "ask",
-    "additionalContext": "git tag requires user confirmation"
-  }
-}
-EOF
-  exit 0
-fi
-
-# git commit — check for conventional commit message
-# Support both -m and -am (combined add+message flag)
-COMMIT_MSG=""
-COMMIT_MSG=$(echo "$CMD" | grep -oP -- '-a?m\s+["\x27]?\K(.+?)(?=["\x27](\s|$)|$)')
-
-if [ -z "$COMMIT_MSG" ]; then
-  cat <<'EOF'
-{
-  "hookSpecificOutput": {
-    "permissionDecision": "deny",
-    "additionalContext": "Commit must include -m with a conventional commit message"
-  }
-}
-EOF
-  exit 0
-fi
-
-# Validate conventional commit pattern (case-insensitive per spec rule 15; includes revert)
-if echo "$COMMIT_MSG" | grep -qiP '^(feat|fix|docs|chore|refactor|test|ci|build|perf|style|revert)(\(.+\))?(!)?\:\s+.+'; then
-  cat <<'EOF'
-{
-  "hookSpecificOutput": {
-    "permissionDecision": "allow"
-  }
-}
-EOF
+EOJSON
+  fi
 else
-  cat <<'EOF'
+  if command -v jq &>/dev/null; then
+    jq -n --arg decision "$FINAL_DECISION" \
+      '{"hookSpecificOutput":{"permissionDecision":$decision}}'
+  else
+    cat <<EOJSON
 {
   "hookSpecificOutput": {
-    "permissionDecision": "deny",
-    "additionalContext": "Commit message must follow conventional commits pattern (e.g. feat: add feature, fix(scope): description)"
+    "permissionDecision": "${FINAL_DECISION}"
   }
 }
-EOF
+EOJSON
+  fi
 fi
