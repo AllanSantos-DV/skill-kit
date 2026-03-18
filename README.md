@@ -1,6 +1,6 @@
 # Skill Kit
 
-Coleção de **skills** e **agents** para o **GitHub Copilot** no VS Code.
+Coleção de **skills**, **agents** e **hooks** para o **GitHub Copilot** no VS Code.
 
 > **Convenção de idioma**: Os arquivos `SKILL.md`, `.agent.md` e `references/` são escritos em **inglês** — o leitor é o agente de IA, treinado predominantemente em inglês. Os `README.md` são em **português** — o leitor é o desenvolvedor humano.
 
@@ -10,33 +10,41 @@ Agents são **personas determinísticas** que controlam como o Copilot opera. Ca
 
 | Agent | Escopo | Tools | Propósito |
 |-------|--------|-------|-----------|
+| [orchestrator](agents/orchestrator.agent.md) | Coordenação | Leitura + delegação | Avalia pedidos, coleta sinais, delega ao especialista certo com contexto enriquecido. Não edita código. |
 | [researcher](agents/researcher.agent.md) | Read-only | Busca, leitura, fetch | Entender intent, pesquisar, verificar fatos. Não edita nada. |
-| [validator](agents/validator.agent.md) | Read-only | Busca, leitura, fetch | Análise estruturada dos 6 eixos, classificar confiança, pesquisa ativa. Não edita nada. |
+| [validator](agents/validator.agent.md) | Read-only | Busca, leitura, fetch | Análise estruturada, classificar confiança, pesquisa ativa. Não edita nada. |
 | [implementor](agents/implementor.agent.md) | Full | Todas | Implementar com disciplina — planeja, raciocina, documenta decisões. |
 
 ### Cadeia de Agents (Handoffs)
 
-Os agents formam um workflow guiado com transições automáticas:
+O **orchestrator** é o ponto de entrada. Ele avalia o pedido, coleta sinais (escopo, risco, incógnitas) e delega ao especialista certo:
 
 ```
-┌─────────────┐   Validate →   ┌─────────────┐   Implement →   ┌─────────────┐
-│  Researcher │ ───────────────▶│  Validator   │───────────────▶│ Implementor │
-│             │                 │              │                 │             │
-│ ENTENDE     │                 │ ANALISA      │                 │ EXECUTA     │
-│ Pesquisa    │                 │ 6 eixos      │                 │ Plano →     │
-│ Verifica    │                 │ Confiança    │                 │ Código →    │
-│ Pergunta    │                 │ Pesquisa     │                 │ Task Map    │
-│             │                 │ ativa        │                 │             │
-│ 🔒 Read-only│                 │ 🔒 Read-only │                 │ 🔓 Full     │
-└─────────────┘                 └──────────────┘                 └─────────────┘
-                                                                       │
-                                                                 ← Research More
-                                                                       │
-                                                                 (volta pro Researcher
-                                                                  se descobrir gaps)
+                                    ┌──────────────┐
+                                    │ Orchestrator  │
+                                    │               │
+                                    │ AVALIA        │
+                                    │ Coleta sinais │
+                                    │ Delega        │
+                                    │               │
+                                    │ 🎯 Coordenação│
+                                    └──────┬────────┘
+                              ┌────────────┼────────────┐
+                              ▼            ▼            ▼
+                    ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+                    │  Researcher  │ │  Validator   │ │ Implementor  │
+                    │              │ │              │ │              │
+                    │ ENTENDE      │ │ ANALISA      │ │ EXECUTA      │
+                    │ 🔒 Read-only │ │ 🔒 Read-only │ │ 🔓 Full      │
+                    └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
+                           │     Validate → │  Implement →   │
+                           └────────────────┘────────────────┘
+                                             │
+                                       ← Research More
 ```
 
 **O workflow é guiado, não forçado.** Você pode:
+- Usar o Orchestrator como ponto de entrada — ele decide a rota
 - Seguir a cadeia completa: Researcher → Validator → Implementor
 - Pular etapas: selecionar Implementor direto pra tarefas simples
 - Voltar atrás: o Implementor tem handoff de volta pro Researcher se descobrir que precisa de mais pesquisa
@@ -49,6 +57,7 @@ Os agents formam um workflow guiado com transições automáticas:
 | "A spec não é pública" (sem checar) | Researcher/Validator **verificam ativamente** com fetch antes de declarar |
 | Validação depende de boa vontade do LLM | Tools do Validator são **fisicamente** restritas a leitura |
 | Uma persona faz tudo (mal) | Cada agent faz **uma coisa bem** |
+| Você decide quem chamar pra cada tarefa | Orchestrator **calibra** o especialista com base em sinais |
 
 ### Instalação dos Agents
 
@@ -65,32 +74,43 @@ Os agents aparecem automaticamente no dropdown do Chat no VS Code.
 | [agent-creator](skills/agent-creator/) | Guia completo para criar custom agents (.agent.md) — tool restrictions, handoffs, orchestration |
 | [contextacao](skills/contextacao/) | Análise estruturada de contexto antes de agir — questionar premissas, dependências e pontos cegos |
 | [doc-to-markdown](skills/doc-to-markdown/) | Converter documentos (Word, Excel, PDF, PowerPoint, etc.) para Markdown consumível por LLMs |
-| [task-intent](skills/task-intent/) | Entender antes de implementar — força o agente a compreender POR QUÊ/PRA QUÊ/PRA QUEM antes de escrever código |
-| [task-map](skills/task-map/) | Externalizar análise e encadear tarefas — persiste decisões e contexto entre sessões |
+| [error-learning](skills/error-learning/) | Registrar e generalizar erros do agente em lições reutilizáveis |
+| [hooks-creator](skills/hooks-creator/) | Criar e configurar hooks de lifecycle para agents (PreToolUse, Stop, etc.) |
+| [markdown-to-document](skills/markdown-to-document/) | Gerar documentos formatados (PPTX, DOCX, XLSX, PDF) a partir de Markdown |
+| [safety-check](skills/safety-check/) | Análise de risco com peso variável — Light (scan rápido), Standard (análise dimensional), Deep (investigação completa) |
+| [skill-benchmark](skills/skill-benchmark/) | Framework de benchmark A/B para medir eficácia de skills com dados |
 | [skill-creator](skills/skill-creator/) | Guia completo para criar skills bem estruturadas do zero |
 | [skill-manager-guide](skills/skill-manager-guide/) | Como usar a extensão Skill Manager for Copilot |
+| [task-intent](skills/task-intent/) | Entender antes de implementar — força o agente a compreender POR QUÊ/PRA QUÊ/PRA QUEM antes de escrever código |
+| [task-map](skills/task-map/) | Externalizar análise e encadear tarefas — persiste decisões e contexto entre sessões |
 
 ### Composição de Skills
 
-As skills são projetadas para se **complementar** conforme a complexidade da tarefa:
+As skills aceitam **peso variável** — a mesma skill pode ser invocada em profundidades diferentes. O orchestrator calibra a profundidade com base em sinais (escopo, risco, incógnitas):
 
 ```
 Tarefa simples (rename, fix):
-  → task-intent (rápido: "por quê?" → implementa)
+  → task-intent (Light) → implementa
 
 Tarefa moderada (feature, refactor):
-  → task-intent (entende intenção → planeja → raciocina)
-  → task-map (externaliza decisões que afetam trabalho futuro)
+  → task-intent (Standard) → plano + raciocínio
+  → task-map (Standard) → externaliza decisões
 
 Tarefa complexa (arquitetura, migração):
-  → task-intent (análise profunda de intenção)
-  → task-map (mapa completo com chain context)
-  → contextação (análise estruturada dos 6 eixos)
+  → task-intent (Deep) → análise profunda
+  → contextação (Complex) → 6 eixos
+  → safety-check (Standard/Deep) → análise de risco dimensional
+  → task-map (Deep) → mapa com chain context
+
+Quando o agente erra:
+  → error-learning → registra, generaliza, previne recorrência
 ```
+
+O modelo de peso (Light / Standard / Deep) permite que o esforço escale com a complexidade. Uma tarefa trivial recebe validação rápida; uma migração crítica recebe análise completa com avaliação de riscos.
 
 ### Na prática: como usar no dia a dia
 
-As três skills de disciplina (**task-intent**, **task-map**, **contextação**) trabalham juntas, mas sem cerimônia. Não é um processo burocrático — é um reflexo que o agente incorpora.
+As skills de disciplina (**task-intent**, **task-map**, **contextação**, **safety-check**, **error-learning**) trabalham juntas, mas sem cerimônia. Não é um processo burocrático — é um reflexo que o agente incorpora.
 
 **O fluxo real:**
 
@@ -104,6 +124,10 @@ As três skills de disciplina (**task-intent**, **task-map**, **contextação**)
 
 5. **Se a tarefa é complexa → contextação.** Quando envolve múltiplas tecnologias, dependências externas, risco em produção — o agente aprofunda com análise dos 6 eixos (premissas, escopo, dependências, fontes de verdade, modos de falha, stakeholders).
 
+6. **Se há risco → safety-check.** Avalia dimensões de risco (segurança, integridade de dados, compatibilidade, reversibilidade) com profundidade proporcional ao impacto.
+
+7. **Se o agente erra → error-learning.** Quando você corrige o agente, a skill registra o erro, analisa a causa raiz e generaliza em uma lição que previne recorrência.
+
 **O que muda:**
 
 | Sem as skills | Com as skills |
@@ -112,8 +136,25 @@ As três skills de disciplina (**task-intent**, **task-map**, **contextação**)
 | Cada tarefa começa do zero | Cada tarefa lê o **For Next** da anterior e começa informada |
 | Decisões se perdem quando a conversa fica longa | Decisões ficam no mapa — sobrevivem à compressão de contexto |
 | Agente entrega rápido mas errado | Agente entrega certeiro porque entendeu a intenção real |
+| Agente repete o mesmo erro | error-learning registra a lição — o erro não se repete |
+| Mudança arriscada sem avaliação | safety-check dimensiona o risco antes de agir |
 
 **Nota:** o agente escala esforço naturalmente. Um rename não ganha análise de 6 eixos. Uma migração de banco ganha tudo. Eficiência sem burocracia.
+
+## Hooks
+
+Hooks são **scripts de lifecycle** que rodam automaticamente durante a interação do agente. Funcionam como guardrails em tempo real. Cada hook tem versão `.ps1` (Windows) e `.sh` (macOS/Linux), e são configurados no frontmatter dos agents.
+
+| Hook | Evento | Propósito |
+|------|--------|-----------|
+| [pre-commit-guard](hooks/pre-commit-guard.ps1) | PreToolUse | Garante conventional commits. Bloqueia commits sem formato adequado. |
+| [output-format](hooks/output-format.ps1) | PreToolUse | Injeta regras de formatação de output no contexto do agente. |
+| [verify-claims](hooks/verify-claims.ps1) | PreToolUse | Exige verificação de fatos antes de declarar afirmações. |
+| [context-confidence-check](hooks/context-confidence-check.ps1) | PreToolUse | Avalia confiança do contexto antes de agir — previne hallucination. |
+| [skill-feedback](hooks/skill-feedback.ps1) | PreToolUse | Injeta protocolo de feedback para captura estruturada. |
+| [lesson-injector](hooks/lesson-injector.ps1) | PreToolUse | Injeta lições aprendidas relevantes (do error-learning) no contexto. |
+| [stop-checklist](hooks/stop-checklist.ps1) | Stop | Checklist de qualidade antes de encerrar — verifica se testes rodaram, se task-map é necessário, etc. |
+| [subagent-audit](hooks/subagent-audit.ps1) | SubagentStart | Audita delegações de sub-agentes — verifica se instruções estão completas. |
 
 ## Como Usar
 
@@ -124,17 +165,34 @@ As três skills de disciplina (**task-intent**, **task-map**, **contextação**)
 3. Cole: `https://github.com/AllanSantos-DV/skill-kit.git`
 4. Execute `Skills: Pull All`
 
-### Agents (manual)
+### Agents e Hooks (manual)
 
 1. Clone ou baixe este repositório
-2. Copie a pasta `agents/` para:
-   - **Global**: `~/.copilot/agents/` (disponível em todos os workspaces)
-   - **Por projeto**: `.github/agents/` (compartilhado com o time)
+2. Copie as pastas `agents/` e `hooks/` para:
+   - **Global**: `~/.copilot/agents/` e `~/.copilot/hooks/` (disponível em todos os workspaces)
+   - **Por projeto**: `.github/agents/` e `.github/hooks/` (compartilhado com o time)
 3. Os agents aparecem no dropdown de agents do Chat no VS Code
 
 ### Tudo junto
 
-Skills + Agents formam o ecossistema completo. Os agents consomem a disciplina das skills e garantem que ela seja aplicada via restrições determinísticas de tools.
+Skills + Agents + Hooks formam o ecossistema completo. Os agents consomem a disciplina das skills, os hooks garantem guardrails em tempo real, e as restrições determinísticas de tools impedem desvios.
+
+## Testes
+
+Testes estruturais em `tests/structural/` validam a integridade dos agents e skills:
+
+- **Agents**: verifica frontmatter, hooks referenciados, references, sincronia com cópias instaladas
+- **Skills**: verifica frontmatter, estrutura de diretório, mecanismo de feedback, sincronia
+
+Para rodar:
+
+```powershell
+# Agents
+powershell -NoProfile -ExecutionPolicy Bypass -File "tests/structural/test-agents-structure.ps1"
+
+# Skills
+powershell -NoProfile -ExecutionPolicy Bypass -File "tests/structural/test-skills-structure.ps1"
+```
 
 ## Contribuindo
 
@@ -146,7 +204,7 @@ Crie uma pasta em `skills/` com um `SKILL.md`:
 skills/
   nome-da-skill/
     SKILL.md        ← Obrigatório (em inglês)
-    FEEDBACK.md     ← Opcional
+    FEEDBACK.md     ← Obrigatório (captura de feedback)
     references/     ← Opcional (em inglês)
 ```
 
@@ -165,6 +223,21 @@ agents/
 ```
 
 Consulte a [documentação de custom agents](https://code.visualstudio.com/docs/copilot/customization/custom-agents) do VS Code.
+
+### Hooks
+
+Crie scripts `.ps1` e `.sh` em `hooks/`:
+
+```
+hooks/
+  nome-do-hook.ps1   ← Windows (PowerShell 5.1+)
+  nome-do-hook.sh    ← macOS/Linux (bash)
+```
+
+Use a skill **hooks-creator** para orientação completa:
+```
+/hooks-creator Descreva o evento e propósito do hook
+```
 
 ## Licença
 
