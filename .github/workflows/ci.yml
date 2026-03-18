@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Structural Tests (pwsh available on both OSes) ---
+      - name: Run agent structure tests
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File "tests/structural/test-agents-structure.ps1"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Run skill structure tests
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File "tests/structural/test-skills-structure.ps1"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      # --- Hook Tests (PS1 — Windows only, tests call `powershell` internally) ---
+      - name: Run pre-commit-guard hook tests (PS1)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File "tests/hooks/test-pre-commit-guard.ps1"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Run lesson-injector hook tests (PS1)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File "tests/hooks/test-lesson-injector.ps1"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      # --- Hook Tests (SH — Linux only, requires jq which is pre-installed) ---
+      - name: Run pre-commit-guard hook tests (SH)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          chmod +x tests/hooks/test-pre-commit-guard.sh
+          chmod +x hooks/pre-commit-guard.sh
+          bash tests/hooks/test-pre-commit-guard.sh
+
+      - name: Run lesson-injector hook tests (SH)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          chmod +x tests/hooks/test-lesson-injector.sh
+          chmod +x hooks/lesson-injector.sh
+          bash tests/hooks/test-lesson-injector.sh
