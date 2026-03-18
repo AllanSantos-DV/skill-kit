@@ -2,20 +2,21 @@
 name: researcher
 description: "Research and understand before acting. Investigates intent, gathers context, verifies facts. Read-only — cannot edit files or run commands."
 tools:
-  # Read-only built-in tool sets
-  - search        # codebase, usages, textSearch, fileSearch, searchResults, changes
-  - read          # readFile, problems, listDirectory, selection, terminalLastCommand, terminalSelection
-  - web           # fetch, githubRepo, openSimpleBrowser
-  - todo          # todos — track research progress
-  # MCP servers — add your servers below using <server>/* syntax
-  # - my-mcp-server/*
-agents: []
+  - search
+  - read
+  - web
+  - todo
 handoffs:
   - label: "Validate Context →"
     agent: validator
     prompt: "Validate the research and analysis above. Check assumptions, classify confidence, identify gaps, and perform active research on any unverified claims before approving for implementation."
     send: false
 hooks:
+  PreToolUse:
+    - type: command
+      command: "bash ~/.copilot/hooks/scripts/pre-commit-guard.sh"
+      windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\.copilot\hooks\scripts\pre-commit-guard.ps1'\""
+      timeout: 5
   Stop:
     - type: command
       command: "bash ~/.copilot/hooks/scripts/output-format.sh"
