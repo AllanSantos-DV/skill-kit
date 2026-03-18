@@ -238,6 +238,8 @@ Not all output mechanisms inject content into the agent's context. Some only dis
 > }
 > ```
 
+> **⚠️ Agents with ONLY `Stop` hooks (no `PreToolUse`) crash as subagents.** When an agent defines `hooks:` with only `Stop` events and no `PreToolUse`, invoking it via `runSubagent` crashes with `Cannot read properties of undefined (reading 'length')`. **Workaround:** Always include at least one `PreToolUse` hook entry. For read-only agents, use a no-op guard (e.g., `pre-commit-guard` which only fires on destructive operations).
+
 > **⚠️ `systemMessage` is UI-only — the agent never sees it.** It displays a warning banner in the chat for the user. If you need the agent to act on a Stop hook, use `decision: "block"` with `reason` — this IS injected into the agent's context. Putting `systemMessage` inside `hookSpecificOutput` is never valid — it's not a recognized field there and causes unintended blocking.
 
 ## Cross-Platform Scripts
