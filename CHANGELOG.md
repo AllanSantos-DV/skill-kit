@@ -3,15 +3,11 @@
 Todas as mudanças notáveis do projeto são documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
-## [Não publicado]
+## [0.5.0] — 2026-03-18
 
 ### Adicionado
 - CI com GitHub Actions: testes estruturais e de hooks em matrix Windows + Ubuntu
 - Testes unitários para hook `pre-commit-guard` (PS1 + SH, 20 casos cada)
-
-## [0.5.0] — 2026-03-18
-
-### Adicionado
 - Skill **safety-check**: análise de risco com peso variável (Light/Standard/Deep)
 - Skill **error-learning**: registro e generalização de erros em lições reutilizáveis
 - Hook **lesson-injector**: injeta lições aprendidas no contexto do agente
@@ -34,7 +30,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - Bug de crash de subagent com hooks que tinham apenas `Stop` (sem `PreToolUse`)
 - `.sh` hook tests fazem SKIP no Windows em vez de FAIL
 
-## [0.4.0] — 2026-03-16
+## [0.4.0] — 2026-03-17
 
 ### Adicionado
 - Skill **skill-benchmark**: framework de benchmark A/B para medir efetividade de skills
@@ -60,7 +56,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - Compatibilidade com PowerShell 5.1 nos hooks
 - Conformidade com spec de conventional commits
 
-## [0.3.0] — 2026-03-10
+## [0.3.0] — 2026-03-17
 
 ### Adicionado
 - Hook **pre-commit-guard**: guarda contra `git push`, `git tag` sem confirmação; valida conventional commits
@@ -76,7 +72,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ### Removido
 - **BREAKING**: Comandos e infraestrutura do Claude Code removidos (`feat!: remove Claude Code`)
 
-## [0.2.0] — 2026-03-05
+## [0.2.0] — 2026-03-16
 
 ### Adicionado
 - Skill **hooks-creator**: criação de hooks de lifecycle para agents
@@ -102,7 +98,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - Single-quote path em comandos Windows
 - Qualidade de dados em hooks (13 correções)
 
-## [0.1.0] — 2026-02-28
+## [0.1.0] — 2026-03-11
 
 ### Adicionado
 - Skill **skill-manager-guide**: guia de uso da extensão Skill Manager
