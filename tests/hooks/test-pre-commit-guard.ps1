@@ -225,6 +225,78 @@ Assert-ContextContains $out 'confirmation' '19. push context mentions confirmati
 $out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git commit'
 Assert-ContextContains $out '-m' '20. no-message context mentions -m'
 
+# ---------------------------------------------------------------------------
+Write-Host "`n--- New destructive command guards ---" -ForegroundColor White
+# ---------------------------------------------------------------------------
+
+# 21. git clean -fd -> deny
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git clean -fd'
+Assert-Decision $out 'deny' '21. git clean -fd -> deny'
+
+# 22. git clean -fdx -> deny
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git clean -fdx'
+Assert-Decision $out 'deny' '22. git clean -fdx -> deny'
+
+# 23. git clean -xfd -> deny
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git clean -xfd'
+Assert-Decision $out 'deny' '23. git clean -xfd -> deny'
+
+# 24. git clean -fd context message
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git clean -fd'
+Assert-ContextContains $out 'untracked files permanently' '24. git clean context mentions untracked files'
+
+# 25. git checkout -- . -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git checkout -- .'
+Assert-Decision $out 'ask' '25. git checkout -- . -> ask'
+
+# 26. git checkout -- src/file.ts -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git checkout -- src/file.ts'
+Assert-Decision $out 'ask' '26. git checkout -- src/file.ts -> ask'
+
+# 27. git checkout -- context message
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git checkout -- .'
+Assert-ContextContains $out 'working tree changes' '27. git checkout -- context mentions working tree changes'
+
+# 28. git branch -D feature -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git branch -D feature-branch'
+Assert-Decision $out 'ask' '28. git branch -D feature-branch -> ask'
+
+# 29. git branch -D context message
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git branch -D feature-branch'
+Assert-ContextContains $out 'force-deletes' '29. git branch -D context mentions force-deletes'
+
+# 30. git branch -d (lowercase) should NOT be caught — passthrough
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git branch -d feature-branch'
+Assert-NoOutput $out '30. git branch -d (lowercase) -> no output (not force delete)'
+
+# 31. git stash drop -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git stash drop'
+Assert-Decision $out 'ask' '31. git stash drop -> ask'
+
+# 32. git stash clear -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git stash clear'
+Assert-Decision $out 'ask' '32. git stash clear -> ask'
+
+# 33. git stash drop context message
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git stash drop'
+Assert-ContextContains $out 'stashed changes' '33. git stash drop context mentions stashed changes'
+
+# 34. Remove-Item -Recurse -Force -> deny
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'Remove-Item -Recurse -Force C:\temp'
+Assert-Decision $out 'deny' '34. Remove-Item -Recurse -Force -> deny'
+
+# 35. Remove-Item -Force -Recurse (reversed flags) -> deny
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'Remove-Item -Force -Recurse C:\temp'
+Assert-Decision $out 'deny' '35. Remove-Item -Force -Recurse (reversed) -> deny'
+
+# 36. Remove-Item -Recurse -Force context message
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'Remove-Item -Recurse -Force C:\temp'
+Assert-ContextContains $out 'destructive' '36. Remove-Item context mentions destructive'
+
+# 37. git clean + git checkout -- chained (deny wins over ask)
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git clean -fd && git checkout -- .'
+Assert-Decision $out 'deny' '37. git clean + git checkout -- chained -> deny (deny wins)'
+
 # ===========================================================================
 # Summary
 # ===========================================================================

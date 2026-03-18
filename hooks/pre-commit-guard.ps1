@@ -1,7 +1,16 @@
-# PreToolUse hook: guard git commit/push/tag (supports chained commands)
+# PreToolUse hook: guard destructive commands (supports chained commands)
 # - Splits chained commands by ; && || (respecting quoted strings)
-# - commit: deny unless -m with conventional commit message; allow if valid
-# - push/tag: ask user for confirmation
+# - git commit: deny unless -m with conventional commit message
+# - git push/tag: ask user for confirmation
+# - git push --force/--force-with-lease: deny (destructive)
+# - git reset --hard: deny (data loss)
+# - git rebase: ask (history rewrite)
+# - git clean -f*: deny (removes untracked files)
+# - git checkout -- <path>: ask (discards working tree changes)
+# - git branch -D: ask (force-deletes branch)
+# - git stash drop/clear: ask (loses stashed changes)
+# - Remove-Item -Recurse -Force: deny (PS equivalent of rm -rf)
+# - Destructive filesystem commands (rm -rf, etc.): deny
 # - Most restrictive wins: deny > ask > allow
 # - PS 5.1 compatible
 try {
@@ -61,7 +70,82 @@ $contexts = @()
 $hasGitCommand = $false
 
 foreach ($sub in $subCommands) {
-    if ($sub -notmatch 'git\s+(-[^\s]+\s+)*(commit|push|tag)') { continue }
+    # --- Destructive filesystem commands ---
+    if ($sub -match '\brm\s+.*-[rR]' -or $sub -match '\brm\s+-[fF][rR]' -or $sub -match '\brm\s+-[rR][fF]' -or
+        $sub -match '\brmdir\s+/[sS]' -or $sub -match '\bdel\s+/[sS]' -or
+        $sub -match '\bformat\s+[a-zA-Z]:' -or $sub -match '\bmkfs\b') {
+        $hasGitCommand = $true
+        $contexts += "Destructive filesystem command requires confirmation: $sub"
+        $finalDecision = 'deny'
+        continue
+    }
+
+    # --- Git destructive commands ---
+    # git reset --hard
+    if ($sub -match 'git\s+(-[^\s]+\s+)*reset\s+--hard') {
+        $hasGitCommand = $true
+        $contexts += 'git reset --hard causes data loss — denied'
+        $finalDecision = 'deny'
+        continue
+    }
+
+    # git push --force / --force-with-lease
+    if ($sub -match 'git\s+(-[^\s]+\s+)*push\s+.*--force') {
+        $hasGitCommand = $true
+        $contexts += 'git push --force rewrites remote history — denied'
+        $finalDecision = 'deny'
+        continue
+    }
+
+    # git rebase (interactive or not)
+    if ($sub -match 'git\s+(-[^\s]+\s+)*rebase\b') {
+        $hasGitCommand = $true
+        $contexts += 'git rebase rewrites history — requires confirmation'
+        if ($finalDecision -ne 'deny') { $finalDecision = 'ask' }
+        continue
+    }
+
+    # git clean with -f flag (removes untracked files permanently)
+    if ($sub -match 'git\s+(-[^\s]+\s+)*clean\s+.*-[a-zA-Z]*f') {
+        $hasGitCommand = $true
+        $contexts += 'git clean removes untracked files permanently — denied'
+        $finalDecision = 'deny'
+        continue
+    }
+
+    # git checkout -- (discards working tree changes)
+    if ($sub -match 'git\s+(-[^\s]+\s+)*checkout\s+.*--\s') {
+        $hasGitCommand = $true
+        $contexts += 'git checkout -- discards working tree changes — requires confirmation'
+        if ($finalDecision -ne 'deny') { $finalDecision = 'ask' }
+        continue
+    }
+
+    # git branch -D (force delete)
+    if ($sub -cmatch 'git\s+(-[^\s]+\s+)*branch\s+.*-D') {
+        $hasGitCommand = $true
+        $contexts += 'git branch -D force-deletes a branch — requires confirmation'
+        if ($finalDecision -ne 'deny') { $finalDecision = 'ask' }
+        continue
+    }
+
+    # git stash drop / git stash clear
+    if ($sub -match 'git\s+(-[^\s]+\s+)*stash\s+(drop|clear)\b') {
+        $hasGitCommand = $true
+        $contexts += 'git stash drop/clear loses stashed changes — requires confirmation'
+        if ($finalDecision -ne 'deny') { $finalDecision = 'ask' }
+        continue
+    }
+
+    # Remove-Item -Recurse -Force (PowerShell equivalent of rm -rf)
+    if ($sub -match '\b(Remove-Item|ri|del|erase|rd|rmdir)\b.*-Recurse.*-Force|\b(Remove-Item|ri|del|erase|rd|rmdir)\b.*-Force.*-Recurse') {
+        $hasGitCommand = $true
+        $contexts += 'Remove-Item -Recurse -Force is destructive — denied'
+        $finalDecision = 'deny'
+        continue
+    }
+
+    if ($sub -notmatch 'git\s+(-[^\s]+\s+)*(commit|push|tag)\b') { continue }
     $hasGitCommand = $true
     $action = $Matches[2]
 
