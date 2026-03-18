@@ -147,7 +147,7 @@
 </head>
 <body>
   <div class="header">
-    <h1>📦 Guia de Skills <span class="count-badge">10</span></h1>
+    <h1>📦 Guia de Skills <span class="count-badge">12</span></h1>
     <p>
       Skills são arquivos <code>SKILL.md</code> que injetam conhecimento especializado no agente de IA.
       Cada skill ensina padrões, workflows e técnicas específicas de um domínio — funcionando como
@@ -265,6 +265,42 @@
     </ul>
   </div>
 
+  <!-- error-learning -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">🧠</span>
+      <h3>error-learning</h3>
+      <span class="category-badge category-workflow">Workflow Skill</span>
+    </div>
+    <p class="card-desc">
+      Registra e generaliza erros do agente em lições reutilizáveis. Quando o usuário corrige o agente,
+      esta skill analisa a causa raiz, generaliza o erro em uma regra genérica e persiste como lição
+      em <code>~/.copilot/lessons/</code> para prevenir recorrência.
+    </p>
+    <div class="section-label">Quando usar</div>
+    <ul class="use-list">
+      <li>O usuário corrigiu o agente</li>
+      <li>Capturar o que deu errado</li>
+      <li>Analisar causa raiz</li>
+      <li>Generalizar correções em lições</li>
+      <li>Prevenir erros recorrentes</li>
+    </ul>
+    <div class="section-label">Quando NÃO usar</div>
+    <ul class="use-list dont">
+      <li>Debugging geral</li>
+      <li>Escrever testes</li>
+      <li>Code review</li>
+    </ul>
+    <div class="section-label">Capacidades principais</div>
+    <ul class="features">
+      <li>Classificação de causa raiz: wrong-assumption, missing-context, unknown-pattern, wrong-scope, skipped-verification</li>
+      <li>Generalização: transforma caso específico em regra genérica que cobre cenários similares</li>
+      <li>Persistência em <code>~/.copilot/lessons/L{NNN}-{slug}.md</code> com template estruturado</li>
+      <li>Tags de action (create, modify, fix) e domain (git, regex, hooks, yaml) para matching</li>
+      <li>Consolidação automática quando 30+ lições acumulam — merge de clusters similares</li>
+    </ul>
+  </div>
+
   <!-- hooks-creator -->
   <div class="card">
     <div class="card-header">
@@ -335,6 +371,42 @@
       <li>Script <code>analyze_template.py</code> extrai perfis de estilo de documentos existentes</li>
       <li>Scripts de auditoria: <code>audit_overflow.py</code>, <code>check_placeholders.py</code></li>
       <li>MS Project gera MSPDI XML (formato de intercâmbio oficial, abre nativamente no Project)</li>
+    </ul>
+  </div>
+
+  <!-- safety-check -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">🛡️</span>
+      <h3>safety-check</h3>
+      <span class="category-badge category-workflow">Workflow Skill</span>
+    </div>
+    <p class="card-desc">
+      Análise de risco com peso variável antes de agir. Aceita três níveis de profundidade —
+      Light (scan rápido), Standard (análise dimensional) e Deep (investigação completa com evidências).
+      Pode ser invocada múltiplas vezes no mesmo fluxo com peso crescente.
+    </p>
+    <div class="section-label">Quando usar</div>
+    <ul class="use-list">
+      <li>Avaliar riscos de segurança</li>
+      <li>Integridade de dados</li>
+      <li>Compatibilidade retroativa</li>
+      <li>Impacto operacional</li>
+      <li>Avaliar reversibilidade</li>
+    </ul>
+    <div class="section-label">Quando NÃO usar</div>
+    <ul class="use-list dont">
+      <li>Penetration testing</li>
+      <li>Auditorias de compliance</li>
+      <li>Ferramentas de análise estática</li>
+    </ul>
+    <div class="section-label">Capacidades principais</div>
+    <ul class="features">
+      <li>Modelo de peso: Light (Risk Pulse — 1 frase por dimensão), Standard (Risk Radar — análise dimensional), Deep (investigação completa com evidências)</li>
+      <li>5 dimensões de risco: Security, Data Integrity, Backward Compatibility, Operational, Reversibility (multiplicador)</li>
+      <li>Reversibilidade como multiplicador: amplifica peso de outras dimensões quando ação é irreversível</li>
+      <li>Output estruturado: Risk Pulse (Light) ou Risk Radar com tabela de dimensões (Standard/Deep)</li>
+      <li>Invocação incremental: pode começar em Light e escalar para Deep se sinais de risco emergem</li>
     </ul>
   </div>
 
