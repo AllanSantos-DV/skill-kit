@@ -51,6 +51,7 @@ handoffs:
 | `tools` | No | string[] | Tool sets the agent can use. **Omit = inherit all. Declare = override.** |
 | `agents` | No | string[] | Sub-agents this agent can invoke. `[]` = none, `['*']` = all, list = specific. |
 | `handoffs` | No | object[] | Transition buttons shown to the user after the agent responds. |
+| `hooks` | No | object | Lifecycle hooks (PreToolUse, Stop, etc.). See **hooks-creator** skill for full guide. |
 | `model` | No | string | Force a specific model (e.g. `copilot-chat-fast`). |
 | `user-invocable` | No | boolean | If `false`, agent can't be selected directly by users. Default: `true`. |
 | `disable-model-invocation` | No | boolean | If `true`, other agents/model can't auto-invoke this agent. Default: `false`. |
