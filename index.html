@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skill Kit</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+      font-size: var(--vscode-font-size, 13px);
+      color: var(--vscode-editor-foreground, #ccc);
+      background: var(--vscode-editor-background, #1e1e1e);
+      padding: 32px 24px;
+      max-width: 900px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    a { color: var(--vscode-textLink-foreground, #4a9cd6); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      font-family: var(--vscode-editor-font-family, 'Cascadia Code', Consolas, monospace);
+      background: rgba(128,128,128,0.12);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 0.92em;
+    }
+
+    /* Header */
+    .header {
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.25));
+    }
+    .header h1 {
+      font-size: 1.8em;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+    .header p {
+      color: var(--vscode-descriptionForeground, #999);
+      font-size: 0.95em;
+      line-height: 1.5;
+    }
+    .version-badge {
+      display: inline-block;
+      background: rgba(74, 156, 214, 0.15);
+      color: #4a9cd6;
+      border: 1px solid rgba(74, 156, 214, 0.3);
+      font-size: 0.7em;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+      vertical-align: middle;
+      margin-left: 10px;
+      letter-spacing: 0.03em;
+    }
+    .stats {
+      margin-top: 12px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .stat {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9em;
+      color: var(--vscode-editor-foreground, #ccc);
+    }
+    .stat-number {
+      font-weight: 700;
+      color: var(--vscode-textLink-foreground, #4a9cd6);
+    }
+
+    /* Cards */
+    .card {
+      background: var(--vscode-editorWidget-background, #252526);
+      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.2));
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      display: block;
+      color: inherit;
+    }
+    a.card:hover {
+      border-color: var(--vscode-textLink-foreground, #4a9cd6);
+      box-shadow: 0 0 0 1px rgba(74, 156, 214, 0.15);
+      text-decoration: none;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .card-icon {
+      font-size: 1.3em;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: rgba(128,128,128,0.1);
+      flex-shrink: 0;
+    }
+    .card-header h2 {
+      font-size: 1.15em;
+      font-weight: 600;
+      flex: 1;
+    }
+    .card-desc {
+      color: var(--vscode-descriptionForeground, #999);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .card-arrow {
+      font-size: 0.85em;
+      color: var(--vscode-textLink-foreground, #4a9cd6);
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .count-badge {
+      display: inline-block;
+      background: var(--vscode-badge-background, #4d4d4d);
+      color: var(--vscode-badge-foreground, #fff);
+      font-size: 0.75em;
+      padding: 2px 10px;
+      border-radius: 12px;
+      margin-left: 8px;
+      font-weight: 600;
+    }
+
+    /* Mini list */
+    .section-label {
+      font-size: 0.78em;
+      font-weight: 600;
+      color: var(--vscode-descriptionForeground, #999);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
+    .mini-list {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .mini-list li {
+      font-size: 0.85em;
+      padding: 3px 10px;
+      border-radius: 4px;
+      background: var(--vscode-badge-background, #4d4d4d);
+      color: var(--vscode-badge-foreground, #fff);
+    }
+
+    /* Badges */
+    .badge {
+      font-size: 0.68em;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+    .badge-coordinator {
+      background: rgba(155, 89, 182, 0.15);
+      color: #b07ed4;
+      border: 1px solid rgba(155, 89, 182, 0.3);
+    }
+    .badge-readonly {
+      background: rgba(214, 148, 74, 0.15);
+      color: #d6944a;
+      border: 1px solid rgba(214, 148, 74, 0.3);
+    }
+    .badge-full {
+      background: rgba(76, 175, 80, 0.15);
+      color: #4caf50;
+      border: 1px solid rgba(76, 175, 80, 0.3);
+    }
+    .badge-workflow {
+      background: rgba(74, 156, 214, 0.15);
+      color: #4a9cd6;
+      border: 1px solid rgba(74, 156, 214, 0.3);
+    }
+    .badge-tool {
+      background: rgba(76, 175, 80, 0.15);
+      color: #4caf50;
+      border: 1px solid rgba(76, 175, 80, 0.3);
+    }
+    .badge-guide {
+      background: rgba(214, 148, 74, 0.15);
+      color: #d6944a;
+      border: 1px solid rgba(214, 148, 74, 0.3);
+    }
+    .badge-event {
+      font-size: 0.68em;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .badge-PreToolUse { background: #4a9cd6; }
+    .badge-Stop { background: #d6944a; }
+    .badge-SubagentStart { background: #9b59b6; }
+
+    /* Handoff diagram */
+    .handoff-diagram {
+      background: rgba(128,128,128,0.06);
+      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.15));
+      border-radius: 6px;
+      padding: 14px 16px;
+      margin-top: 10px;
+      font-family: var(--vscode-editor-font-family, 'Cascadia Code', Consolas, monospace);
+      font-size: 0.85em;
+      line-height: 1.5;
+      white-space: pre;
+      overflow-x: auto;
+      color: var(--vscode-editor-foreground, #ccc);
+    }
+
+    /* Weight model */
+    .weight-model {
+      background: rgba(128,128,128,0.06);
+      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.15));
+      border-radius: 6px;
+      padding: 16px 20px;
+      margin-top: 10px;
+      text-align: center;
+    }
+    .weight-track {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 8px;
+    }
+    .weight-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .weight-node .label {
+      font-weight: 700;
+      font-size: 1em;
+      color: var(--vscode-editor-foreground, #ccc);
+    }
+    .weight-node .desc {
+      font-size: 0.82em;
+      color: var(--vscode-descriptionForeground, #999);
+    }
+    .weight-line {
+      width: 60px;
+      height: 2px;
+      background: var(--vscode-widget-border, rgba(128,128,128,0.4));
+      margin: 0 12px;
+      margin-bottom: 20px;
+    }
+
+    /* Sections */
+    .section-title {
+      font-size: 1.1em;
+      font-weight: 700;
+      margin-top: 36px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.25));
+    }
+
+    /* Quick start */
+    .quickstart-box {
+      background: var(--vscode-editorWidget-background, #252526);
+      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.2));
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .quickstart-box h3 {
+      font-size: 1em;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .quickstart-box ol {
+      padding-left: 20px;
+      color: var(--vscode-descriptionForeground, #999);
+      font-size: 0.92em;
+    }
+    .quickstart-box ol li {
+      margin-bottom: 8px;
+      line-height: 1.6;
+    }
+    .quickstart-box ol li strong {
+      color: var(--vscode-editor-foreground, #ccc);
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.25));
+      text-align: center;
+      color: var(--vscode-descriptionForeground, #999);
+      font-size: 0.85em;
+    }
+
+    /* Agent mini-list */
+    .agent-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .agent-list li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 0;
+      font-size: 0.9em;
+    }
+    .agent-list li .name {
+      font-weight: 600;
+      color: var(--vscode-editor-foreground, #ccc);
+    }
+
+    /* Hook groups */
+    .hook-group {
+      margin-bottom: 8px;
+    }
+    .hook-group-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🧰 Skill Kit <span class="version-badge">v0.5.0</span></h1>
+    <p>Coleção de skills, agents e hooks para o GitHub Copilot no VS Code.</p>
+    <div class="stats">
+      <span class="stat"><span class="stat-number">4</span> agents</span>
+      <span class="stat">·</span>
+      <span class="stat"><span class="stat-number">12</span> skills</span>
+      <span class="stat">·</span>
+      <span class="stat"><span class="stat-number">8</span> hooks</span>
+    </div>
+  </div>
+
+  <!-- Agents Card -->
+  <a class="card" href="agents/guide.html">
+    <div class="card-header">
+      <span class="card-icon">🎭</span>
+      <h2>Agents <span class="count-badge">4</span></h2>
+      <span class="card-arrow">→</span>
+    </div>
+    <p class="card-desc">
+      Personas determinísticas que controlam como o Copilot opera. Cada agent restringe tools e injeta instruções especializadas.
+    </p>
+
+    <ul class="agent-list">
+      <li><span class="name">orchestrator</span> <span class="badge badge-coordinator">Coordenador</span></li>
+      <li><span class="name">researcher</span> <span class="badge badge-readonly">Read-only</span></li>
+      <li><span class="name">validator</span> <span class="badge badge-readonly">Read-only</span></li>
+      <li><span class="name">implementor</span> <span class="badge badge-full">Full</span></li>
+    </ul>
+
+    <div class="handoff-diagram">Orchestrator ──┬── Research This ──→ Researcher
+                ├── Validate This ──→ Validator
+                └── Implement This ─→ Implementor
+                              ↑               │
+                              └─ Research More ┘</div>
+  </a>
+
+  <!-- Skills Card -->
+  <a class="card" href="skills/guide.html">
+    <div class="card-header">
+      <span class="card-icon">📦</span>
+      <h2>Skills <span class="count-badge">12</span></h2>
+      <span class="card-arrow">→</span>
+    </div>
+    <p class="card-desc">
+      Conhecimento especializado injetado no agente. Modelo de peso variável (Light / Standard / Deep) escala esforço com complexidade.
+    </p>
+
+    <div class="section-label">Workflow <span class="badge badge-workflow">8</span></div>
+    <ul class="mini-list">
+      <li>task-intent</li>
+      <li>task-map</li>
+      <li>contextação</li>
+      <li>safety-check</li>
+      <li>error-learning</li>
+      <li>agent-creator</li>
+      <li>hooks-creator</li>
+      <li>skill-creator</li>
+    </ul>
+
+    <div class="section-label">Tool <span class="badge badge-tool">3</span></div>
+    <ul class="mini-list">
+      <li>doc-to-markdown</li>
+      <li>markdown-to-document</li>
+      <li>skill-benchmark</li>
+    </ul>
+
+    <div class="section-label">Guide <span class="badge badge-guide">1</span></div>
+    <ul class="mini-list">
+      <li>skill-manager-guide</li>
+    </ul>
+
+    <div class="weight-model">
+      <div class="weight-track">
+        <div class="weight-node">
+          <span class="label">Light</span>
+          <span class="desc">scan rápido</span>
+        </div>
+        <div class="weight-line"></div>
+        <div class="weight-node">
+          <span class="label">Standard</span>
+          <span class="desc">análise dimensional</span>
+        </div>
+        <div class="weight-line"></div>
+        <div class="weight-node">
+          <span class="label">Deep</span>
+          <span class="desc">investigação completa</span>
+        </div>
+      </div>
+    </div>
+  </a>
+
+  <!-- Hooks Card -->
+  <a class="card" href="hooks/guide.html">
+    <div class="card-header">
+      <span class="card-icon">🔗</span>
+      <h2>Hooks <span class="count-badge">8</span></h2>
+      <span class="card-arrow">→</span>
+    </div>
+    <p class="card-desc">
+      Scripts de lifecycle que rodam automaticamente como guardrails em tempo real. Cada hook tem versão <code>.ps1</code> (Windows) e <code>.sh</code> (macOS/Linux).
+    </p>
+
+    <div class="hook-group">
+      <div class="hook-group-label">
+        <span class="badge-event badge-PreToolUse">PreToolUse</span>
+      </div>
+      <ul class="mini-list">
+        <li>pre-commit-guard</li>
+        <li>output-format</li>
+        <li>verify-claims</li>
+        <li>context-confidence-check</li>
+        <li>skill-feedback</li>
+        <li>lesson-injector</li>
+      </ul>
+    </div>
+
+    <div class="hook-group">
+      <div class="hook-group-label">
+        <span class="badge-event badge-Stop">Stop</span>
+      </div>
+      <ul class="mini-list">
+        <li>stop-checklist</li>
+      </ul>
+    </div>
+
+    <div class="hook-group">
+      <div class="hook-group-label">
+        <span class="badge-event badge-SubagentStart">SubagentStart</span>
+      </div>
+      <ul class="mini-list">
+        <li>subagent-audit</li>
+      </ul>
+    </div>
+  </a>
+
+  <!-- Quick Start -->
+  <h2 class="section-title">🚀 Começando</h2>
+
+  <div class="quickstart-box">
+    <h3>Via extensão (recomendado)</h3>
+    <ol>
+      <li>Instale a extensão <strong>Skill Manager for Copilot</strong> no VS Code</li>
+      <li>Abra a paleta de comandos (<code>Ctrl+Shift+P</code>) e execute <strong>Skill Manager: Add Repository</strong></li>
+      <li>Adicione a URL deste repositório</li>
+      <li>Execute <strong>Skill Manager: Pull All</strong> para instalar agents, skills e hooks</li>
+    </ol>
+  </div>
+
+  <div class="quickstart-box">
+    <h3>Manual</h3>
+    <ol>
+      <li>Clone este repositório</li>
+      <li>Copie o conteúdo de <code>agents/</code> para <code>~/.copilot/agents/</code></li>
+      <li>Copie o conteúdo de <code>skills/</code> para <code>~/.copilot/skills/</code></li>
+      <li>Copie o conteúdo de <code>hooks/</code> para <code>~/.copilot/hooks/</code></li>
+      <li>Recarregue o VS Code</li>
+    </ol>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    MIT License · Made with GitHub Copilot
+  </div>
+
+</body>
+</html>
