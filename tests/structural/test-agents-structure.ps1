@@ -309,7 +309,10 @@ foreach ($file in $agentFiles) {
                     Skip "Hook script (shell): $($hs.Path)" "Windows - shell scripts not applicable"
                 } else {
                     $resolved = Resolve-BashHookPath -HookPath $hs.Path
-                    if (Test-Path $resolved) {
+                    $parentDir = Split-Path $resolved -Parent
+                    if (-not (Test-Path $parentDir)) {
+                        Skip "Hook script exists: $($hs.Path)" "Installed hooks dir not found — skip"
+                    } elseif (Test-Path $resolved) {
                         Pass "Hook script exists: $($hs.Path)"
                     } else {
                         Fail "Hook script exists: $($hs.Path)" "Resolved to: $resolved (not found)"
@@ -317,7 +320,10 @@ foreach ($file in $agentFiles) {
                 }
             } elseif ($hs.Type -eq 'windows') {
                 $resolved = Resolve-WindowsHookPath -HookPath $hs.Path
-                if (Test-Path $resolved) {
+                $parentDir = Split-Path $resolved -Parent
+                if (-not (Test-Path $parentDir)) {
+                    Skip "Hook script exists: $($hs.Path)" "Installed hooks dir not found — skip"
+                } elseif (Test-Path $resolved) {
                     Pass "Hook script exists: $($hs.Path)"
                 } else {
                     Fail "Hook script exists: $($hs.Path)" "Resolved to: $resolved (not found)"

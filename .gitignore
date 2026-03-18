@@ -5,3 +5,4 @@ __pycache__/
 docs/maps/
 tests/
 !tests/structural/
+!tests/hooks/
