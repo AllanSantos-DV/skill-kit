@@ -1,8 +1,16 @@
 #!/bin/bash
-# PreToolUse hook: guard git commit/push/tag (supports chained commands)
+# PreToolUse hook: guard destructive commands (supports chained commands)
 # - Splits chained commands by ; && || (respecting quoted strings)
-# - commit: deny unless -m with conventional commit message; allow if valid
-# - push/tag: ask user for confirmation
+# - git commit: deny unless -m with conventional commit message
+# - git push/tag: ask user for confirmation
+# - git push --force/--force-with-lease: deny (destructive)
+# - git reset --hard: deny (data loss)
+# - git rebase: ask (history rewrite)
+# - git clean -f*: deny (removes untracked files)
+# - git checkout -- <path>: ask (discards working tree changes)
+# - git branch -D: ask (force-deletes branch)
+# - git stash drop/clear: ask (loses stashed changes)
+# - Destructive filesystem commands (rm -rf, etc.): deny
 # - Most restrictive wins: deny > ask > allow
 INPUT=$(cat 2>/dev/null || true)
 
@@ -81,9 +89,65 @@ evaluate_git_command() {
   eval_decision=""
   eval_context=""
 
+  # --- Destructive filesystem commands ---
+  if echo "$sub" | grep -qP '\brm\s+.*-[rR]|\brm\s+-[fFrR]{2}|\brmdir\s+/[sS]|\bdel\s+/[sS]|\bformat\s+[a-zA-Z]:|\bmkfs\b'; then
+    eval_decision="deny"
+    eval_context="Destructive filesystem command requires confirmation: $sub"
+    return 0
+  fi
+
+  # --- Git reset --hard ---
+  if echo "$sub" | grep -qP 'git\s+(-[^ ]+\s+)*reset\s+--hard'; then
+    eval_decision="deny"
+    eval_context="git reset --hard causes data loss"
+    return 0
+  fi
+
+  # --- Git push --force ---
+  if echo "$sub" | grep -qP 'git\s+(-[^ ]+\s+)*push\s+.*--force'; then
+    eval_decision="deny"
+    eval_context="git push --force rewrites remote history"
+    return 0
+  fi
+
+  # --- Git rebase ---
+  if echo "$sub" | grep -qP 'git\s+(-[^ ]+\s+)*rebase\b'; then
+    eval_decision="ask"
+    eval_context="git rebase rewrites history — requires confirmation"
+    return 0
+  fi
+
+  # --- Git clean -f ---
+  if echo "$sub" | grep -qP 'git\s+(-[^ ]+\s+)*clean\s+.*-[a-zA-Z]*f'; then
+    eval_decision="deny"
+    eval_context="git clean removes untracked files permanently — denied"
+    return 0
+  fi
+
+  # --- Git checkout -- (discard working tree changes) ---
+  if echo "$sub" | grep -qP 'git\s+(-[^ ]+\s+)*checkout\s+.*--\s'; then
+    eval_decision="ask"
+    eval_context="git checkout -- discards working tree changes — requires confirmation"
+    return 0
+  fi
+
+  # --- Git branch -D (force delete) ---
+  if echo "$sub" | grep -qP 'git\s+(-[^ ]+\s+)*branch\s+.*-D'; then
+    eval_decision="ask"
+    eval_context="git branch -D force-deletes a branch — requires confirmation"
+    return 0
+  fi
+
+  # --- Git stash drop / clear ---
+  if echo "$sub" | grep -qP 'git\s+(-[^ ]+\s+)*stash\s+(drop|clear)\b'; then
+    eval_decision="ask"
+    eval_context="git stash drop/clear loses stashed changes — requires confirmation"
+    return 0
+  fi
+
   # Check if this sub-command contains git commit/push/tag
-  if ! echo "$sub" | grep -qP 'git\s+(-[^ ]+\s+)*(commit|push|tag)'; then
-    return 1  # not a git command we care about
+  if ! echo "$sub" | grep -qP 'git\s+(-[^ ]+\s+)*(commit|push|tag)\b'; then
+    return 1  # not a command we care about
   fi
 
   local action

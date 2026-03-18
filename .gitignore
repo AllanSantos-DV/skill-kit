@@ -1,5 +1,6 @@
 .mcp-memory/
 .venv/
+.github/copilot-instructions.md
 .vscode/
 __pycache__/
 docs/maps/

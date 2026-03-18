@@ -219,6 +219,67 @@ assert_context_contains "$out" "confirmation" '19. push context mentions confirm
 out=$(invoke_hook "run_in_terminal" "git commit")
 assert_context_contains "$out" "-m" '20. no-message context mentions -m'
 
+# ---------------------------------------------------------------------------
+echo ""
+echo "--- New destructive command guards ---"
+# ---------------------------------------------------------------------------
+
+# 21. git clean -fd -> deny
+out=$(invoke_hook "run_in_terminal" "git clean -fd")
+assert_decision "$out" "deny" '21. git clean -fd -> deny'
+
+# 22. git clean -fdx -> deny
+out=$(invoke_hook "run_in_terminal" "git clean -fdx")
+assert_decision "$out" "deny" '22. git clean -fdx -> deny'
+
+# 23. git clean -xfd -> deny
+out=$(invoke_hook "run_in_terminal" "git clean -xfd")
+assert_decision "$out" "deny" '23. git clean -xfd -> deny'
+
+# 24. git clean -fd context message
+out=$(invoke_hook "run_in_terminal" "git clean -fd")
+assert_context_contains "$out" "untracked files permanently" '24. git clean context mentions untracked files'
+
+# 25. git checkout -- . -> ask
+out=$(invoke_hook "run_in_terminal" "git checkout -- .")
+assert_decision "$out" "ask" '25. git checkout -- . -> ask'
+
+# 26. git checkout -- src/file.ts -> ask
+out=$(invoke_hook "run_in_terminal" "git checkout -- src/file.ts")
+assert_decision "$out" "ask" '26. git checkout -- src/file.ts -> ask'
+
+# 27. git checkout -- context message
+out=$(invoke_hook "run_in_terminal" "git checkout -- .")
+assert_context_contains "$out" "working tree changes" '27. git checkout -- context mentions working tree changes'
+
+# 28. git branch -D feature -> ask
+out=$(invoke_hook "run_in_terminal" "git branch -D feature-branch")
+assert_decision "$out" "ask" '28. git branch -D feature-branch -> ask'
+
+# 29. git branch -D context message
+out=$(invoke_hook "run_in_terminal" "git branch -D feature-branch")
+assert_context_contains "$out" "force-deletes" '29. git branch -D context mentions force-deletes'
+
+# 30. git branch -d (lowercase) should NOT be caught — passthrough
+out=$(invoke_hook "run_in_terminal" "git branch -d feature-branch")
+assert_no_output "$out" '30. git branch -d (lowercase) -> no output (not force delete)'
+
+# 31. git stash drop -> ask
+out=$(invoke_hook "run_in_terminal" "git stash drop")
+assert_decision "$out" "ask" '31. git stash drop -> ask'
+
+# 32. git stash clear -> ask
+out=$(invoke_hook "run_in_terminal" "git stash clear")
+assert_decision "$out" "ask" '32. git stash clear -> ask'
+
+# 33. git stash drop context message
+out=$(invoke_hook "run_in_terminal" "git stash drop")
+assert_context_contains "$out" "stashed changes" '33. git stash drop context mentions stashed changes'
+
+# 34. git clean + git checkout -- chained (deny wins over ask)
+out=$(invoke_hook "run_in_terminal" 'git clean -fd && git checkout -- .')
+assert_decision "$out" "deny" '34. git clean + git checkout -- chained -> deny (deny wins)'
+
 # ===========================================================================
 # Summary
 # ===========================================================================
