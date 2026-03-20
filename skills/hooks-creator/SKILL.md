@@ -437,6 +437,104 @@ if [ "$TOOL" != "Bash" ] && [ "$TOOL" != "run_in_terminal" ]; then exit 0; fi
 if ($input_json.tool_name -notin @('Bash', 'run_in_terminal')) { exit 0 }
 ```
 
+## Neural Link Integration
+
+When the user's environment uses **Neural Link** as the hook dispatcher (configured via Skill Manager), newly created hooks should include a `.neural-link.json` companion file. This file lives alongside the `.ps1` and `.sh` scripts and is automatically processed during `Pull All`.
+
+### When to Generate
+
+Generate a `.neural-link.json` companion file when:
+- The hook is being placed in a repo that uses Skill Manager distribution (has `hooks/` directory)
+- The user mentions Neural Link, adaptive scoring, or learning
+- Ask the user if unsure: "Should I generate Neural Link configuration for adaptive scoring?"
+
+Do NOT generate when:
+- The hook is workspace-only (`.github/hooks/`)
+- The user explicitly says they don't use Neural Link
+
+### Companion File Schema
+
+The file MUST be named `.neural-link.json` and placed in the same `hooks/` directory as the scripts:
+
+```
+hooks/
+  my-hook.ps1
+  my-hook.sh
+  my-hook.neural-link.json    ← companion file
+```
+
+**IMPORTANT**: The filename pattern is `{hook-name}.neural-link.json` — matching the hook script name (without extension).
+
+```jsonc
+{
+  // Handler name — must match the script base name (without .ps1/.sh)
+  "handler": "my-hook",
+
+  // Which lifecycle events this hook handles
+  "events": ["PreToolUse"],
+
+  // Default weights per agent (agents not listed get learning.defaultWeight from config)
+  "weights": {
+    "implementor": 0.8,
+    "researcher": 0.5,
+    "orchestrator": 0.3
+  },
+
+  // Optional modifiers — contextual score adjustments
+  "modifiers": [
+    {
+      "condition": { "field": "tool_name", "op": "in", "value": ["run_in_terminal"] },
+      "adjust": "+0.2"
+    }
+  ],
+
+  // Optional: training scenarios for pre-training the learner
+  "trainingScenarios": [
+    {
+      "input": {
+        "event": "PreToolUse",
+        "agentSlug": "implementor",
+        "tool": "run_in_terminal",
+        "payload": { "command": "rm -rf /", "isBackground": false }
+      },
+      "mockResults": [
+        { "handler": "my-hook", "action": "block", "reason": "Dangerous command" }
+      ],
+      "label": "should block destructive terminal commands"
+    },
+    {
+      "input": {
+        "event": "PreToolUse",
+        "agentSlug": "implementor",
+        "tool": "read_file",
+        "payload": { "filePath": "src/index.ts" }
+      },
+      "mockResults": [
+        { "handler": "my-hook", "action": "allow" }
+      ],
+      "label": "should allow safe read operations"
+    }
+  ]
+}
+```
+
+### Weight Guidelines
+
+| Agent Role | Typical Weight | Rationale |
+|-----------|---------------|----------|
+| implementor | 0.7–0.9 | Full tool access, most hooks are relevant |
+| researcher | 0.3–0.6 | Read-only, fewer hooks apply |
+| orchestrator | 0.2–0.4 | Coordination only, minimal hook relevance |
+| validator | 0.3–0.5 | Analysis focus, some hooks apply |
+
+### Training Scenario Guidelines
+
+- Include at least 2 scenarios: one that triggers the hook (block/deny) and one that doesn't (allow)
+- Use realistic tool names and payloads
+- The `label` field is human-readable — describe the expected behavior
+- The `mockResults` format matches Neural Link's `e2e-pretrain.mjs` pipeline
+- More scenarios = faster learner convergence. 4-6 scenarios per hook is a good target.
+
 ## Distribution via Skill Manager
 
 The **Skill Manager extension** can automatically distribute hook scripts alongside agents and skills. This is the recommended approach for teams and shared repos.
