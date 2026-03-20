@@ -3,6 +3,12 @@
 Todas as mudanças notáveis do projeto são documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [Unreleased]
+
+### Adicionado
+- Neural Link companion files (`.neural-link.json`) para os 8 hooks existentes: pre-commit-guard, output-format, stop-checklist, lesson-injector, skill-feedback, context-confidence-check, verify-claims, subagent-audit
+- Cada companion declara: weights por agente, modifiers contextuais, training scenarios para pre-training
+
 ## [0.5.0] — 2026-03-18
 
 ### Alterado

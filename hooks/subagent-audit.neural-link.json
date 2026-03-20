@@ -1,0 +1,43 @@
+{
+  "handler": "subagent-audit",
+  "events": ["Stop"],
+  "weights": {
+    "orchestrator": 0.95,
+    "implementor": 0.1,
+    "researcher": 0.1,
+    "validator": 0.1
+  },
+  "modifiers": [],
+  "trainingScenarios": [
+    {
+      "input": {
+        "event": "Stop",
+        "agentSlug": "orchestrator"
+      },
+      "mockResults": [
+        { "handler": "subagent-audit", "action": "allow", "reason": "Subagent handoffs audited: 2 delegations (researcher, implementor), all with explicit context." }
+      ],
+      "label": "should audit subagent handoffs for orchestrator"
+    },
+    {
+      "input": {
+        "event": "Stop",
+        "agentSlug": "orchestrator"
+      },
+      "mockResults": [
+        { "handler": "subagent-audit", "action": "block", "reason": "Subagent handoff to implementor missing explicit task context — add intent and success criteria before delegating." }
+      ],
+      "label": "should block when orchestrator delegates without context"
+    },
+    {
+      "input": {
+        "event": "Stop",
+        "agentSlug": "implementor"
+      },
+      "mockResults": [
+        { "handler": "subagent-audit", "action": "allow" }
+      ],
+      "label": "should not fire for non-orchestrator agents (low weight, learner suppresses)"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "handler": "verify-claims",
+  "events": ["Stop"],
+  "weights": {
+    "researcher": 0.9,
+    "implementor": 0.7,
+    "validator": 0.5,
+    "orchestrator": 0.3
+  },
+  "modifiers": [
+    {
+      "condition": { "field": "transcript_has_file_references", "op": "eq", "value": false },
+      "adjust": "=0.3"
+    }
+  ],
+  "trainingScenarios": [
+    {
+      "input": {
+        "event": "Stop",
+        "agentSlug": "researcher"
+      },
+      "mockResults": [
+        { "handler": "verify-claims", "action": "block", "reason": "File references found without corresponding tool access: src/config.ts mentioned but never read via read_file or grep_search." }
+      ],
+      "label": "should block when file references lack tool-backed verification"
+    },
+    {
+      "input": {
+        "event": "Stop",
+        "agentSlug": "implementor"
+      },
+      "mockResults": [
+        { "handler": "verify-claims", "action": "allow" }
+      ],
+      "label": "should allow when all file references have corresponding tool calls"
+    },
+    {
+      "input": {
+        "event": "Stop",
+        "agentSlug": "validator"
+      },
+      "mockResults": [
+        { "handler": "verify-claims", "action": "ask", "reason": "Unverified claim detected: API rate limit mentioned but no documentation fetched." }
+      ],
+      "label": "should ask for confirmation when unverified external claims detected"
+    }
+  ]
+}

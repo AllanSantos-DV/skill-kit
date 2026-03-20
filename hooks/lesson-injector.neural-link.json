@@ -1,0 +1,48 @@
+{
+  "handler": "lesson-injector",
+  "events": ["SessionStart"],
+  "weights": {
+    "implementor": 0.8,
+    "researcher": 0.8,
+    "orchestrator": 0.8,
+    "validator": 0.8
+  },
+  "modifiers": [
+    {
+      "condition": { "field": "active_skills", "op": "contains", "value": "safety-check" },
+      "adjust": "+0.1"
+    }
+  ],
+  "trainingScenarios": [
+    {
+      "input": {
+        "event": "SessionStart",
+        "agentSlug": "implementor"
+      },
+      "mockResults": [
+        { "handler": "lesson-injector", "action": "add", "reason": "Injected 3 lessons matching task context" }
+      ],
+      "label": "should inject relevant lessons at session start"
+    },
+    {
+      "input": {
+        "event": "SessionStart",
+        "agentSlug": "researcher"
+      },
+      "mockResults": [
+        { "handler": "lesson-injector", "action": "add", "reason": "Injected 1 lesson matching research keywords" }
+      ],
+      "label": "should inject lessons for researcher session"
+    },
+    {
+      "input": {
+        "event": "SessionStart",
+        "agentSlug": "orchestrator"
+      },
+      "mockResults": [
+        { "handler": "lesson-injector", "action": "allow" }
+      ],
+      "label": "should allow when no matching lessons found"
+    }
+  ]
+}
