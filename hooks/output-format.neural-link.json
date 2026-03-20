@@ -1,0 +1,43 @@
+{
+  "handler": "output-format",
+  "events": ["Stop"],
+  "weights": {
+    "researcher": 0.95,
+    "validator": 0.95,
+    "implementor": 0.1,
+    "orchestrator": 0.1
+  },
+  "modifiers": [],
+  "trainingScenarios": [
+    {
+      "input": {
+        "event": "Stop",
+        "agentSlug": "researcher"
+      },
+      "mockResults": [
+        { "handler": "output-format", "action": "block", "reason": "Verify your output follows the required format: Research Summary with all mandatory sections." }
+      ],
+      "label": "should remind researcher to follow output format"
+    },
+    {
+      "input": {
+        "event": "Stop",
+        "agentSlug": "validator"
+      },
+      "mockResults": [
+        { "handler": "output-format", "action": "block", "reason": "Verify your output follows the required format: Validation Report with all mandatory sections." }
+      ],
+      "label": "should remind validator to follow output format"
+    },
+    {
+      "input": {
+        "event": "Stop",
+        "agentSlug": "implementor"
+      },
+      "mockResults": [
+        { "handler": "output-format", "action": "allow" }
+      ],
+      "label": "should not fire for implementor (low weight, learner suppresses)"
+    }
+  ]
+}

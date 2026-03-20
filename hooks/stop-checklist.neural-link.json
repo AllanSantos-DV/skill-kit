@@ -1,0 +1,43 @@
+{
+  "handler": "stop-checklist",
+  "events": ["Stop"],
+  "weights": {
+    "implementor": 0.8,
+    "researcher": 0.7,
+    "validator": 0.7,
+    "orchestrator": 0.5
+  },
+  "modifiers": [],
+  "trainingScenarios": [
+    {
+      "input": {
+        "event": "Stop",
+        "agentSlug": "implementor"
+      },
+      "mockResults": [
+        { "handler": "stop-checklist", "action": "block", "reason": "Before finishing: 1) Did you run tests? 2) Did you produce a task map (if decisions were made)? 3) Is the quality checklist satisfied?" }
+      ],
+      "label": "should block implementor with quality checklist"
+    },
+    {
+      "input": {
+        "event": "Stop",
+        "agentSlug": "orchestrator"
+      },
+      "mockResults": [
+        { "handler": "stop-checklist", "action": "block", "reason": "Before finishing: 1) Did you run tests? 2) Did you produce a task map (if decisions were made)? 3) Is the quality checklist satisfied?" }
+      ],
+      "label": "should remind orchestrator of checklist (lower weight, may be suppressed by learner)"
+    },
+    {
+      "input": {
+        "event": "Stop",
+        "agentSlug": "researcher"
+      },
+      "mockResults": [
+        { "handler": "stop-checklist", "action": "block", "reason": "Before finishing: 1) Did you run tests? 2) Did you produce a task map (if decisions were made)? 3) Is the quality checklist satisfied?" }
+      ],
+      "label": "should remind researcher of checklist"
+    }
+  ]
+}
