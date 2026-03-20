@@ -229,21 +229,21 @@ Assert-ContextContains $out '-m' '20. no-message context mentions -m'
 Write-Host "`n--- New destructive command guards ---" -ForegroundColor White
 # ---------------------------------------------------------------------------
 
-# 21. git clean -fd -> deny
+# 21. git clean -fd -> ask
 $out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git clean -fd'
-Assert-Decision $out 'deny' '21. git clean -fd -> deny'
+Assert-Decision $out 'ask' '21. git clean -fd -> ask'
 
-# 22. git clean -fdx -> deny
+# 22. git clean -fdx -> ask
 $out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git clean -fdx'
-Assert-Decision $out 'deny' '22. git clean -fdx -> deny'
+Assert-Decision $out 'ask' '22. git clean -fdx -> ask'
 
-# 23. git clean -xfd -> deny
+# 23. git clean -xfd -> ask
 $out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git clean -xfd'
-Assert-Decision $out 'deny' '23. git clean -xfd -> deny'
+Assert-Decision $out 'ask' '23. git clean -xfd -> ask'
 
 # 24. git clean -fd context message
 $out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git clean -fd'
-Assert-ContextContains $out 'untracked files permanently' '24. git clean context mentions untracked files'
+Assert-ContextContains $out 'untracked files' '24. git clean context mentions untracked files'
 
 # 25. git checkout -- . -> ask
 $out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git checkout -- .'
@@ -293,9 +293,287 @@ Assert-Decision $out 'deny' '35. Remove-Item -Force -Recurse (reversed) -> deny'
 $out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'Remove-Item -Recurse -Force C:\temp'
 Assert-ContextContains $out 'destructive' '36. Remove-Item context mentions destructive'
 
-# 37. git clean + git checkout -- chained (deny wins over ask)
+# 37. git clean + git checkout -- chained (both ask)
 $out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git clean -fd && git checkout -- .'
-Assert-Decision $out 'deny' '37. git clean + git checkout -- chained -> deny (deny wins)'
+Assert-Decision $out 'ask' '37. git clean + git checkout -- chained -> ask (both ask)'
+
+# ---------------------------------------------------------------------------
+Write-Host "`n--- Policy changes (deny -> ask) ---" -ForegroundColor White
+# ---------------------------------------------------------------------------
+
+# 38. git reset --hard -> ask (was deny, recoverable via reflog)
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git reset --hard'
+Assert-Decision $out 'ask' '38. git reset --hard -> ask'
+
+# 39. git reset --hard context message
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git reset --hard'
+Assert-ContextContains $out 'uncommitted changes' '39. git reset --hard context mentions uncommitted changes'
+
+# 40. git push --force -> deny (stays deny)
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git push --force origin main'
+Assert-Decision $out 'deny' '40. git push --force origin main -> deny'
+
+# 41. git push --force context message
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git push --force origin main'
+Assert-ContextContains $out 'remote history' '41. git push --force context mentions remote history'
+
+# 42. git push --force-with-lease -> ask (new, distinguished from --force)
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git push --force-with-lease origin main'
+Assert-Decision $out 'ask' '42. git push --force-with-lease origin main -> ask'
+
+# 43. git push --force-with-lease context message
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git push --force-with-lease origin main'
+Assert-ContextContains $out 'confirmation' '43. git push --force-with-lease context mentions confirmation'
+
+# 44. git clean -fd context mentions requires confirmation
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git clean -fd'
+Assert-ContextContains $out 'requires confirmation' '44. git clean -fd context mentions requires confirmation'
+
+# 45. Chain: git push --force + git push --force-with-lease -> deny wins
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git push --force-with-lease origin main && git push --force origin dev'
+Assert-Decision $out 'deny' '45. git push --force-with-lease + --force chained -> deny (deny wins)'
+
+# ---------------------------------------------------------------------------
+Write-Host "`n--- Conventional commit types ---" -ForegroundColor White
+# ---------------------------------------------------------------------------
+
+# 46. docs prefix
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git commit -m "docs: update readme"'
+Assert-Decision $out 'allow' '46. git commit -m "docs: update readme" -> allow'
+
+# 47. chore prefix
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git commit -m "chore: cleanup"'
+Assert-Decision $out 'allow' '47. git commit -m "chore: cleanup" -> allow'
+
+# 48. refactor prefix
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git commit -m "refactor: extract method"'
+Assert-Decision $out 'allow' '48. git commit -m "refactor: extract method" -> allow'
+
+# 49. test prefix
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git commit -m "test: add unit tests"'
+Assert-Decision $out 'allow' '49. git commit -m "test: add unit tests" -> allow'
+
+# 50. ci prefix
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git commit -m "ci: fix pipeline"'
+Assert-Decision $out 'allow' '50. git commit -m "ci: fix pipeline" -> allow'
+
+# 51. build prefix
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git commit -m "build: update deps"'
+Assert-Decision $out 'allow' '51. git commit -m "build: update deps" -> allow'
+
+# 52. perf prefix
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git commit -m "perf: optimize query"'
+Assert-Decision $out 'allow' '52. git commit -m "perf: optimize query" -> allow'
+
+# 53. style prefix
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git commit -m "style: formatting"'
+Assert-Decision $out 'allow' '53. git commit -m "style: formatting" -> allow'
+
+# 54. revert prefix
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git commit -m "revert: undo feat"'
+Assert-Decision $out 'allow' '54. git commit -m "revert: undo feat" -> allow'
+
+# 55. Breaking change with ! (feat!)
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git commit -m "feat!: breaking change"'
+Assert-Decision $out 'allow' '55. git commit -m "feat!: breaking change" -> allow'
+
+# 56. Scope + breaking change (fix(auth)!)
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git commit -m "fix(auth)!: breaking fix"'
+Assert-Decision $out 'allow' '56. git commit -m "fix(auth)!: breaking fix" -> allow'
+
+# ---------------------------------------------------------------------------
+Write-Host "`n--- Git rebase ---" -ForegroundColor White
+# ---------------------------------------------------------------------------
+
+# 57. git rebase main -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git rebase main'
+Assert-Decision $out 'ask' '57. git rebase main -> ask'
+
+# 58. git rebase -i HEAD~3 -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git rebase -i HEAD~3'
+Assert-Decision $out 'ask' '58. git rebase -i HEAD~3 -> ask'
+
+# 59. git rebase --interactive main -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git rebase --interactive main'
+Assert-Decision $out 'ask' '59. git rebase --interactive main -> ask'
+
+# 60. git rebase context mentions history
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git rebase main'
+Assert-ContextContains $out 'history' '60. git rebase context mentions history'
+
+# ---------------------------------------------------------------------------
+Write-Host "`n--- Filesystem destructive commands ---" -ForegroundColor White
+# ---------------------------------------------------------------------------
+
+# 61. rm -rf -> deny
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'rm -rf /tmp/build'
+Assert-Decision $out 'deny' '61. rm -rf /tmp/build -> deny'
+
+# 62. rm -r -> deny
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'rm -r ./dist'
+Assert-Decision $out 'deny' '62. rm -r ./dist -> deny'
+
+# 63. rm -fR (capital R) -> deny
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'rm -fR ./node_modules'
+Assert-Decision $out 'deny' '63. rm -fR ./node_modules -> deny'
+
+# 64. rm -rf context mentions Destructive
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'rm -rf /tmp/build'
+Assert-ContextContains $out 'Destructive' '64. rm -rf context mentions Destructive'
+
+# 65. rmdir /s /q (PS1 only) -> deny
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'rmdir /s /q C:\temp'
+Assert-Decision $out 'deny' '65. rmdir /s /q C:\temp -> deny'
+
+# 66. del /s (PS1 only) -> deny
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'del /s C:\temp'
+Assert-Decision $out 'deny' '66. del /s C:\temp -> deny'
+
+# ---------------------------------------------------------------------------
+Write-Host "`n--- Bash tool_name ---" -ForegroundColor White
+# ---------------------------------------------------------------------------
+
+# 67. Bash + git push -> ask
+$out = Invoke-Hook -ToolName 'Bash' -Command 'git push origin main'
+Assert-Decision $out 'ask' '67. Bash + git push origin main -> ask'
+
+# 68. Bash + valid commit -> allow
+$out = Invoke-Hook -ToolName 'Bash' -Command 'git commit -m "feat: x"'
+Assert-Decision $out 'allow' '68. Bash + git commit -m "feat: x" -> allow'
+
+# 69. Bash + bad commit -> deny
+$out = Invoke-Hook -ToolName 'Bash' -Command 'git commit -m "bad"'
+Assert-Decision $out 'deny' '69. Bash + git commit -m "bad" -> deny'
+
+# ---------------------------------------------------------------------------
+Write-Host "`n--- Safe variants (passthrough) ---" -ForegroundColor White
+# ---------------------------------------------------------------------------
+
+# 70. git reset --soft HEAD~1 -> no output
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git reset --soft HEAD~1'
+Assert-NoOutput $out '70. git reset --soft HEAD~1 -> no output'
+
+# 71. git reset --mixed HEAD~1 -> no output
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git reset --mixed HEAD~1'
+Assert-NoOutput $out '71. git reset --mixed HEAD~1 -> no output'
+
+# 72. git reset HEAD file.txt -> no output (unstaging)
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git reset HEAD file.txt'
+Assert-NoOutput $out '72. git reset HEAD file.txt -> no output'
+
+# 73. git clean -n -> no output (dry-run)
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git clean -n'
+Assert-NoOutput $out '73. git clean -n -> no output (dry-run)'
+
+# 74. git clean --dry-run -> no output
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git clean --dry-run'
+Assert-NoOutput $out '74. git clean --dry-run -> no output'
+
+# 75. git stash -> no output
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git stash'
+Assert-NoOutput $out '75. git stash -> no output'
+
+# 76. git stash list -> no output
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git stash list'
+Assert-NoOutput $out '76. git stash list -> no output'
+
+# 77. git stash pop -> no output
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git stash pop'
+Assert-NoOutput $out '77. git stash pop -> no output'
+
+# 78. git stash apply -> no output
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git stash apply'
+Assert-NoOutput $out '78. git stash apply -> no output'
+
+# 79. Remove-Item without -Recurse -Force -> no output (PS1 only)
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'Remove-Item C:\temp'
+Assert-NoOutput $out '79. Remove-Item C:\temp -> no output'
+
+# 80. Remove-Item -Recurse only -> no output (PS1 only)
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'Remove-Item -Recurse C:\temp'
+Assert-NoOutput $out '80. Remove-Item -Recurse C:\temp -> no output'
+
+# 81. Remove-Item -Force only -> no output (PS1 only)
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'Remove-Item -Force C:\temp'
+Assert-NoOutput $out '81. Remove-Item -Force C:\temp -> no output'
+
+# 82. git add . -> no output
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git add .'
+Assert-NoOutput $out '82. git add . -> no output'
+
+# 83. git status -> no output
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git status'
+Assert-NoOutput $out '83. git status -> no output'
+
+# 84. git log -> no output
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git log'
+Assert-NoOutput $out '84. git log -> no output'
+
+# 85. git diff -> no output
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git diff'
+Assert-NoOutput $out '85. git diff -> no output'
+
+# ---------------------------------------------------------------------------
+Write-Host "`n--- Chain splitting with || operator ---" -ForegroundColor White
+# ---------------------------------------------------------------------------
+
+# 86. git push || echo -> ask (push detected through ||)
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git push origin main || echo "failed"'
+Assert-Decision $out 'ask' '86. git push origin main || echo "failed" -> ask'
+
+# 87. bad commit || git push -> deny (deny wins)
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git commit -m "bad" || git push'
+Assert-Decision $out 'deny' '87. git commit -m "bad" || git push -> deny'
+
+# ---------------------------------------------------------------------------
+Write-Host "`n--- Git push variants ---" -ForegroundColor White
+# ---------------------------------------------------------------------------
+
+# 88. git push (bare, no remote) -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git push'
+Assert-Decision $out 'ask' '88. git push (bare) -> ask'
+
+# 89. git push -u origin feature -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git push -u origin feature'
+Assert-Decision $out 'ask' '89. git push -u origin feature -> ask'
+
+# 90. git push --tags -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git push --tags'
+Assert-Decision $out 'ask' '90. git push --tags -> ask'
+
+# ---------------------------------------------------------------------------
+Write-Host "`n--- Git tag variants ---" -ForegroundColor White
+# ---------------------------------------------------------------------------
+
+# 91. git tag -a (annotated) -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git tag -a v1.0 -m "release"'
+Assert-Decision $out 'ask' '91. git tag -a v1.0 -m "release" -> ask'
+
+# 92. git tag -d (delete) -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git tag -d v1.0'
+Assert-Decision $out 'ask' '92. git tag -d v1.0 -> ask'
+
+# ---------------------------------------------------------------------------
+Write-Host "`n--- Context accumulation ---" -ForegroundColor White
+# ---------------------------------------------------------------------------
+
+# 93-95. Chain push + bad commit: deny, context has both "confirmation" and "conventional"
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git push origin main; git commit -m "bad"'
+Assert-Decision $out 'deny' '93. push + bad commit chained with ; -> deny'
+Assert-ContextContains $out 'confirmation' '94. accumulated context contains confirmation (from push)'
+Assert-ContextContains $out 'conventional' '95. accumulated context contains conventional (from commit)'
+
+# ---------------------------------------------------------------------------
+Write-Host "`n--- git reset --hard with ref ---" -ForegroundColor White
+# ---------------------------------------------------------------------------
+
+# 96. git reset --hard HEAD~1 -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git reset --hard HEAD~1'
+Assert-Decision $out 'ask' '96. git reset --hard HEAD~1 -> ask'
+
+# 97. git reset --hard origin/main -> ask
+$out = Invoke-Hook -ToolName 'run_in_terminal' -Command 'git reset --hard origin/main'
+Assert-Decision $out 'ask' '97. git reset --hard origin/main -> ask'
 
 # ===========================================================================
 # Summary

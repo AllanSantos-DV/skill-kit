@@ -3,10 +3,11 @@
 # - Splits chained commands by ; && || (respecting quoted strings)
 # - git commit: deny unless -m with conventional commit message
 # - git push/tag: ask user for confirmation
-# - git push --force/--force-with-lease: deny (destructive)
-# - git reset --hard: deny (data loss)
+# - git push --force-with-lease: ask (confirmation)
+# - git push --force: deny (destructive)
+# - git reset --hard: ask (recoverable via reflog)
 # - git rebase: ask (history rewrite)
-# - git clean -f*: deny (removes untracked files)
+# - git clean -f*: ask (routine cleanup)
 # - git checkout -- <path>: ask (discards working tree changes)
 # - git branch -D: ask (force-deletes branch)
 # - git stash drop/clear: ask (loses stashed changes)
@@ -98,12 +99,19 @@ evaluate_git_command() {
 
   # --- Git reset --hard ---
   if echo "$sub" | grep -qP 'git\s+(-[^ ]+\s+)*reset\s+--hard'; then
-    eval_decision="deny"
-    eval_context="git reset --hard causes data loss"
+    eval_decision="ask"
+    eval_context="git reset --hard discards uncommitted changes — requires confirmation"
     return 0
   fi
 
-  # --- Git push --force ---
+  # --- Git push --force-with-lease (safer variant — ask) ---
+  if echo "$sub" | grep -qP 'git\s+(-[^ ]+\s+)*push\s+.*--force-with-lease'; then
+    eval_decision="ask"
+    eval_context="git push --force-with-lease requires confirmation"
+    return 0
+  fi
+
+  # --- Git push --force (destructive — deny) ---
   if echo "$sub" | grep -qP 'git\s+(-[^ ]+\s+)*push\s+.*--force'; then
     eval_decision="deny"
     eval_context="git push --force rewrites remote history"
@@ -117,10 +125,10 @@ evaluate_git_command() {
     return 0
   fi
 
-  # --- Git clean -f ---
+  # --- Git clean -f (routine cleanup — ask) ---
   if echo "$sub" | grep -qP 'git\s+(-[^ ]+\s+)*clean\s+.*-[a-zA-Z]*f'; then
-    eval_decision="deny"
-    eval_context="git clean removes untracked files permanently — denied"
+    eval_decision="ask"
+    eval_context="git clean removes untracked files — requires confirmation"
     return 0
   fi
 

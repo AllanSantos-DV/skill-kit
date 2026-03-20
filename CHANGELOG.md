@@ -5,6 +5,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ## [0.5.0] — 2026-03-18
 
+### Alterado
+- `pre-commit-guard` hook: `git reset --hard` policy changed from deny to ask (recoverable via reflog)
+- `pre-commit-guard` hook: `git push --force-with-lease` now distinguished from `--force` — ask instead of deny
+- `pre-commit-guard` hook: `git clean -f` policy changed from deny to ask (routine cleanup operation)
+
 ### Adicionado
 - CI com GitHub Actions: testes estruturais e de hooks em matrix Windows + Ubuntu
 - Testes unitários para hook `pre-commit-guard` (PS1 + SH, 20 casos cada)
