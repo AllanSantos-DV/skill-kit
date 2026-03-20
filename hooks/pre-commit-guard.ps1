@@ -2,10 +2,11 @@
 # - Splits chained commands by ; && || (respecting quoted strings)
 # - git commit: deny unless -m with conventional commit message
 # - git push/tag: ask user for confirmation
-# - git push --force/--force-with-lease: deny (destructive)
-# - git reset --hard: deny (data loss)
+# - git push --force-with-lease: ask (confirmation)
+# - git push --force: deny (destructive)
+# - git reset --hard: ask (recoverable via reflog)
 # - git rebase: ask (history rewrite)
-# - git clean -f*: deny (removes untracked files)
+# - git clean -f*: ask (routine cleanup)
 # - git checkout -- <path>: ask (discards working tree changes)
 # - git branch -D: ask (force-deletes branch)
 # - git stash drop/clear: ask (loses stashed changes)
@@ -84,12 +85,20 @@ foreach ($sub in $subCommands) {
     # git reset --hard
     if ($sub -match 'git\s+(-[^\s]+\s+)*reset\s+--hard') {
         $hasGitCommand = $true
-        $contexts += 'git reset --hard causes data loss — denied'
-        $finalDecision = 'deny'
+        $contexts += 'git reset --hard discards uncommitted changes — requires confirmation'
+        if ($finalDecision -ne 'deny') { $finalDecision = 'ask' }
         continue
     }
 
-    # git push --force / --force-with-lease
+    # git push --force-with-lease (safer variant — ask)
+    if ($sub -match 'git\s+(-[^\s]+\s+)*push\s+.*--force-with-lease') {
+        $hasGitCommand = $true
+        $contexts += 'git push --force-with-lease requires confirmation'
+        if ($finalDecision -ne 'deny') { $finalDecision = 'ask' }
+        continue
+    }
+
+    # git push --force (destructive — deny)
     if ($sub -match 'git\s+(-[^\s]+\s+)*push\s+.*--force') {
         $hasGitCommand = $true
         $contexts += 'git push --force rewrites remote history — denied'
@@ -105,11 +114,11 @@ foreach ($sub in $subCommands) {
         continue
     }
 
-    # git clean with -f flag (removes untracked files permanently)
+    # git clean with -f flag (routine cleanup — ask)
     if ($sub -match 'git\s+(-[^\s]+\s+)*clean\s+.*-[a-zA-Z]*f') {
         $hasGitCommand = $true
-        $contexts += 'git clean removes untracked files permanently — denied'
-        $finalDecision = 'deny'
+        $contexts += 'git clean removes untracked files — requires confirmation'
+        if ($finalDecision -ne 'deny') { $finalDecision = 'ask' }
         continue
     }
 
