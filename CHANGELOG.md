@@ -6,8 +6,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ## [Unreleased]
 
 ### Adicionado
-- Neural Link companion files (`.neural-link.json`) para os 8 hooks existentes: pre-commit-guard, output-format, stop-checklist, lesson-injector, skill-feedback, context-confidence-check, verify-claims, subagent-audit
-- Cada companion declara: weights por agente, modifiers contextuais, training scenarios para pre-training
+- Documentação de `permissionDecisionReason` na skill hooks-creator (SKILL.md, platform-reference.md, examples.md)
+
+### Alterado
+- `pre-commit-guard` hooks (.ps1/.sh): adicionado campo `permissionDecisionReason` ao output JSON — VS Code agora exibe motivo descritivo no prompt de confirmação "ask"/"deny"
 
 ## [0.5.0] — 2026-03-18
 
