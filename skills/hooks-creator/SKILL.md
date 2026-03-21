@@ -186,6 +186,7 @@ Not all output mechanisms inject content into the agent's context. Some only dis
 | Field | Type | Description |
 |-------|------|-------------|
 | `permissionDecision` | string | See values below |
+| `permissionDecisionReason` | string | Reason shown to user in the confirmation prompt (for "deny" or "ask") |
 | `updatedInput` | object | Modified tool arguments |
 | `additionalContext` | string | Extra context for the agent |
 
@@ -197,12 +198,13 @@ Not all output mechanisms inject content into the agent's context. Some only dis
 | `"deny"` | Block the tool call. Agent receives `additionalContext` and must adapt. |
 | `"ask"` | VS Code shows a confirmation prompt to the user. If user approves, tool executes. If user denies, tool is blocked. |
 
-> **⚠️ PreToolUse fields (`permissionDecision`, `updatedInput`, `additionalContext`) MUST be inside `hookSpecificOutput`.** Placing them at the JSON top-level causes VS Code to silently ignore the output — the tool call proceeds as if no hook existed. This is the most common PreToolUse hook bug.
+> **⚠️ PreToolUse fields (`permissionDecision`, `permissionDecisionReason`, `updatedInput`, `additionalContext`) MUST be inside `hookSpecificOutput`.** Placing them at the JSON top-level causes VS Code to silently ignore the output — the tool call proceeds as if no hook existed. This is the most common PreToolUse hook bug.
 >
 > ```json
 > // ❌ WRONG — VS Code ignores these fields at top-level
 > {
 >   "permissionDecision": "deny",
+>   "permissionDecisionReason": "reason for user",
 >   "additionalContext": "reason"
 > }
 >
@@ -210,6 +212,7 @@ Not all output mechanisms inject content into the agent's context. Some only dis
 > {
 >   "hookSpecificOutput": {
 >     "permissionDecision": "deny",
+>     "permissionDecisionReason": "reason for user",
 >     "additionalContext": "reason"
 >   }
 > }
@@ -363,7 +366,7 @@ $gitAction = $Matches[2]  # commit, push, or tag
 
 if ($gitAction -eq 'push' -or $gitAction -eq 'tag') {
     # Ask user for confirmation
-    @{ hookSpecificOutput = @{ permissionDecision = "ask"; additionalContext = "git $gitAction requires user confirmation" } } | ConvertTo-Json -Depth 3 | Write-Output
+    @{ hookSpecificOutput = @{ permissionDecision = "ask"; permissionDecisionReason = "git $gitAction requires user confirmation"; additionalContext = "git $gitAction requires user confirmation" } } | ConvertTo-Json -Depth 3 | Write-Output
     exit 0
 }
 

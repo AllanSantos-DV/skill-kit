@@ -194,7 +194,9 @@ $result = @{
     }
 }
 if ($contexts.Count -gt 0) {
-    $result.hookSpecificOutput['additionalContext'] = ($contexts -join '; ')
+    $contextText = ($contexts -join '; ')
+    $result.hookSpecificOutput['additionalContext'] = $contextText
+    $result.hookSpecificOutput['permissionDecisionReason'] = $contextText
 }
 
 $result | ConvertTo-Json -Depth 3

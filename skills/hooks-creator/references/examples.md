@@ -206,6 +206,7 @@ for pattern in "${DANGEROUS_PATTERNS[@]}"; do
 {
   "hookSpecificOutput": {
     "permissionDecision": "deny",
+    "permissionDecisionReason": "BLOCKED: Command matched dangerous pattern '$pattern'. This command was prevented by the safety hook.",
     "additionalContext": "BLOCKED: Command matched dangerous pattern '$pattern'. This command was prevented by the safety hook."
   }
 }
@@ -254,6 +255,7 @@ foreach ($pattern in $dangerousPatterns) {
         $result = @{
             hookSpecificOutput = @{
                 permissionDecision = "deny"
+                permissionDecisionReason = "BLOCKED: Command matched dangerous pattern '$pattern'. This command was prevented by the safety hook."
                 additionalContext = "BLOCKED: Command matched dangerous pattern '$pattern'. This command was prevented by the safety hook."
             }
         } | ConvertTo-Json -Depth 3

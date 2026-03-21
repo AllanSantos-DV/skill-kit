@@ -231,7 +231,7 @@ fi
 if [ -n "$CONTEXTS" ]; then
   if command -v jq &>/dev/null; then
     jq -n --arg decision "$FINAL_DECISION" --arg ctx "$CONTEXTS" \
-      '{"hookSpecificOutput":{"permissionDecision":$decision,"additionalContext":$ctx}}'
+      '{"hookSpecificOutput":{"permissionDecision":$decision,"additionalContext":$ctx,"permissionDecisionReason":$ctx}}'
   else
     # Manual JSON — escape quotes in context
     ESCAPED_CTX=$(echo "$CONTEXTS" | sed 's/"/\\"/g')
@@ -239,7 +239,8 @@ if [ -n "$CONTEXTS" ]; then
 {
   "hookSpecificOutput": {
     "permissionDecision": "${FINAL_DECISION}",
-    "additionalContext": "${ESCAPED_CTX}"
+    "additionalContext": "${ESCAPED_CTX}",
+    "permissionDecisionReason": "${ESCAPED_CTX}"
   }
 }
 EOJSON
