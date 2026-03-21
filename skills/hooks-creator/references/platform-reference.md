@@ -142,7 +142,8 @@ Both platforms expect the same JSON output structure from hooks:
   "hookSpecificOutput": {
     "systemMessage": "Message injected into context",
     "additionalContext": "Extra context for the agent",
-    "permissionDecision": "allow"
+    "permissionDecision": "allow",
+    "permissionDecisionReason": "Reason shown to user in confirmation prompt"
   }
 }
 ```
