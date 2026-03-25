@@ -7,5 +7,10 @@
   },
   "claudeHooks": {
     "path": "claude-hooks"
+  },
+  "neuralLink": {
+    "isRuntime": true,
+    "path": "neural-link",
+    "configTemplate": "neural-link/neural-link.config.json"
   }
 }
