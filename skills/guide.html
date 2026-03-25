@@ -6,114 +6,218 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Guia de Skills</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
-      font-size: var(--vscode-font-size, 13px);
-      color: var(--vscode-editor-foreground, #ccc);
-      background: var(--vscode-editor-background, #1e1e1e);
-      padding: 32px 24px;
-      max-width: 900px;
-      margin: 0 auto;
-      line-height: 1.6;
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --border: #30363d;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --accent-blue: #58a6ff;
+      --accent-green: #7ee787;
+      --accent-purple: #d2a8ff;
+      --accent-orange: #ffa657;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --glass-bg: rgba(22, 27, 34, 0.65);
+      --glass-border: rgba(48, 54, 61, 0.6);
     }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+      font-size: 16px;
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    code {
+      font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace;
+      background: rgba(110, 118, 129, 0.15);
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 0.88em;
+      color: var(--accent-orange);
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header / Mini-hero */
+    .header {
+      position: relative;
+      padding: 48px 0;
+      margin-bottom: 40px;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(88, 166, 255, 0.08) 0%, rgba(126, 231, 135, 0.05) 40%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .header .container {
+      position: relative;
+      z-index: 1;
+    }
+
     .back-link {
       display: inline-block;
-      margin-bottom: 12px;
-      color: var(--vscode-textLink-foreground, #3794ff);
+      margin-bottom: 16px;
+      color: var(--accent-blue);
       text-decoration: none;
       font-size: 0.9em;
+      font-weight: 500;
+      transition: color 0.2s;
     }
+
     .back-link:hover {
-      text-decoration: underline;
+      color: #79b8ff;
+      text-decoration: none;
     }
-    .header {
-      margin-bottom: 32px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.25));
-    }
+
     .header h1 {
-      font-size: 1.6em;
-      font-weight: 700;
-      margin-bottom: 8px;
-      letter-spacing: -0.01em;
+      font-size: 2em;
+      font-weight: 800;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
+
     .header p {
-      color: var(--vscode-descriptionForeground, #999);
-      font-size: 0.95em;
-      line-height: 1.5;
+      color: var(--text-secondary);
+      font-size: 1em;
+      line-height: 1.7;
+      max-width: 720px;
     }
+
+    .count-badge {
+      display: inline-block;
+      background: rgba(88, 166, 255, 0.12);
+      color: var(--accent-blue);
+      border: 1px solid rgba(88, 166, 255, 0.25);
+      font-size: 0.45em;
+      padding: 3px 12px;
+      border-radius: 20px;
+      margin-left: 8px;
+      font-weight: 700;
+      vertical-align: middle;
+      -webkit-text-fill-color: var(--accent-blue);
+    }
+
+    /* Cards */
+    .cards-container {
+      padding-bottom: 48px;
+    }
+
     .card {
-      background: var(--vscode-editorWidget-background, #252526);
-      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.2));
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 16px;
-      transition: border-color 0.15s;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 24px;
+      margin-bottom: 20px;
+      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
     }
+
     .card:hover {
-      border-color: var(--vscode-textLink-foreground, #4a9cd6);
+      border-color: rgba(88, 166, 255, 0.35);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 24px rgba(88, 166, 255, 0.06);
+      transform: translateY(-2px);
     }
+
     .card-header {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 12px;
+      margin-bottom: 12px;
     }
+
     .card-icon {
-      font-size: 1.3em;
-      width: 32px;
-      height: 32px;
+      font-size: 1.4em;
+      width: 48px;
+      height: 48px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 6px;
-      background: rgba(128,128,128,0.1);
+      border-radius: var(--radius-md);
+      background: rgba(88, 166, 255, 0.08);
       flex-shrink: 0;
     }
+
     .card-header h3 {
-      font-size: 1.1em;
-      font-weight: 600;
+      font-size: 1.15em;
+      font-weight: 700;
+      color: var(--text-primary);
       flex: 1;
     }
+
+    /* Category badges */
     .category-badge {
       font-size: 0.7em;
       padding: 2px 10px;
       border-radius: 12px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       white-space: nowrap;
     }
+
     .category-workflow {
-      background: rgba(74, 156, 214, 0.15);
-      color: #4a9cd6;
-      border: 1px solid rgba(74, 156, 214, 0.3);
+      background: rgba(88, 166, 255, 0.12);
+      color: var(--accent-blue);
+      border: 1px solid rgba(88, 166, 255, 0.25);
     }
+
     .category-tool {
-      background: rgba(76, 175, 80, 0.15);
-      color: #4caf50;
-      border: 1px solid rgba(76, 175, 80, 0.3);
+      background: rgba(126, 231, 135, 0.12);
+      color: var(--accent-green);
+      border: 1px solid rgba(126, 231, 135, 0.25);
     }
+
     .category-guide {
-      background: rgba(214, 148, 74, 0.15);
-      color: #d6944a;
-      border: 1px solid rgba(214, 148, 74, 0.3);
+      background: rgba(255, 166, 87, 0.12);
+      color: var(--accent-orange);
+      border: 1px solid rgba(255, 166, 87, 0.25);
     }
+
     .card-desc {
-      color: var(--vscode-descriptionForeground, #999);
-      line-height: 1.6;
-      margin-bottom: 12px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 14px;
+      font-size: 0.95em;
     }
+
     .section-label {
-      font-size: 0.8em;
-      font-weight: 600;
-      color: var(--vscode-descriptionForeground, #999);
+      font-size: 0.75em;
+      font-weight: 700;
+      color: var(--text-secondary);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-top: 14px;
-      margin-bottom: 6px;
+      letter-spacing: 0.08em;
+      margin-top: 16px;
+      margin-bottom: 8px;
     }
+
     .use-list {
       list-style: none;
       padding: 0;
@@ -121,51 +225,126 @@
       flex-wrap: wrap;
       gap: 6px;
     }
+
     .use-list li {
       font-size: 0.85em;
-      padding: 3px 10px;
-      border-radius: 4px;
-      background: var(--vscode-badge-background, #4d4d4d);
-      color: var(--vscode-badge-foreground, #fff);
+      padding: 4px 12px;
+      border-radius: 6px;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
     }
+
     .use-list.dont li {
-      background: rgba(214, 74, 74, 0.12);
-      color: #d64a4a;
-      border: 1px solid rgba(214, 74, 74, 0.25);
+      background: rgba(248, 81, 73, 0.08);
+      color: #f85149;
+      border: 1px solid rgba(248, 81, 73, 0.2);
     }
+
     .features {
       margin-top: 10px;
-      padding-left: 18px;
-      color: var(--vscode-editor-foreground, #ccc);
+      padding-left: 20px;
+      color: var(--text-primary);
       font-size: 0.9em;
     }
+
     .features li {
-      margin-bottom: 4px;
-      line-height: 1.5;
+      margin-bottom: 5px;
+      line-height: 1.6;
     }
-    .count-badge {
-      display: inline-block;
-      background: var(--vscode-badge-background, #4d4d4d);
-      color: var(--vscode-badge-foreground, #fff);
-      font-size: 0.8em;
-      padding: 2px 10px;
-      border-radius: 12px;
-      margin-left: 8px;
-      font-weight: 600;
+
+    .features li::marker {
+      color: var(--text-secondary);
+    }
+
+    /* Card icon tints per category */
+    .category-tool ~ .card-icon,
+    .card:nth-child(3) .card-icon,
+    .card:nth-child(8) .card-icon {
+      background: rgba(126, 231, 135, 0.08);
+    }
+
+    .category-guide ~ .card-icon {
+      background: rgba(255, 166, 87, 0.08);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header {
+        padding: 32px 0;
+      }
+      .header h1 {
+        font-size: 1.6em;
+      }
+      .container {
+        padding: 0 16px;
+      }
+      .card {
+        padding: 20px;
+      }
+      .card-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2em;
+      }
+      .card-header {
+        flex-wrap: wrap;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        font-size: 14px;
+      }
+      .header {
+        padding: 24px 0;
+        margin-bottom: 24px;
+      }
+      .header h1 {
+        font-size: 1.4em;
+      }
+      .container {
+        padding: 0 12px;
+      }
+      .card {
+        padding: 16px;
+        margin-bottom: 14px;
+        border-radius: var(--radius-md);
+      }
+      .card-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1.1em;
+        border-radius: var(--radius-sm);
+      }
+      .card-header h3 {
+        font-size: 1.05em;
+      }
+      .use-list {
+        gap: 4px;
+      }
+      .use-list li {
+        font-size: 0.8em;
+        padding: 3px 8px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <a href="../index.html" class="back-link">← Home</a>
-    <h1>📦 Guia de Skills <span class="count-badge">12</span></h1>
-    <p>
-      Skills são arquivos <code>SKILL.md</code> que injetam conhecimento especializado no agente de IA.
-      Cada skill ensina padrões, workflows e técnicas específicas de um domínio — funcionando como
-      instruções de sistema que o agente segue durante a sessão. Abaixo estão todas as skills disponíveis
-      neste repositório, organizadas com descrição, casos de uso e capacidades.
-    </p>
+    <div class="container">
+      <a href="../index.html" class="back-link">← Home</a>
+      <h1>📦 Guia de Skills <span class="count-badge">12</span></h1>
+      <p>
+        Skills são arquivos <code>SKILL.md</code> que injetam conhecimento especializado no agente de IA.
+        Cada skill ensina padrões, workflows e técnicas específicas de um domínio — funcionando como
+        instruções de sistema que o agente segue durante a sessão. Abaixo estão todas as skills disponíveis
+        neste repositório, organizadas com descrição, casos de uso e capacidades.
+      </p>
+    </div>
   </div>
+
+  <div class="container cards-container">
 
   <!-- agent-creator -->
   <div class="card">
@@ -597,6 +776,8 @@
       <li>Regras de quando NÃO produzir mapa (renames, typos, formatting)</li>
     </ul>
   </div>
+
+  </div><!-- .cards-container -->
 
 </body>
 </html>
