@@ -6,6 +6,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ## [Unreleased]
 
 ### Adicionado
+- Neural Link runtime incluído no Skill Kit (em `neural-link/`)
 - Documentação de `permissionDecisionReason` na skill hooks-creator (SKILL.md, platform-reference.md, examples.md)
 
 ### Alterado
