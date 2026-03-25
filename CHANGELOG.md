@@ -5,7 +5,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-03-25
+
 ### Adicionado
+- Redesign completo do `index.html` — tema dark (#0d1117), hero com gradient, seção Neural Link com badge "NEW", glassmorphism cards
+- Redesign dos 3 guides (`agents/guide.html`, `skills/guide.html`, `hooks/guide.html`) — design system unificado com index.html
 - Neural Link runtime incluído no Skill Kit (em `neural-link/`)
 - Documentação de `permissionDecisionReason` na skill hooks-creator (SKILL.md, platform-reference.md, examples.md)
 
