@@ -5,22 +5,33 @@ import { DEFAULT_HANDLER_WEIGHT, EPSILON } from '../infra/constants.js';
 
 /**
  * Score handlers against the current context.
- * Combines declarative scoring (weights + modifiers) with learned scoring.
+ *
+ * Two-phase approach (selective evaluation):
+ *   Phase 1 — Declarative scoring: evaluate config weights and modifiers (cheap, no ML).
+ *   Phase 2 — Learned scoring: init learner and combine only when at least one
+ *             handler survived with declarativeScore > 0.
+ *
  * Returns array of { name, handler, score, features } for all eligible handlers.
  */
 export async function scoreHandlers(context, config) {
   const results = [];
   const learningConfig = config.learning || {};
-  const learner = await getLearner(learningConfig, context.cwd);
-  learner.load(context.cwd);
   const features = extractFeatures(context);
 
+  // --- Phase 1: Declarative scoring (no ML, no learner I/O) ---
+  const declarativeResults = [];
   for (const [name, handler] of Object.entries(config.handlers)) {
     if (!handler.enabled) continue;
     if (!handler.events.includes(context.event_type)) continue;
 
     const defaultWeight = learningConfig.defaultWeight ?? DEFAULT_HANDLER_WEIGHT;
     let declarativeScore = handler.weight ?? defaultWeight;
+
+    // Fast path: base weight is 0 and no modifier can raise it
+    if (declarativeScore === 0 && !canModifiersElevate(handler.modifiers)) {
+      declarativeResults.push({ name, handler, declarativeScore: 0.0 });
+      continue;
+    }
 
     for (const mod of handler.modifiers) {
       if (evaluateCondition(mod.condition, context)) {
@@ -29,20 +40,44 @@ export async function scoreHandlers(context, config) {
     }
     declarativeScore = Math.max(0.0, Math.min(1.0, declarativeScore));
 
-    // Combined score: only mix when declarative is non-zero.
-    // If a modifier explicitly zeroed the score (=0.0), the handler is
-    // irrelevant for this context — the learner must not resurrect it.
+    declarativeResults.push({ name, handler, declarativeScore });
+  }
+
+  // --- Phase 2: Learned scoring — lazy learner init ---
+  const needsLearner = declarativeResults.some(r => r.declarativeScore > 0);
+  let learner = null;
+
+  if (needsLearner) {
+    learner = await getLearner(learningConfig, context.cwd);
+    learner.load(context.cwd);
+  }
+
+  for (const { name, handler, declarativeScore } of declarativeResults) {
     let score;
     if (declarativeScore === 0.0) {
       score = 0.0;
     } else {
       score = learner.combine(name, declarativeScore, features.vector);
     }
-
     results.push({ name, handler, score, declarativeScore, features });
   }
 
   return results;
+}
+
+/**
+ * Check if any modifier can elevate a score from 0.
+ * Only '+' with positive value or '=' with positive value can raise zero.
+ * Multiplication and subtraction on zero remain zero.
+ */
+function canModifiersElevate(modifiers) {
+  if (!modifiers || modifiers.length === 0) return false;
+  return modifiers.some(mod => {
+    if (!mod.adjust || typeof mod.adjust !== 'string') return false;
+    const op = mod.adjust[0];
+    const value = parseFloat(mod.adjust.slice(1));
+    return (op === '+' && value > 0) || (op === '=' && value > 0);
+  });
 }
 
 /**

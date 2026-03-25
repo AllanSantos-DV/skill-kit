@@ -2,12 +2,34 @@ import { spawn } from 'node:child_process';
 import { homedir } from 'node:os';
 import { resolve, normalize, isAbsolute } from 'node:path';
 import { existsSync, statSync } from 'node:fs';
+import { HANDLER_TIMEOUT_MS } from '../infra/constants.js';
 
 const isWindows = process.platform === 'win32';
+
+const FAIL_OPEN_RESULT = Object.freeze({ decision: 'allow', reason: '', hookSpecificOutput: {} });
+
+/**
+ * Wrap a promise with a timeout guard using Promise.race.
+ * If the handler doesn't resolve within timeoutMs, returns fail-open result
+ * and the timer is cleaned up via finally to prevent leaks.
+ */
+function withTimeout(promise, timeoutMs, name) {
+  let timer;
+  const timeoutPromise = new Promise(resolve => {
+    timer = setTimeout(() => {
+      console.error(`[Timeout] Handler ${name} exceeded ${timeoutMs}ms, fail-open`);
+      resolve({ ...FAIL_OPEN_RESULT });
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
 
 /**
  * Execute active handlers in parallel.
  * Each handler receives the original stdin JSON via pipe.
+ * Uses Promise.race per handler: inner timeout kills child process,
+ * outer race guarantees the pipeline always moves forward.
  * Returns array of { name, score, result }.
  */
 export async function executeHandlers(active, stdinJson, config) {
@@ -18,9 +40,12 @@ export async function executeHandlers(active, stdinJson, config) {
   const promises = active.map(({ name, handler, score }) => {
     const timeout = handler.timeout
       ?? config.eventTimeouts?.[eventType]
-      ?? config.defaultTimeout;
+      ?? config.defaultTimeout
+      ?? HANDLER_TIMEOUT_MS;
 
-    return runHandler(name, handler, stdinStr, timeout)
+    const handlerExec = runHandler(name, handler, stdinStr, timeout);
+
+    return withTimeout(handlerExec, timeout, name)
       .then(result => ({ name, score, result }));
   });
 

@@ -41,6 +41,13 @@ export const LLM_MARGIN = 0.1;
 export const LLM_ADJUSTMENT = 0.1;
 
 // ========================================
+// Execution
+// ========================================
+
+/** Default per-handler timeout in milliseconds (final fallback when config doesn't specify) */
+export const HANDLER_TIMEOUT_MS = 5000;
+
+// ========================================
 // Persistence and I/O
 // ========================================
 

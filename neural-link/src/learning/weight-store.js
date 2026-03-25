@@ -3,12 +3,18 @@
  * 
  * Encapsulates file I/O logic and backup fallback strategy.
  * Allows for testability via dependency injection (MockWeightStore).
+ *
+ * E-02: Optimized loading with "last known good path" hint file.
+ * Instead of cascading through all candidates every time, we remember
+ * which path succeeded and try it first on the next invocation.
  */
 
-import { readFileSync, existsSync, copyFileSync } from 'node:fs';
+import { readFileSync, existsSync, copyFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { PATHS, FILES } from '../infra/paths.js';
+
+const WEIGHT_PATH_HINT = join(PATHS.BASE, '.weight-path-hint');
 
 /**
  * Persistent weight storage with backup fallback.
@@ -20,12 +26,41 @@ export class WeightStore {
   }
 
   /**
+   * Try reading and parsing weights from a single path.
+   * Returns { weights, activations } or null on failure.
+   */
+  _tryRead(path) {
+    try {
+      if (!existsSync(path)) return null;
+      const raw = readFileSync(path, 'utf-8');
+      const data = JSON.parse(raw);
+      return {
+        weights: data.weights || {},
+        activations: data.activations || {},
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Load weights from disk. Returns { weights, activations } or null if not found.
-   * Tries workspace paths first, then global, then backups.
+   * E-02: Tries last-known-good path first, then falls back to full cascade.
    */
   load(workspacePath = null) {
     if (workspacePath) this._workspacePath = workspacePath;
 
+    // E-02: Try last-known-good path hint first (fast path)
+    const hintPath = this._readPathHint();
+    if (hintPath) {
+      const result = this._tryRead(hintPath);
+      if (result) {
+        this._loadedFrom = hintPath;
+        return result;
+      }
+    }
+
+    // Full cascade fallback
     const candidates = [];
     if (this._workspacePath) {
       const wsFile = join(this._workspacePath, '.neural-link.weights.json');
@@ -36,17 +71,11 @@ export class WeightStore {
     candidates.push(FILES.BACKUP_WEIGHTS);
 
     for (const path of candidates) {
-      if (!existsSync(path)) continue;
-      try {
-        const raw = readFileSync(path, 'utf-8');
-        const data = JSON.parse(raw);
+      const result = this._tryRead(path);
+      if (result) {
         this._loadedFrom = path;
-        return {
-          weights: data.weights || {},
-          activations: data.activations || {},
-        };
-      } catch {
-        continue;
+        this._writePathHint(path);
+        return result;
       }
     }
 
@@ -77,6 +106,8 @@ export class WeightStore {
           copyFileSync(wsPath, wsBackup);
         }
         await writeFile(wsPath, json);
+        // E-02: Update hint to workspace path (most specific)
+        this._writePathHint(wsPath);
       } catch {
         // Workspace save failed — fall through to global
       }
@@ -91,6 +122,31 @@ export class WeightStore {
       await writeFile(FILES.LEARNED_WEIGHTS, json);
     } catch {
       // Persistence failure is non-critical
+    }
+  }
+
+  /**
+   * Read last-known-good path from hint file.
+   */
+  _readPathHint() {
+    try {
+      if (!existsSync(WEIGHT_PATH_HINT)) return null;
+      const hint = readFileSync(WEIGHT_PATH_HINT, 'utf-8').trim();
+      return hint || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Persist successful load path for next invocation.
+   */
+  _writePathHint(path) {
+    try {
+      mkdirSync(PATHS.BASE, { recursive: true });
+      writeFileSync(WEIGHT_PATH_HINT, path);
+    } catch {
+      // Hint write failure is non-critical
     }
   }
 

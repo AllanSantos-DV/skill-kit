@@ -9,7 +9,7 @@ import { recordDecision, checkOverrides } from '../infra/session-tracker.js';
 import { extractFeatures } from '../learning/features.js';
 import { getLearner } from '../learning/learner.js';
 import { applyLLMFallback } from '../learning/llm-evaluator.js';
-import { tryNonCritical, tryNonCriticalAsync } from '../infra/error-handler.js';
+import { tryNonCriticalAsync } from '../infra/error-handler.js';
 
 /**
  * Pipeline builder for composable stage execution.
@@ -42,18 +42,25 @@ export function createPipeline() {
 }
 
 /**
- * Create the default Neural Link pipeline.
- * Stages: sensor → scoring → threshold → executor → compositor → feedback.
+ * Create the response-critical pipeline (stages needed before stdout).
+ * Stages: sensor → [overrides‖scoring] → llm → filter → executor → compositor.
  */
-function createDefaultPipeline() {
+function createResponsePipeline() {
   return createPipeline()
     .use(senseStage)
-    .use(checkOverridesStage)
-    .use(scoringStage)
+    .use(overridesAndScoringStage)
     .use(llmFallbackStage)
     .use(filterStage)
     .use(executeStage)
-    .use(composeStage)
+    .use(composeStage);
+}
+
+/**
+ * Create the deferred pipeline (post-response stages).
+ * Stages: logger → record → feedback → postTool → falseNeg.
+ */
+function createDeferredPipeline() {
+  return createPipeline()
     .use(logStage)
     .use(recordDecisionsStage)
     .use(feedbackStage)
@@ -62,13 +69,50 @@ function createDefaultPipeline() {
 }
 
 /**
+ * Create the default Neural Link pipeline.
+ * Stages: sensor → [overrides‖scoring] → llm → filter → executor → compositor → [post-response].
+ *
+ * Parallelization:
+ *   - checkOverrides and scoring are independent → Promise.all
+ *   - Post-response stages (log, record, feedback, postTool, falseNeg) have
+ *     no output dependency → Promise.all in background
+ */
+function createDefaultPipeline() {
+  return createPipeline()
+    .use(senseStage)
+    .use(overridesAndScoringStage)
+    .use(llmFallbackStage)
+    .use(filterStage)
+    .use(executeStage)
+    .use(composeStage)
+    .use(postResponseStage);
+}
+
+/**
  * Main dispatch function.
  * Orchestrates: sensor → scoring → threshold → executor → compositor → feedback.
+ *
+ * When earlyReturn is true, returns { output, runPostResponse } so callers
+ * can emit stdout before deferred stages (logging, feedback, weight saving).
  */
-export async function dispatch(stdinJson) {
-  const pipeline = createDefaultPipeline();
-  const result = await pipeline.execute({ stdinJson });
-  return result.output ?? {};
+export async function dispatch(stdinJson, { earlyReturn = false } = {}) {
+  if (!earlyReturn) {
+    const pipeline = createDefaultPipeline();
+    const result = await pipeline.execute({ stdinJson });
+    return result.output ?? {};
+  }
+
+  // Early-return mode: split response from deferred work
+  const responsePipeline = createResponsePipeline();
+  const ctx = await responsePipeline.execute({ stdinJson });
+  const output = ctx.output ?? {};
+
+  const runPostResponse = async () => {
+    const deferred = createDeferredPipeline();
+    await deferred.execute(ctx);
+  };
+
+  return { output, runPostResponse };
 }
 
 // ============================================================================
@@ -81,22 +125,26 @@ async function senseStage(ctx) {
   return { ...ctx, config, context };
 }
 
-async function checkOverridesStage(ctx) {
-  await tryNonCriticalAsync(async () => {
-    const overrideSignals = checkOverrides(ctx.context.sessionId, ctx.context.tool_name, ctx.context.command);
-    if (overrideSignals.length > 0) {
-      const learner = await getLearner(ctx.config.learning || {}, ctx.context.cwd);
-      const features = extractFeatures(ctx.context);
-      for (const signal of overrideSignals) {
-        learner.update(signal.handler, features.vector, signal.reward);
+/**
+ * Parallel stage: checkOverrides and scoring run concurrently.
+ * checkOverrides updates learner with override signals (past decisions);
+ * scoring computes handler scores for the current context.
+ * Both are independent of each other's output.
+ */
+async function overridesAndScoringStage(ctx) {
+  const [, scored] = await Promise.all([
+    tryNonCriticalAsync(async () => {
+      const overrideSignals = checkOverrides(ctx.context.sessionId, ctx.context.tool_name, ctx.context.command);
+      if (overrideSignals.length > 0) {
+        const learner = await getLearner(ctx.config.learning || {}, ctx.context.cwd);
+        const features = extractFeatures(ctx.context);
+        for (const signal of overrideSignals) {
+          learner.update(signal.handler, features.vector, signal.reward);
+        }
       }
-    }
-  }, 'checkOverrides');
-  return ctx;
-}
-
-async function scoringStage(ctx) {
-  const scored = await scoreHandlers(ctx.context, ctx.config);
+    }, 'checkOverrides'),
+    scoreHandlers(ctx.context, ctx.config),
+  ]);
   return { ...ctx, scored };
 }
 
@@ -132,6 +180,68 @@ async function composeStage(ctx) {
   return { ...ctx, output };
 }
 
+/**
+ * Parallel post-response stage: all tasks run concurrently via Promise.all.
+ * None of these produce output needed by the pipeline — they are
+ * side-effect-only (logging, weight updates, session tracking).
+ */
+async function postResponseStage(ctx) {
+  await Promise.all([
+    // Logging
+    ctx.results
+      ? tryNonCriticalAsync(
+          () => logActivation(ctx.context, ctx.active, ctx.results, ctx.output),
+          'logActivation'
+        )
+      : Promise.resolve(),
+
+    // Record decisions to session tracker
+    ctx.results
+      ? tryNonCriticalAsync(() => {
+          for (const r of ctx.results) {
+            const decision = r.result?.decision
+              ?? r.result?.hookSpecificOutput?.permissionDecision
+              ?? 'allow';
+            recordDecision(ctx.context.sessionId, {
+              handler: r.name,
+              tool: ctx.context.tool_name,
+              command: ctx.context.command,
+              decision,
+            });
+          }
+        }, 'recordDecision')
+      : Promise.resolve(),
+
+    // Feedback — update learner weights from handler results
+    ctx.results
+      ? tryNonCriticalAsync(
+          () => processFeedback(ctx.context, ctx.scored, ctx.results, ctx.config.learning || {}),
+          'processFeedback'
+        )
+      : Promise.resolve(),
+
+    // Post-tool feedback
+    ctx.active?.length
+      ? tryNonCriticalAsync(
+          () => processPostToolFeedback(ctx.context, ctx.config, ctx.config.learning || {}),
+          'processPostToolFeedback'
+        )
+      : Promise.resolve(),
+
+    // False negative detection
+    ctx.active
+      ? tryNonCriticalAsync(
+          () => detectFalseNegatives(ctx.context, ctx.scored, ctx.active, ctx.config, ctx.config.learning || {}),
+          'detectFalseNegatives'
+        )
+      : Promise.resolve(),
+  ]);
+
+  return ctx;
+}
+
+// Individual stage functions for the deferred pipeline (earlyReturn mode)
+
 async function logStage(ctx) {
   if (ctx.results) {
     logActivation(ctx.context, ctx.active, ctx.results, ctx.output);
@@ -140,10 +250,8 @@ async function logStage(ctx) {
 }
 
 async function recordDecisionsStage(ctx) {
-  if (!ctx.results) {
-    return ctx;
-  }
-  tryNonCritical(() => {
+  if (!ctx.results) return ctx;
+  tryNonCriticalAsync(() => {
     for (const r of ctx.results) {
       const decision = r.result?.decision
         ?? r.result?.hookSpecificOutput?.permissionDecision
@@ -160,9 +268,7 @@ async function recordDecisionsStage(ctx) {
 }
 
 async function feedbackStage(ctx) {
-  if (!ctx.results) {
-    return ctx;
-  }
+  if (!ctx.results) return ctx;
   await tryNonCriticalAsync(
     () => processFeedback(ctx.context, ctx.scored, ctx.results, ctx.config.learning || {}),
     'processFeedback'
@@ -171,6 +277,7 @@ async function feedbackStage(ctx) {
 }
 
 async function postToolFeedbackStage(ctx) {
+  if (!ctx.active?.length) return ctx;
   await tryNonCriticalAsync(
     () => processPostToolFeedback(ctx.context, ctx.config, ctx.config.learning || {}),
     'processPostToolFeedback'
@@ -179,9 +286,7 @@ async function postToolFeedbackStage(ctx) {
 }
 
 async function falseNegativeStage(ctx) {
-  if (!ctx.active) {
-    return ctx;
-  }
+  if (!ctx.active) return ctx;
   await tryNonCriticalAsync(
     () => detectFalseNegatives(ctx.context, ctx.scored, ctx.active, ctx.config, ctx.config.learning || {}),
     'detectFalseNegatives'
