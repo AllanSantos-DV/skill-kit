@@ -2,517 +2,847 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:;" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Skill Kit</title>
+  <meta name="description" content="Skill Kit — Coleção de skills, agents, hooks e Neural Link runtime para o GitHub Copilot" />
+  <title>Skill Kit — GitHub Copilot Skills, Agents &amp; Hooks</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
-      font-size: var(--vscode-font-size, 13px);
-      color: var(--vscode-editor-foreground, #ccc);
-      background: var(--vscode-editor-background, #1e1e1e);
-      padding: 32px 24px;
-      max-width: 900px;
-      margin: 0 auto;
-      line-height: 1.6;
-    }
-    a { color: var(--vscode-textLink-foreground, #4a9cd6); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    code {
-      font-family: var(--vscode-editor-font-family, 'Cascadia Code', Consolas, monospace);
-      background: rgba(128,128,128,0.12);
-      padding: 1px 5px;
-      border-radius: 3px;
-      font-size: 0.92em;
+    /* ═══════════════════════════════════════════
+       RESET & BASE
+       ═══════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --border: #30363d;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --accent-blue: #58a6ff;
+      --accent-green: #7ee787;
+      --accent-purple: #d2a8ff;
+      --accent-orange: #ffa657;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --glass-bg: rgba(22, 27, 34, 0.65);
+      --glass-border: rgba(48, 54, 61, 0.6);
     }
 
-    /* Header */
-    .header {
-      margin-bottom: 32px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.25));
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+      font-size: 16px;
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
-    .header h1 {
-      font-size: 1.8em;
-      font-weight: 700;
+
+    a { color: var(--accent-blue); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: #79b8ff; }
+
+    code {
+      font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace;
+      background: rgba(110, 118, 129, 0.15);
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 0.88em;
+      color: var(--accent-orange);
+    }
+
+    /* ═══════════════════════════════════════════
+       LAYOUT
+       ═══════════════════════════════════════════ */
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ═══════════════════════════════════════════
+       HERO
+       ═══════════════════════════════════════════ */
+    .hero {
+      position: relative;
+      padding: 80px 0 64px;
+      text-align: center;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 600px;
+      background: radial-gradient(ellipse at center, rgba(88, 166, 255, 0.08) 0%, rgba(210, 168, 255, 0.05) 40%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-content { position: relative; z-index: 1; }
+
+    .hero-title {
+      font-size: 3.2em;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
       margin-bottom: 8px;
-      letter-spacing: -0.01em;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-blue) 50%, var(--accent-purple) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
-    .header p {
-      color: var(--vscode-descriptionForeground, #999);
-      font-size: 0.95em;
+
+    .hero-version {
+      display: inline-block;
+      background: rgba(88, 166, 255, 0.12);
+      color: var(--accent-blue);
+      border: 1px solid rgba(88, 166, 255, 0.25);
+      font-size: 0.75rem;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      margin-bottom: 16px;
+    }
+
+    .hero-subtitle {
+      font-size: 1.2em;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 28px;
       line-height: 1.5;
     }
-    .version-badge {
-      display: inline-block;
-      background: rgba(74, 156, 214, 0.15);
-      color: #4a9cd6;
-      border: 1px solid rgba(74, 156, 214, 0.3);
-      font-size: 0.7em;
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-weight: 600;
-      vertical-align: middle;
-      margin-left: 10px;
-      letter-spacing: 0.03em;
-    }
-    .stats {
-      margin-top: 12px;
+
+    .hero-stats {
       display: flex;
-      gap: 16px;
+      justify-content: center;
+      gap: 8px;
       flex-wrap: wrap;
+      font-size: 0.95rem;
     }
-    .stat {
+    .hero-stat {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.9em;
-      color: var(--vscode-editor-foreground, #ccc);
+      padding: 6px 16px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
-    .stat-number {
+    .hero-stat-number {
       font-weight: 700;
-      color: var(--vscode-textLink-foreground, #4a9cd6);
+      color: var(--accent-blue);
+    }
+    .hero-stat-label {
+      color: var(--text-secondary);
+    }
+    .hero-stat-runtime {
+      background: rgba(210, 168, 255, 0.08);
+      border-color: rgba(210, 168, 255, 0.2);
+    }
+    .hero-stat-runtime .hero-stat-label {
+      color: var(--accent-purple);
+      font-weight: 600;
     }
 
-    /* Cards */
-    .card {
-      background: var(--vscode-editorWidget-background, #252526);
-      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.2));
-      border-radius: 8px;
-      padding: 20px;
+    /* ═══════════════════════════════════════════
+       SECTION HELPERS
+       ═══════════════════════════════════════════ */
+    .section { padding: 48px 0; }
+    .section-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .section-title {
+      font-size: 1.8em;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+    .section-desc {
+      color: var(--text-secondary);
+      max-width: 640px;
+      margin: 0 auto;
+      font-size: 1.05rem;
+    }
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, var(--border) 50%, transparent 100%);
+      margin: 0;
+      border: none;
+    }
+
+    /* ═══════════════════════════════════════════
+       NEURAL LINK SECTION
+       ═══════════════════════════════════════════ */
+    .neural-link {
+      position: relative;
+      padding: 56px 0;
+    }
+    .neural-link::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(210, 168, 255, 0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .nl-card {
+      position: relative;
+      background: var(--glass-bg);
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      overflow: hidden;
+    }
+    .nl-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius-lg);
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(210, 168, 255, 0.4), rgba(88, 166, 255, 0.15), rgba(210, 168, 255, 0.1));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+    .nl-card::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(210, 168, 255, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .nl-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
       margin-bottom: 16px;
-      transition: border-color 0.15s, box-shadow 0.15s;
+      position: relative;
+      z-index: 1;
+      flex-wrap: wrap;
+    }
+    .nl-icon {
+      font-size: 2em;
+      line-height: 1;
+    }
+    .nl-title {
+      font-size: 1.5em;
+      font-weight: 700;
+      color: var(--accent-purple);
+    }
+    .nl-badge-new {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--accent-purple), #b07eff);
+      color: #fff;
+      font-size: 0.65rem;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .nl-desc {
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+      line-height: 1.7;
+      max-width: 640px;
+      margin-bottom: 32px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .nl-features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      position: relative;
+      z-index: 1;
+    }
+    .nl-feature {
+      background: rgba(13, 17, 23, 0.5);
+      border: 1px solid rgba(210, 168, 255, 0.12);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .nl-feature:hover {
+      border-color: rgba(210, 168, 255, 0.3);
+      box-shadow: 0 0 20px rgba(210, 168, 255, 0.06);
+    }
+    .nl-feature-icon {
+      font-size: 1.4em;
+      margin-bottom: 8px;
       display: block;
+    }
+    .nl-feature-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+      color: var(--text-primary);
+    }
+    .nl-feature-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .nl-note {
+      margin-top: 24px;
+      padding: 12px 16px;
+      background: rgba(210, 168, 255, 0.06);
+      border-left: 3px solid var(--accent-purple);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      position: relative;
+      z-index: 1;
+    }
+    .nl-note strong { color: var(--accent-purple); }
+
+    /* ═══════════════════════════════════════════
+       NAVIGATION CARDS GRID
+       ═══════════════════════════════════════════ */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
       color: inherit;
+      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      position: relative;
+      overflow: hidden;
     }
-    a.card:hover {
-      border-color: var(--vscode-textLink-foreground, #4a9cd6);
-      box-shadow: 0 0 0 1px rgba(74, 156, 214, 0.15);
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
       text-decoration: none;
+      border-color: rgba(88, 166, 255, 0.35);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 24px rgba(88, 166, 255, 0.06);
     }
-    .card-header {
+    .card:hover::after { opacity: 1; }
+
+    .card-agents::after { background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue)); }
+    .card-agents:hover { border-color: rgba(210, 168, 255, 0.35); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 24px rgba(210, 168, 255, 0.06); }
+
+    .card-skills::after { background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); }
+    .card-skills:hover { border-color: rgba(88, 166, 255, 0.35); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 24px rgba(88, 166, 255, 0.06); }
+
+    .card-hooks::after { background: linear-gradient(90deg, var(--accent-orange), var(--accent-blue)); }
+    .card-hooks:hover { border-color: rgba(255, 166, 87, 0.35); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 24px rgba(255, 166, 87, 0.06); }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .card-icon {
+      font-size: 1.6em;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-md);
+      flex-shrink: 0;
+    }
+    .card-agents .card-icon { background: rgba(210, 168, 255, 0.1); }
+    .card-skills .card-icon { background: rgba(88, 166, 255, 0.1); }
+    .card-hooks .card-icon { background: rgba(255, 166, 87, 0.1); }
+
+    .card-title-group { flex: 1; }
+    .card-title {
+      font-size: 1.2em;
+      font-weight: 700;
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 10px;
     }
-    .card-icon {
-      font-size: 1.3em;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      background: rgba(128,128,128,0.1);
-      flex-shrink: 0;
-    }
-    .card-header h2 {
-      font-size: 1.15em;
-      font-weight: 600;
-      flex: 1;
-    }
-    .card-desc {
-      color: var(--vscode-descriptionForeground, #999);
-      line-height: 1.6;
-      margin-bottom: 14px;
-    }
-    .card-arrow {
-      font-size: 0.85em;
-      color: var(--vscode-textLink-foreground, #4a9cd6);
-      margin-left: auto;
-      flex-shrink: 0;
-    }
-    .count-badge {
+    .card-count {
       display: inline-block;
-      background: var(--vscode-badge-background, #4d4d4d);
-      color: var(--vscode-badge-foreground, #fff);
-      font-size: 0.75em;
+      font-size: 0.7rem;
       padding: 2px 10px;
       border-radius: 12px;
-      margin-left: 8px;
-      font-weight: 600;
+      font-weight: 700;
+    }
+    .card-agents .card-count { background: rgba(210, 168, 255, 0.15); color: var(--accent-purple); }
+    .card-skills .card-count { background: rgba(88, 166, 255, 0.15); color: var(--accent-blue); }
+    .card-hooks .card-count { background: rgba(255, 166, 87, 0.15); color: var(--accent-orange); }
+
+    .card-desc {
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+      line-height: 1.6;
+      margin-bottom: 18px;
     }
 
-    /* Mini list */
-    .section-label {
-      font-size: 0.78em;
+    .card-arrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
       font-weight: 600;
-      color: var(--vscode-descriptionForeground, #999);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-top: 14px;
-      margin-bottom: 6px;
+      margin-top: auto;
+      padding-top: 14px;
+      transition: gap 0.2s;
     }
-    .mini-list {
+    .card:hover .card-arrow { gap: 10px; }
+    .card-agents .card-arrow { color: var(--accent-purple); }
+    .card-skills .card-arrow { color: var(--accent-blue); }
+    .card-hooks .card-arrow { color: var(--accent-orange); }
+
+    /* ─── Card item lists ─── */
+    .card-items { margin-bottom: 6px; }
+    .card-items-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      margin-top: 12px;
+    }
+    .item-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      font-size: 0.88rem;
+    }
+    .item-name { font-weight: 600; color: var(--text-primary); }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.62rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .badge-coordinator { background: rgba(210, 168, 255, 0.12); color: var(--accent-purple); border: 1px solid rgba(210, 168, 255, 0.25); }
+    .badge-readonly { background: rgba(255, 166, 87, 0.12); color: var(--accent-orange); border: 1px solid rgba(255, 166, 87, 0.25); }
+    .badge-full { background: rgba(126, 231, 135, 0.12); color: var(--accent-green); border: 1px solid rgba(126, 231, 135, 0.25); }
+
+    .tag-list {
       list-style: none;
-      padding: 0;
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
     }
-    .mini-list li {
-      font-size: 0.85em;
+    .tag-list li {
+      font-size: 0.8rem;
       padding: 3px 10px;
-      border-radius: 4px;
-      background: var(--vscode-badge-background, #4d4d4d);
-      color: var(--vscode-badge-foreground, #fff);
+      border-radius: 6px;
+      background: rgba(110, 118, 129, 0.12);
+      color: var(--text-secondary);
+      border: 1px solid rgba(48, 54, 61, 0.5);
     }
 
-    /* Badges */
-    .badge {
-      font-size: 0.68em;
+    .event-badge {
+      display: inline-block;
+      font-size: 0.62rem;
       padding: 2px 8px;
-      border-radius: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      white-space: nowrap;
-      vertical-align: middle;
-      margin-left: 4px;
-    }
-    .badge-coordinator {
-      background: rgba(155, 89, 182, 0.15);
-      color: #b07ed4;
-      border: 1px solid rgba(155, 89, 182, 0.3);
-    }
-    .badge-readonly {
-      background: rgba(214, 148, 74, 0.15);
-      color: #d6944a;
-      border: 1px solid rgba(214, 148, 74, 0.3);
-    }
-    .badge-full {
-      background: rgba(76, 175, 80, 0.15);
-      color: #4caf50;
-      border: 1px solid rgba(76, 175, 80, 0.3);
-    }
-    .badge-workflow {
-      background: rgba(74, 156, 214, 0.15);
-      color: #4a9cd6;
-      border: 1px solid rgba(74, 156, 214, 0.3);
-    }
-    .badge-tool {
-      background: rgba(76, 175, 80, 0.15);
-      color: #4caf50;
-      border: 1px solid rgba(76, 175, 80, 0.3);
-    }
-    .badge-guide {
-      background: rgba(214, 148, 74, 0.15);
-      color: #d6944a;
-      border: 1px solid rgba(214, 148, 74, 0.3);
-    }
-    .badge-event {
-      font-size: 0.68em;
-      padding: 2px 8px;
-      border-radius: 12px;
+      border-radius: 10px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       color: #fff;
-      white-space: nowrap;
     }
-    .badge-PreToolUse { background: #4a9cd6; }
-    .badge-Stop { background: #d6944a; }
-    .badge-SubagentStart { background: #9b59b6; }
+    .event-PreToolUse { background: var(--accent-blue); }
+    .event-Stop { background: var(--accent-orange); }
+    .event-SubagentStart { background: #b07eff; }
 
-    /* Handoff diagram */
-    .handoff-diagram {
-      background: rgba(128,128,128,0.06);
-      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.15));
-      border-radius: 6px;
-      padding: 14px 16px;
-      margin-top: 10px;
-      font-family: var(--vscode-editor-font-family, 'Cascadia Code', Consolas, monospace);
-      font-size: 0.85em;
-      line-height: 1.5;
-      white-space: pre;
-      overflow-x: auto;
-      color: var(--vscode-editor-foreground, #ccc);
-    }
-
-    /* Weight model */
-    .weight-model {
-      background: rgba(128,128,128,0.06);
-      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.15));
-      border-radius: 6px;
-      padding: 16px 20px;
-      margin-top: 10px;
-      text-align: center;
-    }
-    .weight-track {
+    .hook-group { margin-bottom: 10px; }
+    .hook-group-label {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 0;
-      margin-bottom: 8px;
+      gap: 8px;
+      margin-bottom: 6px;
     }
-    .weight-node {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-    }
-    .weight-node .label {
+
+    /* Category badge for skills */
+    .cat-badge {
+      display: inline-block;
+      font-size: 0.62rem;
+      padding: 2px 8px;
+      border-radius: 10px;
       font-weight: 700;
-      font-size: 1em;
-      color: var(--vscode-editor-foreground, #ccc);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
-    .weight-node .desc {
-      font-size: 0.82em;
-      color: var(--vscode-descriptionForeground, #999);
-    }
-    .weight-line {
-      width: 60px;
-      height: 2px;
-      background: var(--vscode-widget-border, rgba(128,128,128,0.4));
-      margin: 0 12px;
-      margin-bottom: 20px;
-    }
+    .cat-workflow { background: rgba(88, 166, 255, 0.12); color: var(--accent-blue); border: 1px solid rgba(88, 166, 255, 0.25); }
+    .cat-tool { background: rgba(126, 231, 135, 0.12); color: var(--accent-green); border: 1px solid rgba(126, 231, 135, 0.25); }
+    .cat-guide { background: rgba(255, 166, 87, 0.12); color: var(--accent-orange); border: 1px solid rgba(255, 166, 87, 0.25); }
 
-    /* Sections */
-    .section-title {
+    /* ═══════════════════════════════════════════
+       QUICK START
+       ═══════════════════════════════════════════ */
+    .quickstart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .qs-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .qs-card h3 {
       font-size: 1.1em;
       font-weight: 700;
-      margin-top: 36px;
-      margin-bottom: 16px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.25));
-    }
-
-    /* Quick start */
-    .quickstart-box {
-      background: var(--vscode-editorWidget-background, #252526);
-      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.2));
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 16px;
-    }
-    .quickstart-box h3 {
-      font-size: 1em;
-      font-weight: 600;
-      margin-bottom: 12px;
-    }
-    .quickstart-box ol {
-      padding-left: 20px;
-      color: var(--vscode-descriptionForeground, #999);
-      font-size: 0.92em;
-    }
-    .quickstart-box ol li {
-      margin-bottom: 8px;
-      line-height: 1.6;
-    }
-    .quickstart-box ol li strong {
-      color: var(--vscode-editor-foreground, #ccc);
-    }
-
-    /* Footer */
-    .footer {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.25));
-      text-align: center;
-      color: var(--vscode-descriptionForeground, #999);
-      font-size: 0.85em;
-    }
-
-    /* Agent mini-list */
-    .agent-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    .agent-list li {
+      margin-bottom: 6px;
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 5px 0;
-      font-size: 0.9em;
+      gap: 10px;
     }
-    .agent-list li .name {
-      font-weight: 600;
-      color: var(--vscode-editor-foreground, #ccc);
+    .qs-recommended {
+      display: inline-block;
+      background: rgba(126, 231, 135, 0.12);
+      color: var(--accent-green);
+      border: 1px solid rgba(126, 231, 135, 0.25);
+      font-size: 0.62rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .qs-subtitle {
+      color: var(--text-secondary);
+      font-size: 0.88rem;
+      margin-bottom: 20px;
+    }
+    .qs-card ol {
+      padding-left: 20px;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    .qs-card ol li {
+      margin-bottom: 10px;
+      line-height: 1.65;
+    }
+    .qs-card ol li strong { color: var(--text-primary); }
+
+    /* ═══════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════ */
+    .footer {
+      text-align: center;
+      padding: 40px 0;
+      color: var(--text-secondary);
+      font-size: 0.88rem;
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .footer-links a {
+      color: var(--text-secondary);
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--text-primary); }
+    .footer-copy {
+      color: rgba(139, 148, 158, 0.6);
+      font-size: 0.82rem;
     }
 
-    /* Hook groups */
-    .hook-group {
-      margin-bottom: 8px;
+    /* ═══════════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════════ */
+    @media (max-width: 768px) {
+      .hero { padding: 56px 0 40px; }
+      .hero-title { font-size: 2.2em; }
+      .hero-subtitle { font-size: 1.05em; }
+      .hero-stats { gap: 6px; }
+      .hero-stat { padding: 5px 12px; font-size: 0.85rem; }
+
+      .section { padding: 36px 0; }
+      .section-title { font-size: 1.4em; }
+
+      .nl-card { padding: 24px; }
+      .nl-title { font-size: 1.25em; }
+      .nl-features { grid-template-columns: 1fr 1fr; }
+
+      .cards-grid { grid-template-columns: 1fr; }
+      .card { padding: 22px; }
+
+      .quickstart-grid { grid-template-columns: 1fr; }
     }
-    .hook-group-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
+
+    @media (max-width: 480px) {
+      .container { padding: 0 16px; }
+      .hero-title { font-size: 1.8em; }
+      .nl-features { grid-template-columns: 1fr; }
+      .hero-stat { padding: 4px 10px; font-size: 0.8rem; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Header -->
-  <div class="header">
-    <h1>🧰 Skill Kit <span class="version-badge">v0.5.0</span></h1>
-    <p>Coleção de skills, agents e hooks para o GitHub Copilot no VS Code.</p>
-    <div class="stats">
-      <span class="stat"><span class="stat-number">4</span> agents</span>
-      <span class="stat">·</span>
-      <span class="stat"><span class="stat-number">12</span> skills</span>
-      <span class="stat">·</span>
-      <span class="stat"><span class="stat-number">8</span> hooks</span>
+  <!-- ════════════════ HERO ════════════════ -->
+  <header class="hero">
+    <div class="container hero-content">
+      <span class="hero-version">v0.5.0</span>
+      <h1 class="hero-title">Skill Kit</h1>
+      <p class="hero-subtitle">Coleção de skills, agents, hooks e Neural Link runtime para o GitHub Copilot</p>
+      <div class="hero-stats">
+        <span class="hero-stat"><span class="hero-stat-number">4</span> <span class="hero-stat-label">agents</span></span>
+        <span class="hero-stat"><span class="hero-stat-number">12</span> <span class="hero-stat-label">skills</span></span>
+        <span class="hero-stat"><span class="hero-stat-number">8</span> <span class="hero-stat-label">hooks</span></span>
+        <span class="hero-stat hero-stat-runtime"><span class="hero-stat-label">🧠 Neural Link Runtime</span></span>
+      </div>
     </div>
-  </div>
+  </header>
 
-  <!-- Agents Card -->
-  <a class="card" href="agents/guide.html">
-    <div class="card-header">
-      <span class="card-icon">🎭</span>
-      <h2>Agents <span class="count-badge">4</span></h2>
-      <span class="card-arrow">→</span>
-    </div>
-    <p class="card-desc">
-      Personas determinísticas que controlam como o Copilot opera. Cada agent restringe tools e injeta instruções especializadas.
-    </p>
+  <hr class="divider" />
 
-    <ul class="agent-list">
-      <li><span class="name">orchestrator</span> <span class="badge badge-coordinator">Coordenador</span></li>
-      <li><span class="name">researcher</span> <span class="badge badge-readonly">Read-only</span></li>
-      <li><span class="name">validator</span> <span class="badge badge-readonly">Read-only</span></li>
-      <li><span class="name">implementor</span> <span class="badge badge-full">Full</span></li>
-    </ul>
-
-    <div class="handoff-diagram">Orchestrator ──┬── Research This ──→ Researcher
-                ├── Validate This ──→ Validator
-                └── Implement This ─→ Implementor
-                              ↑               │
-                              └─ Research More ┘</div>
-  </a>
-
-  <!-- Skills Card -->
-  <a class="card" href="skills/guide.html">
-    <div class="card-header">
-      <span class="card-icon">📦</span>
-      <h2>Skills <span class="count-badge">12</span></h2>
-      <span class="card-arrow">→</span>
-    </div>
-    <p class="card-desc">
-      Conhecimento especializado injetado no agente. Modelo de peso variável (Light / Standard / Deep) escala esforço com complexidade.
-    </p>
-
-    <div class="section-label">Workflow <span class="badge badge-workflow">8</span></div>
-    <ul class="mini-list">
-      <li>task-intent</li>
-      <li>task-map</li>
-      <li>contextação</li>
-      <li>safety-check</li>
-      <li>error-learning</li>
-      <li>agent-creator</li>
-      <li>hooks-creator</li>
-      <li>skill-creator</li>
-    </ul>
-
-    <div class="section-label">Tool <span class="badge badge-tool">3</span></div>
-    <ul class="mini-list">
-      <li>doc-to-markdown</li>
-      <li>markdown-to-document</li>
-      <li>skill-benchmark</li>
-    </ul>
-
-    <div class="section-label">Guide <span class="badge badge-guide">1</span></div>
-    <ul class="mini-list">
-      <li>skill-manager-guide</li>
-    </ul>
-
-    <div class="weight-model">
-      <div class="weight-track">
-        <div class="weight-node">
-          <span class="label">Light</span>
-          <span class="desc">scan rápido</span>
+  <!-- ════════════════ NEURAL LINK ════════════════ -->
+  <section class="neural-link">
+    <div class="container">
+      <div class="nl-card">
+        <div class="nl-header">
+          <span class="nl-icon">🧠</span>
+          <span class="nl-title">Neural Link Runtime</span>
+          <span class="nl-badge-new">NEW</span>
         </div>
-        <div class="weight-line"></div>
-        <div class="weight-node">
-          <span class="label">Standard</span>
-          <span class="desc">análise dimensional</span>
+        <p class="nl-desc">
+          Runtime inteligente que intercepta e otimiza hooks dos agentes Copilot. Scoring adaptativo, aprendizado por feedback e compositor de pipeline.
+        </p>
+        <div class="nl-features">
+          <div class="nl-feature">
+            <span class="nl-feature-icon">⚡</span>
+            <div class="nl-feature-name">Adaptive Scoring</div>
+            <div class="nl-feature-desc">Score dinâmico que evolui com o uso e contexto do projeto</div>
+          </div>
+          <div class="nl-feature">
+            <span class="nl-feature-icon">🔀</span>
+            <div class="nl-feature-name">Pipeline Compositor</div>
+            <div class="nl-feature-desc">Composição inteligente de hooks em pipelines otimizados</div>
+          </div>
+          <div class="nl-feature">
+            <span class="nl-feature-icon">📈</span>
+            <div class="nl-feature-name">Feedback Learning</div>
+            <div class="nl-feature-desc">Aprende com resultados anteriores para melhorar decisões</div>
+          </div>
+          <div class="nl-feature">
+            <span class="nl-feature-icon">⚖️</span>
+            <div class="nl-feature-name">Weight Calibration</div>
+            <div class="nl-feature-desc">Calibração automática de pesos entre skills e hooks</div>
+          </div>
         </div>
-        <div class="weight-line"></div>
-        <div class="weight-node">
-          <span class="label">Deep</span>
-          <span class="desc">investigação completa</span>
+        <div class="nl-note">
+          <strong>Incluído automaticamente</strong> no Skill Kit — sem repo separado.
         </div>
       </div>
     </div>
-  </a>
+  </section>
 
-  <!-- Hooks Card -->
-  <a class="card" href="hooks/guide.html">
-    <div class="card-header">
-      <span class="card-icon">🔗</span>
-      <h2>Hooks <span class="count-badge">8</span></h2>
-      <span class="card-arrow">→</span>
-    </div>
-    <p class="card-desc">
-      Scripts de lifecycle que rodam automaticamente como guardrails em tempo real. Cada hook tem versão <code>.ps1</code> (Windows) e <code>.sh</code> (macOS/Linux).
-    </p>
+  <hr class="divider" />
 
-    <div class="hook-group">
-      <div class="hook-group-label">
-        <span class="badge-event badge-PreToolUse">PreToolUse</span>
+  <!-- ════════════════ NAVIGATION CARDS ════════════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Explore o Kit</h2>
+        <p class="section-desc">Agents, skills e hooks que trabalham juntos para dar superpoderes ao seu Copilot.</p>
       </div>
-      <ul class="mini-list">
-        <li>pre-commit-guard</li>
-        <li>output-format</li>
-        <li>verify-claims</li>
-        <li>context-confidence-check</li>
-        <li>skill-feedback</li>
-        <li>lesson-injector</li>
-      </ul>
-    </div>
 
-    <div class="hook-group">
-      <div class="hook-group-label">
-        <span class="badge-event badge-Stop">Stop</span>
+      <div class="cards-grid">
+
+        <!-- Agents Card -->
+        <a class="card card-agents" href="agents/guide.html">
+          <div class="card-top">
+            <span class="card-icon">🎭</span>
+            <div class="card-title-group">
+              <div class="card-title">Agents <span class="card-count">4</span></div>
+            </div>
+          </div>
+          <p class="card-desc">Personas determinísticas que controlam como o Copilot opera. Cada agent restringe tools e injeta instruções especializadas.</p>
+          <div class="card-items">
+            <div class="item-row"><span class="item-name">orchestrator</span> <span class="badge badge-coordinator">Coordenador</span></div>
+            <div class="item-row"><span class="item-name">researcher</span> <span class="badge badge-readonly">Read-only</span></div>
+            <div class="item-row"><span class="item-name">validator</span> <span class="badge badge-readonly">Read-only</span></div>
+            <div class="item-row"><span class="item-name">implementor</span> <span class="badge badge-full">Full access</span></div>
+          </div>
+          <span class="card-arrow">Ver guia completo →</span>
+        </a>
+
+        <!-- Skills Card -->
+        <a class="card card-skills" href="skills/guide.html">
+          <div class="card-top">
+            <span class="card-icon">📦</span>
+            <div class="card-title-group">
+              <div class="card-title">Skills <span class="card-count">12</span></div>
+            </div>
+          </div>
+          <p class="card-desc">Conhecimento especializado injetado no agente. Modelo de peso variável escala esforço com complexidade.</p>
+          <div class="card-items">
+            <div class="card-items-label">Workflow <span class="cat-badge cat-workflow">8</span></div>
+            <ul class="tag-list">
+              <li>task-intent</li>
+              <li>task-map</li>
+              <li>contextação</li>
+              <li>safety-check</li>
+              <li>error-learning</li>
+              <li>agent-creator</li>
+              <li>hooks-creator</li>
+              <li>skill-creator</li>
+            </ul>
+            <div class="card-items-label">Tool <span class="cat-badge cat-tool">3</span></div>
+            <ul class="tag-list">
+              <li>doc-to-markdown</li>
+              <li>markdown-to-document</li>
+              <li>skill-benchmark</li>
+            </ul>
+            <div class="card-items-label">Guide <span class="cat-badge cat-guide">1</span></div>
+            <ul class="tag-list">
+              <li>skill-manager-guide</li>
+            </ul>
+          </div>
+          <span class="card-arrow">Ver guia completo →</span>
+        </a>
+
+        <!-- Hooks Card -->
+        <a class="card card-hooks" href="hooks/guide.html">
+          <div class="card-top">
+            <span class="card-icon">🔗</span>
+            <div class="card-title-group">
+              <div class="card-title">Hooks <span class="card-count">8</span></div>
+            </div>
+          </div>
+          <p class="card-desc">Scripts de lifecycle que rodam automaticamente como guardrails em tempo real. Versões <code>.ps1</code> e <code>.sh</code>.</p>
+          <div class="card-items">
+            <div class="hook-group">
+              <div class="hook-group-label">
+                <span class="event-badge event-PreToolUse">PreToolUse</span>
+                <span style="color: var(--text-secondary); font-size: 0.78rem;">6 hooks</span>
+              </div>
+              <ul class="tag-list">
+                <li>pre-commit-guard</li>
+                <li>output-format</li>
+                <li>verify-claims</li>
+                <li>context-confidence-check</li>
+                <li>skill-feedback</li>
+                <li>lesson-injector</li>
+              </ul>
+            </div>
+            <div class="hook-group">
+              <div class="hook-group-label">
+                <span class="event-badge event-Stop">Stop</span>
+              </div>
+              <ul class="tag-list">
+                <li>stop-checklist</li>
+              </ul>
+            </div>
+            <div class="hook-group">
+              <div class="hook-group-label">
+                <span class="event-badge event-SubagentStart">SubagentStart</span>
+              </div>
+              <ul class="tag-list">
+                <li>subagent-audit</li>
+              </ul>
+            </div>
+          </div>
+          <span class="card-arrow">Ver guia completo →</span>
+        </a>
+
       </div>
-      <ul class="mini-list">
-        <li>stop-checklist</li>
-      </ul>
     </div>
+  </section>
 
-    <div class="hook-group">
-      <div class="hook-group-label">
-        <span class="badge-event badge-SubagentStart">SubagentStart</span>
+  <hr class="divider" />
+
+  <!-- ════════════════ QUICK START ════════════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">🚀 Começando</h2>
+        <p class="section-desc">Duas formas de instalar — escolha a que funciona melhor para você.</p>
       </div>
-      <ul class="mini-list">
-        <li>subagent-audit</li>
-      </ul>
+
+      <div class="quickstart-grid">
+        <div class="qs-card">
+          <h3>Via extensão <span class="qs-recommended">Recomendado</span></h3>
+          <p class="qs-subtitle">Instalação automática via Skill Manager</p>
+          <ol>
+            <li>Instale a extensão <strong>Skill Manager for Copilot</strong> no VS Code</li>
+            <li>Abra a paleta de comandos (<code>Ctrl+Shift+P</code>) e execute <strong>Skill Manager: Add Repository</strong></li>
+            <li>Adicione a URL deste repositório</li>
+            <li>Execute <strong>Skill Manager: Pull All</strong> para instalar agents, skills e hooks</li>
+          </ol>
+        </div>
+        <div class="qs-card">
+          <h3>Manual</h3>
+          <p class="qs-subtitle">Clone e copie os arquivos manualmente</p>
+          <ol>
+            <li>Clone este repositório</li>
+            <li>Copie <code>agents/</code> para <code>~/.copilot/agents/</code></li>
+            <li>Copie <code>skills/</code> para <code>~/.copilot/skills/</code></li>
+            <li>Copie <code>hooks/</code> para <code>~/.copilot/hooks/</code></li>
+            <li>Recarregue o VS Code</li>
+          </ol>
+        </div>
+      </div>
     </div>
-  </a>
+  </section>
 
-  <!-- Quick Start -->
-  <h2 class="section-title">🚀 Começando</h2>
-
-  <div class="quickstart-box">
-    <h3>Via extensão (recomendado)</h3>
-    <ol>
-      <li>Instale a extensão <strong>Skill Manager for Copilot</strong> no VS Code</li>
-      <li>Abra a paleta de comandos (<code>Ctrl+Shift+P</code>) e execute <strong>Skill Manager: Add Repository</strong></li>
-      <li>Adicione a URL deste repositório</li>
-      <li>Execute <strong>Skill Manager: Pull All</strong> para instalar agents, skills e hooks</li>
-    </ol>
-  </div>
-
-  <div class="quickstart-box">
-    <h3>Manual</h3>
-    <ol>
-      <li>Clone este repositório</li>
-      <li>Copie o conteúdo de <code>agents/</code> para <code>~/.copilot/agents/</code></li>
-      <li>Copie o conteúdo de <code>skills/</code> para <code>~/.copilot/skills/</code></li>
-      <li>Copie o conteúdo de <code>hooks/</code> para <code>~/.copilot/hooks/</code></li>
-      <li>Recarregue o VS Code</li>
-    </ol>
-  </div>
-
-  <!-- Footer -->
-  <div class="footer">
-    MIT License · Made with GitHub Copilot
-  </div>
+  <!-- ════════════════ FOOTER ════════════════ -->
+  <hr class="divider" />
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="https://github.com">GitHub</a>
+        <a href="agents/guide.html">Agents</a>
+        <a href="skills/guide.html">Skills</a>
+        <a href="hooks/guide.html">Hooks</a>
+      </div>
+      <p class="footer-copy">MIT License · Made with GitHub Copilot</p>
+    </div>
+  </footer>
 
 </body>
 </html>
