@@ -156,6 +156,14 @@ Hooks são **scripts de lifecycle** que rodam automaticamente durante a interaç
 | [stop-checklist](hooks/stop-checklist.ps1) | Stop | Checklist de qualidade antes de encerrar — verifica se testes rodaram, se task-map é necessário, etc. |
 | [subagent-audit](hooks/subagent-audit.ps1) | SubagentStart | Audita delegações de sub-agentes — verifica se instruções estão completas. |
 
+## Neural Link Runtime
+
+O **Neural Link** é um runtime inteligente que intercepta e otimiza hooks dos agentes Copilot. Ele é distribuído como parte do Skill Kit, no diretório `neural-link/`.
+
+O runtime é detectado e instalado automaticamente pelo [Skill Manager for Copilot](https://marketplace.visualstudio.com/items?itemName=allansantos-dv.copilot-skill-manager). Para detalhes, veja o [README do Neural Link](neural-link/README.md).
+
+> **Nota:** Os arquivos de runtime (`src/`, `bin/`, etc.) são sincronizados automaticamente via CI. O diretório `neural-link/` contém apenas a estrutura base no repositório público.
+
 ## Como Usar
 
 ### Skills (via extensão)
