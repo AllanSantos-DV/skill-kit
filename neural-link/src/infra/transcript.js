@@ -14,6 +14,9 @@ import { MAX_TRANSCRIPT_SIZE } from './constants.js';
 // Cache: one transcript per dispatch (same path in a single invocation)
 let _cache = { path: null, data: null };
 
+// Text extraction cache: avoids re-extracting text for the same transcript
+let _textCache = { path: null, text: null };
+
 /**
  * Parse transcript from disk. Returns array of entries or null on failure.
  * Cached by path — safe to call multiple times per dispatch.
@@ -69,12 +72,25 @@ function extractText(data) {
 }
 
 /**
+ * Get extracted text from transcript, with caching.
+ * Parses and extracts text once per path, reuses across all has* queries.
+ */
+function getTranscriptText(transcriptPath) {
+  if (!transcriptPath) return null;
+  if (_textCache.path === transcriptPath) return _textCache.text;
+  const data = parseTranscript(transcriptPath);
+  if (!data) return null;
+  const text = extractText(data);
+  _textCache = { path: transcriptPath, text };
+  return text;
+}
+
+/**
  * Check if transcript contains file path references.
  */
 export function hasFileReferences(transcriptPath) {
-  const data = parseTranscript(transcriptPath);
-  if (!data) return true; // conservative: assume yes when unknown
-  const text = extractText(data);
+  const text = getTranscriptText(transcriptPath);
+  if (text === null) return true; // conservative: assume yes when unknown
   return FILE_PATH_RE.test(text);
 }
 
@@ -82,9 +98,8 @@ export function hasFileReferences(transcriptPath) {
  * Check if transcript contains a confidence table/assessment.
  */
 export function hasConfidenceTable(transcriptPath) {
-  const data = parseTranscript(transcriptPath);
-  if (!data) return true; // conservative
-  const text = extractText(data);
+  const text = getTranscriptText(transcriptPath);
+  if (text === null) return true; // conservative
   return CONFIDENCE_RE.test(text);
 }
 
@@ -92,13 +107,13 @@ export function hasConfidenceTable(transcriptPath) {
  * Check if transcript shows the agent read a SKILL.md file.
  */
 export function hasSkillRead(transcriptPath) {
-  const data = parseTranscript(transcriptPath);
-  if (!data) return true; // conservative
-  const text = extractText(data);
+  const text = getTranscriptText(transcriptPath);
+  if (text === null) return true; // conservative
   return SKILL_READ_RE.test(text);
 }
 
 /** Reset cache — for testing */
 export function _resetTranscriptCache() {
   _cache = { path: null, data: null };
+  _textCache = { path: null, text: null };
 }

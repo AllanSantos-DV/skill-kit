@@ -1,8 +1,10 @@
 import { dispatch } from './pipeline/dispatcher.js';
-import { loadConfig } from './infra/config.js';
+import { loadConfig, getConfigRaw } from './infra/config.js';
 import { checkCalibration, buildCalibrationResponse } from './calibration.js';
 import { handleError, SEVERITY, EXIT_CODES } from './infra/error-handler.js';
 import { PATHS } from './infra/paths.js';
+import { tryLoadSnapshot, writeSnapshot } from './infra/snapshot.js';
+import { _primeLearner } from './learning/learner.js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -63,6 +65,24 @@ function debugDump(raw, suffix) {
 }
 
 async function main() {
+  // E-09: Try compiled snapshot for single-read bootstrap
+  let snapshotUsed = false;
+  try {
+    const snap = tryLoadSnapshot();
+    if (snap) {
+      if (snap.weights || snap.activations) {
+        _primeLearner(
+          snap.config?.learning || {},
+          snap.weights,
+          snap.activations,
+        );
+      }
+      snapshotUsed = true;
+    }
+  } catch {
+    // Snapshot failure is non-critical — fall through to normal loading
+  }
+
   const chunks = [];
   for await (const chunk of process.stdin) {
     chunks.push(chunk);
@@ -107,12 +127,29 @@ async function main() {
     }
   }
 
-  const result = await dispatch(stdinJson);
-  const output = JSON.stringify(result);
+  const { output, runPostResponse } = await dispatch(stdinJson, { earlyReturn: true });
+  const json = JSON.stringify(output);
 
-  if (debug) debugDump(output, 'out');
+  if (debug) debugDump(json, 'out');
 
-  process.stdout.write(output);
+  // Emit response to VS Code ASAP, then run deferred stages (logging,
+  // session tracking, weight saving) without blocking process exit.
+  process.stdout.write(json, () => {
+    setImmediate(async () => {
+      await runPostResponse().catch(() => {});
+      // E-09: Write snapshot for next invocation (fire-and-forget)
+      if (!snapshotUsed) {
+        try {
+          const configRaw = getConfigRaw();
+          if (configRaw) {
+            writeSnapshot(loadConfig(), configRaw, null, null);
+          }
+        } catch {
+          // Non-critical
+        }
+      }
+    }).unref();
+  });
 }
 
 main().catch((error) => {

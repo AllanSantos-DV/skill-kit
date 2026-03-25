@@ -217,6 +217,26 @@ export function _resetLearner(skipDisk = false) {
 }
 
 /**
+ * E-09: Pre-seed the learner singleton with snapshot data.
+ * Avoids weight file reads when snapshot provides them.
+ */
+export function _primeLearner(config, weights, activations) {
+  if (_instance) return; // already initialized
+  const store = new WeightStore();
+  _instance = new Learner(config, store);
+  if (weights) {
+    for (const [name, arr] of Object.entries(weights)) {
+      _instance.weights[name] = new Float64Array(arr);
+    }
+  }
+  if (activations) {
+    _instance.activations = { ...activations };
+  }
+  _instance._loaded = true;
+  _initPromise = Promise.resolve(_instance);
+}
+
+/**
  * No-op weight store for test mode.
  */
 class NoOpWeightStore {

@@ -1,6 +1,7 @@
 {
   "name": "neural-link",
   "version": "0.1.0",
+  "private": true,
   "description": "Adaptive hook dispatcher for LLM agents",
   "main": "src/index.js",
   "type": "module",

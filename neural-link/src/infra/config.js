@@ -1,21 +1,85 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname, resolve, normalize } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { PATHS } from './paths.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = dirname(dirname(__dirname)); // src/infra → src → project root
 
 let cached = null;
+let lastConfigRaw = null;
+
+const CONFIG_CACHE_FILE = join(PATHS.BASE, '.config-cache.json');
+
+/**
+ * FNV-1a hash (32-bit) — fast, good distribution, zero deps.
+ * Duplicated from features.js to avoid circular dependency.
+ */
+function fnv1aHash(str) {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = (hash * 0x01000193) >>> 0;
+  }
+  return hash;
+}
+
+/**
+ * Try loading config from cross-invocation cache.
+ * Returns cached config if the source file content hash matches, null otherwise.
+ */
+function tryLoadFromDiskCache() {
+  try {
+    if (!existsSync(CONFIG_CACHE_FILE)) return null;
+    const cacheRaw = readFileSync(CONFIG_CACHE_FILE, 'utf-8');
+    const cache = JSON.parse(cacheRaw);
+
+    if (!cache.configPath || !cache.contentHash || !cache.config) return null;
+    if (!existsSync(cache.configPath)) return null;
+
+    const raw = readFileSync(cache.configPath, 'utf-8');
+    if (fnv1aHash(raw) !== cache.contentHash) return null;
+
+    return cache.config;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Persist validated config to disk cache for fast reload on next invocation.
+ */
+function writeDiskCache(configPath, raw, config) {
+  try {
+    mkdirSync(PATHS.BASE, { recursive: true });
+    const cache = {
+      configPath,
+      contentHash: fnv1aHash(raw),
+      config,
+    };
+    writeFileSync(CONFIG_CACHE_FILE, JSON.stringify(cache));
+  } catch {
+    // Cache write failure is non-critical
+  }
+}
 
 /**
  * Load config from (in order):
+ * 0. Cross-invocation disk cache (hash-validated, skips re-validation)
  * 1. .neural-link.config.json in cwd (workspace)
  * 2. ~/.copilot/neural-link.config.json (global)
  * 3. bundled neural-link.config.json (project root)
  */
 export function loadConfig() {
   if (cached) return cached;
+
+  // E-03/E-05: Try cross-invocation cache first
+  const diskCached = tryLoadFromDiskCache();
+  if (diskCached) {
+    cached = diskCached;
+    return cached;
+  }
 
   const cwd = process.cwd();
   const normalizedCwd = normalize(cwd);
@@ -28,7 +92,7 @@ export function loadConfig() {
 
   for (const path of candidates) {
     const resolvedPath = resolve(path);
-    
+
     if (resolvedPath.includes('\0')) {
       console.error(`[Security] Null byte in config path: ${path}`);
       continue;
@@ -37,16 +101,21 @@ export function loadConfig() {
     if (existsSync(resolvedPath)) {
       try {
         const raw = readFileSync(resolvedPath, 'utf-8');
-        
+
         if (raw.length > 10 * 1024 * 1024) {
           console.error(`[Security] Config file too large (>10MB): ${resolvedPath}`);
           continue;
         }
-        
+
         const config = JSON.parse(raw);
         validateConfig(config);
         validateEvaluatorNames(config);
         cached = config;
+        lastConfigRaw = raw;
+
+        // E-03: Persist to disk cache for next invocation
+        writeDiskCache(resolvedPath, raw, config);
+
         return cached;
       } catch (error) {
         console.error(`[Config] Failed to load ${resolvedPath}: ${error.message}`);
@@ -305,4 +374,10 @@ function validateEvaluatorNames(config) {
 /** Reset cache — used in tests */
 export function resetConfigCache() {
   cached = null;
+  lastConfigRaw = null;
+}
+
+/** Get raw config content from last load (for snapshot hashing) */
+export function getConfigRaw() {
+  return lastConfigRaw;
 }
