@@ -6,204 +6,354 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Guia de Agentes</title>
   <style>
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --border: #30363d;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --accent-blue: #58a6ff;
+      --accent-green: #7ee787;
+      --accent-purple: #d2a8ff;
+      --accent-orange: #ffa657;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --glass-bg: rgba(22, 27, 34, 0.65);
+      --glass-border: rgba(48, 54, 61, 0.6);
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
-      font-size: var(--vscode-font-size, 13px);
-      color: var(--vscode-editor-foreground, #ccc);
-      background: var(--vscode-editor-background, #1e1e1e);
-      padding: 32px 24px;
-      max-width: 900px;
-      margin: 0 auto;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+      font-size: 16px;
+      color: var(--text-primary);
+      background: var(--bg-primary);
       line-height: 1.6;
     }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── Header / Mini-Hero ── */
+    .header {
+      position: relative;
+      padding: 48px 0;
+      margin-bottom: 40px;
+      overflow: hidden;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(88, 166, 255, 0.08) 0%, rgba(210, 168, 255, 0.05) 40%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .header > * { position: relative; z-index: 1; }
+
     .back-link {
       display: inline-block;
-      margin-bottom: 12px;
-      color: var(--vscode-textLink-foreground, #3794ff);
+      margin-bottom: 16px;
+      color: var(--accent-blue);
       text-decoration: none;
       font-size: 0.9em;
+      font-weight: 500;
+      transition: color 0.2s;
     }
     .back-link:hover {
+      color: #79b8ff;
       text-decoration: underline;
     }
-    .header {
-      margin-bottom: 32px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.25));
-    }
+
     .header h1 {
-      font-size: 1.6em;
-      font-weight: 700;
-      margin-bottom: 8px;
-      letter-spacing: -0.01em;
+      font-size: 2em;
+      font-weight: 800;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
+
     .header p {
-      color: var(--vscode-descriptionForeground, #999);
+      color: var(--text-secondary);
       font-size: 0.95em;
-      line-height: 1.5;
+      line-height: 1.7;
+      max-width: 720px;
     }
+
+    .count-badge {
+      display: inline-block;
+      background: rgba(88, 166, 255, 0.12);
+      color: var(--accent-blue);
+      border: 1px solid rgba(88, 166, 255, 0.25);
+      font-size: 0.8em;
+      padding: 3px 12px;
+      border-radius: 20px;
+      margin-left: 8px;
+      font-weight: 700;
+      -webkit-text-fill-color: var(--accent-blue);
+      background-clip: padding-box;
+    }
+
+    code {
+      font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace;
+      background: rgba(110, 118, 129, 0.15);
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 0.88em;
+      color: var(--accent-orange);
+    }
+
+    /* ── Cards ── */
     .card {
-      background: var(--vscode-editorWidget-background, #252526);
-      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.2));
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 16px;
-      transition: border-color 0.15s;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 24px;
+      margin-bottom: 20px;
+      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
     }
     .card:hover {
-      border-color: var(--vscode-textLink-foreground, #4a9cd6);
+      border-color: rgba(88, 166, 255, 0.35);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 24px rgba(88, 166, 255, 0.06);
+      transform: translateY(-2px);
     }
+
     .card-header {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 12px;
+      margin-bottom: 12px;
     }
+
     .card-icon {
-      font-size: 1.3em;
-      width: 32px;
-      height: 32px;
+      font-size: 1.5em;
+      width: 48px;
+      height: 48px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 6px;
-      background: rgba(128,128,128,0.1);
+      border-radius: var(--radius-md);
       flex-shrink: 0;
     }
+    /* Tinted icon backgrounds per agent */
+    .card:nth-child(1) .card-icon { background: rgba(210, 168, 255, 0.10); }
+    .card:nth-child(2) .card-icon { background: rgba(88, 166, 255, 0.10); }
+    .card:nth-child(3) .card-icon { background: rgba(255, 166, 87, 0.10); }
+    .card:nth-child(4) .card-icon { background: rgba(126, 231, 135, 0.10); }
+
     .card-header h3 {
-      font-size: 1.1em;
-      font-weight: 600;
+      font-size: 1.15em;
+      font-weight: 700;
       flex: 1;
+      color: var(--text-primary);
     }
+
+    /* ── Access badges ── */
     .access-badge {
       font-size: 0.7em;
       padding: 2px 10px;
       border-radius: 12px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       white-space: nowrap;
     }
     .access-full {
-      background: rgba(76, 175, 80, 0.15);
-      color: #4caf50;
-      border: 1px solid rgba(76, 175, 80, 0.3);
+      background: rgba(126, 231, 135, 0.12);
+      color: var(--accent-green);
+      border: 1px solid rgba(126, 231, 135, 0.25);
     }
     .access-readonly {
-      background: rgba(214, 148, 74, 0.15);
-      color: #d6944a;
-      border: 1px solid rgba(214, 148, 74, 0.3);
+      background: rgba(255, 166, 87, 0.12);
+      color: var(--accent-orange);
+      border: 1px solid rgba(255, 166, 87, 0.25);
     }
     .access-coordinator {
-      background: rgba(155, 89, 182, 0.15);
-      color: #b07ed4;
-      border: 1px solid rgba(155, 89, 182, 0.3);
+      background: rgba(210, 168, 255, 0.12);
+      color: var(--accent-purple);
+      border: 1px solid rgba(210, 168, 255, 0.25);
     }
+
     .card-desc {
-      color: var(--vscode-descriptionForeground, #999);
-      line-height: 1.6;
-      margin-bottom: 12px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 14px;
+      font-size: 0.92em;
     }
-    .section-label {
-      font-size: 0.8em;
+    .card-desc strong {
+      color: var(--text-primary);
       font-weight: 600;
-      color: var(--vscode-descriptionForeground, #999);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-top: 14px;
-      margin-bottom: 6px;
     }
+
+    /* ── Section labels ── */
+    .section-label {
+      font-size: 0.75em;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 16px;
+      margin-bottom: 8px;
+    }
+
+    /* ── Meta rows ── */
     .meta-row {
       display: flex;
       align-items: center;
       gap: 8px;
       flex-wrap: wrap;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
     .meta-label {
       font-size: 0.85em;
       font-weight: 600;
-      color: var(--vscode-descriptionForeground, #999);
+      color: var(--text-secondary);
       min-width: 110px;
     }
+
+    /* ── Tags ── */
     .tag {
       font-size: 0.82em;
       padding: 2px 9px;
-      border-radius: 4px;
-      border: 1px solid var(--vscode-widget-border, rgba(128,128,128,0.3));
-      color: var(--vscode-editor-foreground, #ccc);
-      background: rgba(128,128,128,0.08);
+      border-radius: 6px;
+      border: 1px solid rgba(48, 54, 61, 0.5);
+      color: var(--text-secondary);
+      background: rgba(110, 118, 129, 0.12);
     }
     .tag-agent {
-      border-color: rgba(74, 156, 214, 0.4);
-      color: #4a9cd6;
-      background: rgba(74, 156, 214, 0.08);
+      background: rgba(88, 166, 255, 0.08);
+      color: var(--accent-blue);
+      border-color: rgba(88, 166, 255, 0.25);
     }
+
+    /* ── Hook tags ── */
     .hook-tag {
       font-size: 0.82em;
       padding: 2px 9px;
-      border-radius: 4px;
+      border-radius: 6px;
       font-weight: 500;
     }
-    .hook-PreToolUse { background: rgba(74, 156, 214, 0.12); color: #4a9cd6; border: 1px solid rgba(74, 156, 214, 0.3); }
-    .hook-Stop { background: rgba(214, 148, 74, 0.12); color: #d6944a; border: 1px solid rgba(214, 148, 74, 0.3); }
-    .hook-SubagentStart { background: rgba(155, 89, 182, 0.12); color: #b07ed4; border: 1px solid rgba(155, 89, 182, 0.3); }
-    .hook-SessionStart { background: rgba(74, 173, 91, 0.12); color: #4aad5b; border: 1px solid rgba(74, 173, 91, 0.3); }
+    .hook-PreToolUse {
+      background: rgba(88, 166, 255, 0.12);
+      color: var(--accent-blue);
+      border: 1px solid rgba(88, 166, 255, 0.25);
+    }
+    .hook-Stop {
+      background: rgba(255, 166, 87, 0.12);
+      color: var(--accent-orange);
+      border: 1px solid rgba(255, 166, 87, 0.25);
+    }
+    .hook-SubagentStart {
+      background: rgba(176, 126, 255, 0.12);
+      color: #b07eff;
+      border: 1px solid rgba(176, 126, 255, 0.25);
+    }
+    .hook-SessionStart {
+      background: rgba(126, 231, 135, 0.12);
+      color: var(--accent-green);
+      border: 1px solid rgba(126, 231, 135, 0.25);
+    }
+
+    .hook-detail {
+      font-size: 0.85em;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      padding-left: 4px;
+    }
+
+    /* ── Handoff list ── */
     .handoff-list {
       list-style: none;
       padding: 0;
-      margin-top: 4px;
+      margin-top: 6px;
     }
     .handoff-list li {
       font-size: 0.88em;
-      padding: 6px 12px;
-      margin-bottom: 4px;
-      border-radius: 4px;
-      background: rgba(128,128,128,0.06);
-      border-left: 3px solid var(--vscode-textLink-foreground, #4a9cd6);
+      padding: 8px 14px;
+      margin-bottom: 6px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      background: rgba(88, 166, 255, 0.04);
+      border-left: 3px solid var(--accent-blue);
       line-height: 1.5;
+      color: var(--text-primary);
     }
     .handoff-label {
       font-weight: 600;
-      color: var(--vscode-textLink-foreground, #4a9cd6);
+      color: var(--accent-blue);
     }
     .handoff-target {
-      color: var(--vscode-descriptionForeground, #999);
+      color: var(--text-secondary);
     }
+
+    /* ── When list ── */
     .when-list {
       list-style: none;
       padding: 0;
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 8px;
     }
     .when-list li {
       font-size: 0.85em;
-      padding: 3px 10px;
-      border-radius: 4px;
-      background: var(--vscode-badge-background, #4d4d4d);
-      color: var(--vscode-badge-foreground, #fff);
+      padding: 4px 12px;
+      border-radius: 6px;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
     }
-    .count-badge {
-      display: inline-block;
-      background: var(--vscode-badge-background, #4d4d4d);
-      color: var(--vscode-badge-foreground, #fff);
-      font-size: 0.8em;
-      padding: 2px 10px;
-      border-radius: 12px;
-      margin-left: 8px;
-      font-weight: 600;
-    }
-    .hook-detail {
+
+    /* ── Inline hook description spans ── */
+    .hook-desc-text {
       font-size: 0.85em;
-      color: var(--vscode-descriptionForeground, #999);
-      margin-top: 2px;
-      padding-left: 4px;
+      color: var(--text-secondary);
+    }
+    .none-text {
+      font-size: 0.85em;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .header { padding: 32px 0; }
+      .header h1 { font-size: 1.6em; }
+      .container { padding: 0 16px; }
+      .card { padding: 18px; }
+      .card-icon { width: 40px; height: 40px; font-size: 1.3em; }
+      .card-header h3 { font-size: 1.05em; }
+      .handoff-list li { padding: 6px 10px; }
+    }
+    @media (max-width: 480px) {
+      .header { padding: 24px 0; margin-bottom: 24px; }
+      .header h1 { font-size: 1.35em; }
+      .header p { font-size: 0.88em; }
+      .container { padding: 0 12px; }
+      .card { padding: 14px; margin-bottom: 14px; border-radius: var(--radius-md); }
+      .card-icon { width: 36px; height: 36px; font-size: 1.1em; border-radius: var(--radius-sm); }
+      .card-header { gap: 8px; }
+      .access-badge { font-size: 0.65em; padding: 2px 8px; }
+      .when-list { gap: 6px; }
+      .when-list li { font-size: 0.8em; padding: 3px 10px; }
     }
   </style>
 </head>
 <body>
+  <div class="container">
   <div class="header">
     <a href="../index.html" class="back-link">← Home</a>
     <h1>🤖 Guia de Agentes <span class="count-badge">4</span></h1>
@@ -253,23 +403,23 @@
     <div class="section-label">Hooks configurados</div>
     <div class="meta-row">
       <span class="hook-tag hook-PreToolUse">PreToolUse</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">pre-commit-guard — Guarda contra commits/push/tags sem aprovação</span>
+      <span class="hook-desc-text">pre-commit-guard — Guarda contra commits/push/tags sem aprovação</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-SubagentStart">SubagentStart</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">subagent-audit — Loga decisões de roteamento de sub-agentes</span>
+      <span class="hook-desc-text">subagent-audit — Loga decisões de roteamento de sub-agentes</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">verify-claims — Verifica que claims factuais foram tool-checked</span>
+      <span class="hook-desc-text">verify-claims — Verifica que claims factuais foram tool-checked</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">context-confidence-check — Valida evidência de ferramentas na tabela de confiança</span>
+      <span class="hook-desc-text">context-confidence-check — Valida evidência de ferramentas na tabela de confiança</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">skill-feedback — Captura feedback de skills quando houve insatisfação</span>
+      <span class="hook-desc-text">skill-feedback — Captura feedback de skills quando houve insatisfação</span>
     </div>
 
     <div class="section-label">Quando usar</div>
@@ -317,23 +467,23 @@
     <div class="section-label">Hooks configurados</div>
     <div class="meta-row">
       <span class="hook-tag hook-PreToolUse">PreToolUse</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">pre-commit-guard — Guarda contra commits/push/tags sem aprovação</span>
+      <span class="hook-desc-text">pre-commit-guard — Guarda contra commits/push/tags sem aprovação</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">stop-checklist — Lembra de rodar testes e produzir task map</span>
+      <span class="hook-desc-text">stop-checklist — Lembra de rodar testes e produzir task map</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">verify-claims — Verifica que claims factuais foram tool-checked</span>
+      <span class="hook-desc-text">verify-claims — Verifica que claims factuais foram tool-checked</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">context-confidence-check — Valida evidência de ferramentas na tabela de confiança</span>
+      <span class="hook-desc-text">context-confidence-check — Valida evidência de ferramentas na tabela de confiança</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">skill-feedback — Captura feedback de skills quando houve insatisfação</span>
+      <span class="hook-desc-text">skill-feedback — Captura feedback de skills quando houve insatisfação</span>
     </div>
 
     <div class="section-label">Quando usar</div>
@@ -371,7 +521,7 @@
 
     <div class="section-label">Sub-agentes</div>
     <div class="meta-row">
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground); font-style:italic;">Nenhum — agents: []</span>
+      <span class="none-text">Nenhum — agents: []</span>
     </div>
 
     <div class="section-label">Handoffs</div>
@@ -382,23 +532,23 @@
     <div class="section-label">Hooks configurados</div>
     <div class="meta-row">
       <span class="hook-tag hook-PreToolUse">PreToolUse</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">pre-commit-guard — Guarda contra commits/push/tags sem aprovação</span>
+      <span class="hook-desc-text">pre-commit-guard — Guarda contra commits/push/tags sem aprovação</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">output-format — Verifica que o output segue formato Research Summary</span>
+      <span class="hook-desc-text">output-format — Verifica que o output segue formato Research Summary</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">verify-claims — Verifica que claims factuais foram tool-checked</span>
+      <span class="hook-desc-text">verify-claims — Verifica que claims factuais foram tool-checked</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">context-confidence-check — Valida evidência de ferramentas na tabela de confiança</span>
+      <span class="hook-desc-text">context-confidence-check — Valida evidência de ferramentas na tabela de confiança</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">skill-feedback — Captura feedback de skills quando houve insatisfação</span>
+      <span class="hook-desc-text">skill-feedback — Captura feedback de skills quando houve insatisfação</span>
     </div>
 
     <div class="section-label">Quando usar</div>
@@ -436,7 +586,7 @@
 
     <div class="section-label">Sub-agentes</div>
     <div class="meta-row">
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground); font-style:italic;">Nenhum — agents: []</span>
+      <span class="none-text">Nenhum — agents: []</span>
     </div>
 
     <div class="section-label">Handoffs</div>
@@ -447,23 +597,23 @@
     <div class="section-label">Hooks configurados</div>
     <div class="meta-row">
       <span class="hook-tag hook-PreToolUse">PreToolUse</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">pre-commit-guard — Guarda contra commits/push/tags sem aprovação</span>
+      <span class="hook-desc-text">pre-commit-guard — Guarda contra commits/push/tags sem aprovação</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">output-format — Verifica que o output segue formato Validation Report</span>
+      <span class="hook-desc-text">output-format — Verifica que o output segue formato Validation Report</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">verify-claims — Verifica que claims factuais foram tool-checked</span>
+      <span class="hook-desc-text">verify-claims — Verifica que claims factuais foram tool-checked</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">context-confidence-check — Valida evidência de ferramentas na tabela de confiança</span>
+      <span class="hook-desc-text">context-confidence-check — Valida evidência de ferramentas na tabela de confiança</span>
     </div>
     <div class="meta-row">
       <span class="hook-tag hook-Stop">Stop</span>
-      <span style="font-size:0.85em; color:var(--vscode-descriptionForeground)">skill-feedback — Captura feedback de skills quando houve insatisfação</span>
+      <span class="hook-desc-text">skill-feedback — Captura feedback de skills quando houve insatisfação</span>
     </div>
 
     <div class="section-label">Quando usar</div>
@@ -475,5 +625,6 @@
     </ul>
   </div>
 
+  </div>
 </body>
 </html>
