@@ -70,3 +70,42 @@ export const PERMISSION_MAP = {
   ask: 'ask',
   allow: 'allow',
 };
+
+// ========================================
+// Auto-Registration / Discovery
+// ========================================
+
+/** Valid registration modes */
+export const REGISTRATION_MODES = ['manual', 'auto'];
+
+/** Valid registration sources */
+export const REGISTRATION_SOURCES = ['global', 'workspace'];
+
+/** Default registration mode (backward-compatible) */
+export const DEFAULT_REGISTRATION = 'manual';
+
+/** Workspace-relative directories to scan for hooks */
+export const WORKSPACE_HOOKS_DIRS = ['.github/hooks', '.copilot/hooks'];
+
+/**
+ * Name-prefix → event mapping for auto-discovered hooks.
+ * Order matters: first match wins.
+ */
+export const NAME_EVENT_PATTERNS = [
+  { prefix: 'pre-',      events: ['PreToolUse'] },
+  { prefix: 'stop-',     events: ['Stop'] },
+  { prefix: 'verify-',   events: ['Stop'] },
+  { prefix: 'output-',   events: ['Stop'] },
+  { prefix: 'subagent-', events: ['SubagentStart'] },
+  { prefix: 'lesson-',   events: ['UserPromptSubmit'] },
+  { prefix: 'prompt-',   events: ['UserPromptSubmit'] },
+];
+
+/** Default events when no prefix matches */
+export const DEFAULT_INFERRED_EVENTS = ['PreToolUse', 'Stop'];
+
+/** Script extensions per platform */
+export const PLATFORM_EXTENSIONS = {
+  win32: '.ps1',
+  unix: '.sh',
+};

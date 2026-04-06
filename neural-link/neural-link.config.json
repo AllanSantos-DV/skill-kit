@@ -1,5 +1,6 @@
 {
   "version": "1.0",
+  "registration": "manual",
   "debug": true,
   "threshold": 0.5,
   "defaultTimeout": 5000,

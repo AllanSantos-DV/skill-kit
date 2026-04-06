@@ -1,14 +1,16 @@
-import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, mkdirSync, unlinkSync } from 'node:fs';
 import { join, dirname, resolve, normalize } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { PATHS } from './paths.js';
+import { REGISTRATION_MODES, REGISTRATION_SOURCES } from './constants.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = dirname(dirname(__dirname)); // src/infra → src → project root
 
 let cached = null;
 let lastConfigRaw = null;
+let lastConfigPath = null;
 
 const CONFIG_CACHE_FILE = join(PATHS.BASE, '.config-cache.json');
 
@@ -41,7 +43,7 @@ function tryLoadFromDiskCache() {
     const raw = readFileSync(cache.configPath, 'utf-8');
     if (fnv1aHash(raw) !== cache.contentHash) return null;
 
-    return cache.config;
+    return { config: cache.config, configPath: cache.configPath, raw };
   } catch {
     return null;
   }
@@ -77,7 +79,9 @@ export function loadConfig() {
   // E-03/E-05: Try cross-invocation cache first
   const diskCached = tryLoadFromDiskCache();
   if (diskCached) {
-    cached = diskCached;
+    cached = diskCached.config;
+    lastConfigPath = diskCached.configPath;
+    lastConfigRaw = diskCached.raw;
     return cached;
   }
 
@@ -112,6 +116,7 @@ export function loadConfig() {
         validateEvaluatorNames(config);
         cached = config;
         lastConfigRaw = raw;
+        lastConfigPath = resolvedPath;
 
         // E-03: Persist to disk cache for next invocation
         writeDiskCache(resolvedPath, raw, config);
@@ -160,6 +165,10 @@ function validateConfig(config) {
     throw new Error('defaultTimeout must be between 0 and 300000ms (5 minutes)');
   }
 
+  if (config.registration !== undefined) {
+    validateRegistration(config.registration);
+  }
+
   if (typeof config.handlers !== 'object' || config.handlers === null) {
     throw new Error('handlers must be an object');
   }
@@ -182,6 +191,41 @@ function validateConfig(config) {
 
   if (config.learning !== undefined) {
     validateLearningConfig(config.learning);
+  }
+}
+
+/**
+ * Validate the registration field.
+ * Accepts either a string ("manual"/"auto") for backward compatibility,
+ * or an object { mode, sources } for workspace hooks support.
+ */
+function validateRegistration(registration) {
+  // String form (retrocompat)
+  if (typeof registration === 'string') {
+    if (!REGISTRATION_MODES.includes(registration)) {
+      throw new Error(`registration must be one of: ${REGISTRATION_MODES.join(', ')}`);
+    }
+    return;
+  }
+
+  // Object form
+  if (typeof registration !== 'object' || registration === null || Array.isArray(registration)) {
+    throw new Error('registration must be a string or an object with mode and sources');
+  }
+
+  if (!REGISTRATION_MODES.includes(registration.mode)) {
+    throw new Error(`registration.mode must be one of: ${REGISTRATION_MODES.join(', ')}`);
+  }
+
+  if (registration.sources !== undefined) {
+    if (!Array.isArray(registration.sources) || registration.sources.length === 0) {
+      throw new Error('registration.sources must be a non-empty array');
+    }
+    for (const src of registration.sources) {
+      if (!REGISTRATION_SOURCES.includes(src)) {
+        throw new Error(`registration.sources: invalid source '${src}', must be one of: ${REGISTRATION_SOURCES.join(', ')}`);
+      }
+    }
   }
 }
 
@@ -375,9 +419,22 @@ function validateEvaluatorNames(config) {
 export function resetConfigCache() {
   cached = null;
   lastConfigRaw = null;
+  lastConfigPath = null;
+  // Clear disk cache to prevent cross-test pollution
+  try { unlinkSync(CONFIG_CACHE_FILE); } catch { /* file may not exist */ }
 }
 
 /** Get raw config content from last load (for snapshot hashing) */
 export function getConfigRaw() {
   return lastConfigRaw;
+}
+
+/** Get resolved path of the loaded config file */
+export function getConfigPath() {
+  return lastConfigPath;
+}
+
+/** Override config path — used in tests to avoid disk cache side effects */
+export function _setConfigPath(p) {
+  lastConfigPath = p;
 }
