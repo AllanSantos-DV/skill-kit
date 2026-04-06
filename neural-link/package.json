@@ -1,12 +1,12 @@
 {
   "name": "neural-link",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Adaptive hook dispatcher for LLM agents",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "test": "node --test tests/dispatcher.test.js tests/learning.test.js tests/security.test.js",
+    "test": "node --test tests/dispatcher.test.js tests/learning.test.js tests/security.test.js tests/discovery.test.js",
     "test:e2e": "node tests/e2e-guard.mjs && node tests/e2e-pretrain.mjs --rounds 10",
     "test:validate": "node tests/e2e-validate.mjs --rounds 100",
     "test:real": "node tests/e2e-real-dispatch.mjs",

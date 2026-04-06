@@ -119,11 +119,14 @@ async function main() {
     const config = loadConfig();
     const calibrationResult = checkCalibration(config);
     if (calibrationResult) {
-      const response = buildCalibrationResponse(calibrationResult.uncalibrated);
-      const calibrationOutput = JSON.stringify(response);
-      if (debug) debugDump(calibrationOutput, 'out');
-      process.stdout.write(calibrationOutput);
-      return;
+      const { uncalibrated = [], autoRegistered = [] } = calibrationResult;
+      if (uncalibrated.length > 0 || autoRegistered.length > 0) {
+        const response = buildCalibrationResponse(uncalibrated, autoRegistered);
+        const calibrationOutput = JSON.stringify(response);
+        if (debug) debugDump(calibrationOutput, 'out');
+        process.stdout.write(calibrationOutput);
+        return;
+      }
     }
   }
 
