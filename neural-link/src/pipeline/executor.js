@@ -26,18 +26,62 @@ function withTimeout(promise, timeoutMs, name) {
 }
 
 /**
+ * Check if a handler should be skipped based on routing.skipWhen rules.
+ * Returns the matched rule object if skipped, null otherwise.
+ */
+function checkRoutingSkip(handlerName, handlerConfig, stdinJson, resolvedAgent) {
+  const skipWhen = handlerConfig?.routing?.skipWhen;
+  if (!Array.isArray(skipWhen) || skipWhen.length === 0) return null;
+
+  const stdinHookEventName = stdinJson.hookEventName ?? stdinJson.hook_event_name;
+  const stdinAgentType = stdinJson.agent_type;
+
+  for (const rule of skipWhen) {
+    if (typeof rule !== 'object' || rule === null) continue;
+
+    let allMatch = true;
+    const keys = Object.keys(rule);
+    if (keys.length === 0) continue;
+
+    for (const key of keys) {
+      if (key === 'hookEventName') {
+        if (rule.hookEventName !== stdinHookEventName) { allMatch = false; break; }
+      } else if (key === 'agent_type') {
+        const effectiveAgent = resolvedAgent ?? stdinAgentType;
+        if (rule.agent_type !== effectiveAgent) { allMatch = false; break; }
+      } else {
+        allMatch = false; break;
+      }
+    }
+
+    if (allMatch) return rule;
+  }
+
+  return null;
+}
+
+/**
  * Execute active handlers in parallel.
  * Each handler receives the original stdin JSON via pipe.
  * Uses Promise.race per handler: inner timeout kills child process,
  * outer race guarantees the pipeline always moves forward.
+ * Handlers matched by routing.skipWhen rules are skipped.
  * Returns array of { name, score, result }.
  */
-export async function executeHandlers(active, stdinJson, config) {
+export async function executeHandlers(active, stdinJson, config, context = null) {
   const sanitizedStdin = sanitizeStdinForHandlers(stdinJson);
   const stdinStr = JSON.stringify(sanitizedStdin);
   const eventType = stdinJson.event ?? '';
 
   const promises = active.map(({ name, handler, score }) => {
+    // Check routing skipWhen rules before executing
+    const handlerConfig = config.handlers?.[name];
+    const matchedRule = checkRoutingSkip(name, handlerConfig, stdinJson, context?.agent);
+    if (matchedRule) {
+      console.error(`[routing] Skipping handler ${name}: matched skipWhen rule ${JSON.stringify(matchedRule)}`);
+      return Promise.resolve({ name, score, result: { ...FAIL_OPEN_RESULT }, skipped: true });
+    }
+
     const timeout = handler.timeout
       ?? config.eventTimeouts?.[eventType]
       ?? config.defaultTimeout

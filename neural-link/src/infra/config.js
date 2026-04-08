@@ -282,6 +282,10 @@ function validateHandler(name, handler) {
     }
   }
 
+  if (handler.routing !== undefined) {
+    validateRouting(name, handler.routing);
+  }
+
   if (handler.modifiers !== undefined) {
     if (!Array.isArray(handler.modifiers)) {
       throw new Error(`Handler '${name}': modifiers must be an array`);
@@ -309,6 +313,55 @@ function validateHandler(name, handler) {
       }
     });
   }
+}
+
+const ALLOWED_ROUTING_KEYS = ['hookEventName', 'agent_type'];
+
+/**
+ * Validate routing config. Fail-open: if invalid, strip routing and warn.
+ */
+function validateRouting(handlerName, routing) {
+  if (typeof routing !== 'object' || routing === null || Array.isArray(routing)) {
+    console.warn(`[Config] Handler '${handlerName}': routing must be an object, ignoring`);
+    return false;
+  }
+
+  if (routing.skipWhen === undefined) {
+    console.warn(`[Config] Handler '${handlerName}': routing has no skipWhen, ignoring`);
+    return false;
+  }
+
+  if (!Array.isArray(routing.skipWhen)) {
+    console.warn(`[Config] Handler '${handlerName}': routing.skipWhen must be an array, ignoring`);
+    return false;
+  }
+
+  for (let i = 0; i < routing.skipWhen.length; i++) {
+    const rule = routing.skipWhen[i];
+    if (typeof rule !== 'object' || rule === null || Array.isArray(rule)) {
+      console.warn(`[Config] Handler '${handlerName}': routing.skipWhen[${i}] must be an object, ignoring routing`);
+      return false;
+    }
+
+    const keys = Object.keys(rule);
+    if (keys.length === 0) {
+      console.warn(`[Config] Handler '${handlerName}': routing.skipWhen[${i}] must have at least one key, ignoring routing`);
+      return false;
+    }
+
+    for (const key of keys) {
+      if (!ALLOWED_ROUTING_KEYS.includes(key)) {
+        console.warn(`[Config] Handler '${handlerName}': routing.skipWhen[${i}] has unknown key '${key}', ignoring routing`);
+        return false;
+      }
+      if (typeof rule[key] !== 'string') {
+        console.warn(`[Config] Handler '${handlerName}': routing.skipWhen[${i}].${key} must be a string, ignoring routing`);
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 function validateLearningConfig(learning) {

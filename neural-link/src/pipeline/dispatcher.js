@@ -168,7 +168,7 @@ async function executeStage(ctx) {
   if (!ctx.active || ctx.active.length === 0) {
     return ctx;
   }
-  const results = await executeHandlers(ctx.active, ctx.stdinJson, ctx.config);
+  const results = await executeHandlers(ctx.active, ctx.stdinJson, ctx.config, ctx.context);
   return { ...ctx, results };
 }
 

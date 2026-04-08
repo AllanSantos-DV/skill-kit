@@ -55,7 +55,12 @@
     },
     "stop-checklist": {
       "enabled": true,
-      "events": ["Stop"],
+      "events": ["Stop", "SubagentStop"],
+      "routing": {
+        "skipWhen": [
+          { "hookEventName": "Stop" }
+        ]
+      },
       "script": {
         "bash": "~/.copilot/hooks/scripts/stop-checklist.sh",
         "windows": "$HOME\\.copilot\\hooks\\scripts\\stop-checklist.ps1"
@@ -101,7 +106,12 @@
     },
     "output-format": {
       "enabled": true,
-      "events": ["Stop"],
+      "events": ["Stop", "SubagentStop"],
+      "routing": {
+        "skipWhen": [
+          { "hookEventName": "Stop" }
+        ]
+      },
       "script": {
         "bash": "~/.copilot/hooks/scripts/output-format.sh",
         "windows": "$HOME\\.copilot\\hooks\\scripts\\output-format.ps1"
