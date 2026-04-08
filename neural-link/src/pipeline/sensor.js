@@ -105,7 +105,7 @@ export function sense(stdinJson) {
   return {
     // Core identity
     event_type: eventType,
-    agent: stdinJson.copilot_chat?.agentName ?? stdinJson.agentName ?? stdinJson.agent_type ?? null,
+    agent: stdinJson.copilot_chat?.agentName ?? stdinJson.agentName ?? stdinJson.agent_type ?? process.env.NEURAL_LINK_AGENT ?? null,
 
     // Workspace & session (official VS Code fields)
     cwd,
