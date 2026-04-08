@@ -48,7 +48,8 @@ function checkRoutingSkip(handlerName, handlerConfig, stdinJson, resolvedAgent) 
         if (rule.hookEventName !== stdinHookEventName) { allMatch = false; break; }
       } else if (key === 'agent_type') {
         const effectiveAgent = resolvedAgent ?? stdinAgentType;
-        if (rule.agent_type !== effectiveAgent) { allMatch = false; break; }
+        const agents = rule.agent_type.split(',').map(a => a.trim().toLowerCase());
+        if (!agents.includes((effectiveAgent || '').toLowerCase())) { allMatch = false; break; }
       } else {
         allMatch = false; break;
       }
