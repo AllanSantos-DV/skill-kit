@@ -11,16 +11,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ### Changed
 - **hooks-creator**: Added UTF-8 BOM and em-dash/en-dash rules to PS 5.1 compatibility gotchas
 
-## [0.6.0] — 2026-03-25
+## [0.6.0] — 2026-04-13
 
 ### Adicionado
 - Redesign completo do `index.html` — tema dark (#0d1117), hero com gradient, seção Neural Link com badge "NEW", glassmorphism cards
 - Redesign dos 3 guides (`agents/guide.html`, `skills/guide.html`, `hooks/guide.html`) — design system unificado com index.html
 - Neural Link runtime incluído no Skill Kit (em `neural-link/`)
 - Documentação de `permissionDecisionReason` na skill hooks-creator (SKILL.md, platform-reference.md, examples.md)
+- Seção "Como Usar na Prática" adicionada em `index.html` (Pages) — tutoriais práticos sobre agents, skills e hooks
+- Seção de adaptive delegation no agent `orchestrator` — documentação e exemplos de uso para delegação adaptativa
 
 ### Alterado
 - `pre-commit-guard` hooks (.ps1/.sh): adicionado campo `permissionDecisionReason` ao output JSON — VS Code agora exibe motivo descritivo no prompt de confirmação "ask"/"deny"
+- README.md reestruturado com foco em onboarding: header com tagline, Quick Start, e explicações acessíveis
+- **hooks-creator**: Adicionadas regras de BOM UTF-8 e tratamento de em-dash/en-dash para compatibilidade com PowerShell 5.1
+
+### Removido
+- `docs/` removido do versionamento (agora controle local apenas)
 
 ## [0.5.0] — 2026-03-18
 
