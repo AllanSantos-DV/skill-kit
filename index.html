@@ -796,6 +796,80 @@
 
   <hr class="divider" />
 
+  <!-- ════════════════ COMO USAR NA PRÁTICA ════════════════ -->
+  <section class="section" id="como-usar">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Como Usar na Prática</h2>
+        <p class="section-desc">Exemplos concretos de como interagir com agents, skills e hooks no dia a dia dentro do VS Code.</p>
+      </div>
+
+      <div class="cards-grid">
+
+        <!-- Usando Agents -->
+        <div class="card card-agents">
+          <div class="card-top">
+            <span class="card-icon">🎯</span>
+            <div class="card-title-group">
+              <div class="card-title">1. Usando Agents</div>
+            </div>
+          </div>
+          <p class="card-desc">Agents aparecem no dropdown de chat do Copilot no VS Code e determinam comportamento, ferramentas e permissões.</p>
+          <div class="card-items">
+            <ul class="tag-list" style="margin-top:8px;">
+              <li><strong>Selecione <code>@orchestrator</code></strong> para tarefas complexas — ele avalia, divide e delega para especialistas.</li>
+              <li><strong>Use <code>@researcher</code></strong> quando precisar apenas entender ou investigar sem alterar código.</li>
+              <li><strong>Escolha <code>@implementor</code></strong> para execução direta e mudanças disciplinadas no repositório.</li>
+            </ul>
+          </div>
+          <span class="card-arrow">Dicas rápidas →</span>
+        </div>
+
+        <!-- Usando Skills -->
+        <div class="card card-skills">
+          <div class="card-top">
+            <span class="card-icon">📚</span>
+            <div class="card-title-group">
+              <div class="card-title">2. Usando Skills</div>
+            </div>
+          </div>
+          <p class="card-desc">Skills contêm guias e automações que o agent pode invocar automaticamente quando detecta um pedido no domínio correspondente.</p>
+          <div class="card-items">
+            <ul class="tag-list" style="margin-top:8px;">
+              <li>Peça para <em>criar um hook</em> — o agent pode detectar e acionar a <code>hooks-creator</code> para seguir o fluxo completo.</li>
+              <li>Peça para <em>criar um agente</em> — o agent pode acionar <code>agent-creator</code> que orienta a criação com frontmatter e testes.</li>
+              <li>Skills também podem ser invocadas explicitamente pelo nome quando quiser forçar um comportamento específico.</li>
+            </ul>
+          </div>
+          <span class="card-arrow">Como funciona →</span>
+        </div>
+
+        <!-- Hooks em Ação -->
+        <div class="card card-hooks">
+          <div class="card-top">
+            <span class="card-icon">🔧</span>
+            <div class="card-title-group">
+              <div class="card-title">3. Hooks em Ação</div>
+            </div>
+          </div>
+          <p class="card-desc">Hooks são guardrails que rodam automaticamente em lifecycle events — o usuário normalmente não precisa executar nada manualmente.</p>
+          <div class="card-items">
+            <ul class="tag-list" style="margin-top:8px;">
+              <li>Editou um arquivo sem ler primeiro? O hook <code>read-before-edit</code> injeta um lembrete para revisar antes de alterar.</li>
+              <li>Tentou commitar sem Conventional Commit? O hook <code>pre-commit-guard</code> bloqueia ou solicita correção.</li>
+              <li>Alterou tipos/contratos? O hook <code>contract-check</code> alerta consumidores possivelmente impactados.</li>
+            </ul>
+          </div>
+          <span class="card-arrow">Exemplos práticos →</span>
+        </div>
+
+      </div>
+
+      <p style="margin-top:22px; color:var(--text-secondary);">Esses exemplos mostram padrões comuns — combine agents, skills e hooks para criar fluxos seguros e produtivos no dia a dia.</p>
+
+    </div>
+  </section>
+
   <!-- ════════════════ QUICK START ════════════════ -->
   <section class="section">
     <div class="container">
