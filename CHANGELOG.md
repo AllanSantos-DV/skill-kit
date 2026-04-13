@@ -8,6 +8,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ### Adicionado
 - Seção "Adaptive Delegation" no agente orchestrator — detecta automaticamente se `delegate_child` está disponível e adapta mecanismo de delegação
 
+### Changed
+- **hooks-creator**: Added UTF-8 BOM and em-dash/en-dash rules to PS 5.1 compatibility gotchas
+
 ## [0.6.0] — 2026-03-25
 
 ### Adicionado

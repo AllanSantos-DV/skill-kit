@@ -361,6 +361,12 @@ Example: git guard with conventional commit validation:
 ### PowerShell pattern (abbreviated)
 
 ```powershell
+# NOTE: This file MUST be saved with UTF-8 BOM encoding for PS 5.1 compatibility.
+# Avoid em-dash, en-dash, smart quotes, and non-ASCII characters outside regex.
+```
+
+
+```powershell
 # Extract git action from regex match
 $gitAction = $Matches[2]  # commit, push, or tag
 
@@ -416,6 +422,8 @@ Hook scripts run with **the user's permissions**. A malicious hook in a cloned r
 | Stop hook `decision`/`reason` only inside `hookSpecificOutput` for custom agents | VS Code treats custom agent Stop hooks as SubagentStop — needs `decision`/`reason` at **top-level**. Always output at both levels for safety |
 | Claude hooks bleeding into VS Code Copilot sessions | `chat.useClaudeHooks: true` in VS Code imports ALL hooks from `~/.claude/settings.json` as global hooks — they fire for every agent, ignoring agent scoping. If hooks are already in agent frontmatter, set `chat.useClaudeHooks: false` to avoid duplication and unscoped blocking. **Tell the user** to check this setting if they report hooks firing from unexpected agents. |
 | PS 7-only syntax in hook scripts | Windows ships with PS 5.1 (Windows PowerShell). Avoid: `` `u{XXXX} `` (Unicode escape — PS7+), `$var = if (...) {} else {}` (ternary assignment — PS7+), `??` and `?.` (null-coalescing — PS7+). Use instead: `[char]::ConvertFromUtf32(0xXXXX)`, `if (...) { $var = ... } else { $var = ... }`, explicit null checks. Use `[Environment]::NewLine` instead of backtick-n in complex string concatenation. |
+| UTF-8 BOM required for PS 5.1 | PowerShell 5.1 reads files without BOM as ANSI (Windows-1252). Multi-byte characters (em-dash, accented chars) corrupt and break parsing. **Always save .ps1 files with UTF-8 BOM** (byte order mark `EF BB BF`). In PowerShell: `[System.IO.File]::WriteAllText($path, $content, [System.Text.Encoding]::UTF8)` includes BOM. In Node.js: prepend `\xEF\xBB\xBF` to file content. |
+| Em-dash/en-dash in PS1 files | Never use em-dash (U+2014 `---`) or en-dash (U+2013 `--`) in .ps1 hook scripts -- not in strings, not in comments, nowhere. Even with UTF-8 BOM, these characters cause issues across encoding boundaries. Use double-dash `--` instead. Same applies to any non-ASCII punctuation (smart quotes, ellipsis). Keep hook scripts pure ASCII except inside regex character classes where accented chars may be needed. |
 
 ## Claude Code vs Copilot — Key Differences for Hook Scripts
 
