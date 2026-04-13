@@ -3,7 +3,7 @@
 .github/copilot-instructions.md
 .vscode/
 __pycache__/
-docs/maps/
+docs/
 tests/
 !tests/structural/
 !tests/hooks/
