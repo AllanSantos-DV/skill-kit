@@ -6,6 +6,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ## [Unreleased]
 
 ### Adicionado
+- `hooks/session-context.js` — injeta contexto git/projeto no início de cada sessão (branch, HEAD, uncommitted, recent commits)
+- `hooks/context-save.js` — salva snapshot do estado da sessão em docs/maps/ antes da compactação de contexto (PreCompact)
 - Seção "Adaptive Delegation" no agente orchestrator — detecta automaticamente se `delegate_child` está disponível e adapta mecanismo de delegação
 - **skill-creator**: tabela de 6 type tags de description (WORKFLOW, ENFORCEMENT, CONVERSION, MEASUREMENT, GUIDE, REFERENCE) com orientação de quando usar cada
 - Type tags nas descriptions de `doc-to-markdown` (CONVERSION), `skill-benchmark` (MEASUREMENT) e `skill-manager-guide` (GUIDE)

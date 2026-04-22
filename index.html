@@ -489,6 +489,8 @@
     .event-PreToolUse { background: var(--accent-blue); }
     .event-Stop { background: var(--accent-orange); }
     .event-SubagentStart { background: #b07eff; }
+    .event-SessionStart { background: var(--accent-green); color: #0d1117; }
+    .event-PreCompact { background: var(--accent-purple); }
 
     .hook-group { margin-bottom: 10px; }
     .hook-group-label {
@@ -632,7 +634,7 @@
       <div class="hero-stats">
         <span class="hero-stat"><span class="hero-stat-number">4</span> <span class="hero-stat-label">agents</span></span>
         <span class="hero-stat"><span class="hero-stat-number">12</span> <span class="hero-stat-label">skills</span></span>
-        <span class="hero-stat"><span class="hero-stat-number">8</span> <span class="hero-stat-label">hooks</span></span>
+        <span class="hero-stat"><span class="hero-stat-number">10</span> <span class="hero-stat-label">hooks</span></span>
         <span class="hero-stat hero-stat-runtime"><span class="hero-stat-label">🧠 Neural Link Runtime</span></span>
       </div>
     </div>
@@ -751,7 +753,7 @@
           <div class="card-top">
             <span class="card-icon">🔗</span>
             <div class="card-title-group">
-              <div class="card-title">Hooks <span class="card-count">8</span></div>
+              <div class="card-title">Hooks <span class="card-count">10</span></div>
             </div>
           </div>
           <p class="card-desc">Scripts de lifecycle que rodam automaticamente como guardrails em tempo real. JavaScript cross-platform via <code>Node.js</code>.</p>
@@ -785,6 +787,22 @@
               </div>
               <ul class="tag-list">
                 <li>subagent-audit</li>
+              </ul>
+            </div>
+            <div class="hook-group">
+              <div class="hook-group-label">
+                <span class="event-badge event-SessionStart">SessionStart</span>
+              </div>
+              <ul class="tag-list">
+                <li>session-context</li>
+              </ul>
+            </div>
+            <div class="hook-group">
+              <div class="hook-group-label">
+                <span class="event-badge event-PreCompact">PreCompact</span>
+              </div>
+              <ul class="tag-list">
+                <li>context-save</li>
               </ul>
             </div>
           </div>
