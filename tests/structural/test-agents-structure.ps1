@@ -83,23 +83,27 @@ function Has-FmSection {
 }
 
 function Extract-HookScripts {
-    # Extract script paths from command: and windows: lines in frontmatter
+    # Extract script paths from command: lines in frontmatter
+    # Supports both legacy bash/powershell format and new node format
     param([string]$Frontmatter)
     $scripts = @()
     foreach ($line in ($Frontmatter -split "`n")) {
         $trimmed = $line.Trim()
-        # Match command: "bash ~/.copilot/hooks/scripts/X.sh" or similar
+        # Match command: "node hooks/X.js" or similar
         if ($trimmed -match '^command:\s*"?(.+)"?\s*$') {
             $cmd = $Matches[1].Trim('"')
-            # Extract path after bash/sh
-            if ($cmd -match '(?:bash|sh)\s+(.+)$') {
+            # Node.js hook: node hooks/X.js
+            if ($cmd -match '^node\s+(.+\.js)$') {
+                $scripts += @{ Type = 'node'; Path = $Matches[1].Trim() }
+            }
+            # Legacy: bash ~/.copilot/hooks/scripts/X.sh
+            elseif ($cmd -match '(?:bash|sh)\s+(.+)$') {
                 $scripts += @{ Type = 'bash'; Path = $Matches[1].Trim() }
             }
         }
-        # Match windows: "powershell ... '...\script.ps1'"
+        # Legacy: Match windows: "powershell ... '...\script.ps1'"
         if ($trimmed -match '^windows:\s*"?(.+)"?\s*$') {
             $cmd = $Matches[1].Trim('"')
-            # Extract path from & '$HOME\.copilot\...\X.ps1'  or similar patterns
             if ($cmd -match "'([^']+\.ps1)'") {
                 $scripts += @{ Type = 'windows'; Path = $Matches[1].Trim() }
             }
@@ -271,7 +275,7 @@ foreach ($file in $agentFiles) {
     }
 
     # --- Hook tests (bug workaround) ---
-
+    # Note: PreToolUse hooks may be in hooks/hooks.json (global) instead of frontmatter
     $hasHooks = Has-FmSection -Frontmatter $frontmatter -Section 'hooks'
     $hasPreToolUse = Has-FmSection -Frontmatter $frontmatter -Section '  PreToolUse'
     # Also check indented form
@@ -284,12 +288,18 @@ foreach ($file in $agentFiles) {
         }
     }
 
-    # 6. If has hooks:, must have PreToolUse:
+    # 6. If has hooks:, check for PreToolUse: (crash workaround) — or global hooks.json
+    $hooksJsonPath = Join-Path $PSScriptRoot '..\..\hooks\hooks.json'
+    $hasGlobalPreToolUse = $false
+    if (Test-Path $hooksJsonPath) {
+        $hooksJsonContent = Get-Content $hooksJsonPath -Raw -ErrorAction SilentlyContinue
+        if ($hooksJsonContent -match '"PreToolUse"') { $hasGlobalPreToolUse = $true }
+    }
     if ($hasHooks) {
-        if ($hasPreToolUse) {
-            Pass "hooks has PreToolUse: (crash workaround)"
+        if ($hasPreToolUse -or $hasGlobalPreToolUse) {
+            Pass "PreToolUse: present (frontmatter or hooks.json)"
         } else {
-            Fail "hooks has PreToolUse: (crash workaround)" "hooks: present but PreToolUse: missing — will crash as subagent"
+            Fail "PreToolUse: present (frontmatter or hooks.json)" "hooks: present but PreToolUse: missing everywhere — will crash as subagent"
         }
     }
 
@@ -297,7 +307,15 @@ foreach ($file in $agentFiles) {
     if ($hasHooks) {
         $hookScripts = Extract-HookScripts -Frontmatter $frontmatter
         foreach ($hs in $hookScripts) {
-            if ($hs.Type -eq 'bash') {
+            if ($hs.Type -eq 'node') {
+                # Node.js hook: resolve relative to workspace root
+                $resolved = Join-Path $PSScriptRoot '..\..' $hs.Path
+                if (Test-Path $resolved) {
+                    Pass "Hook script exists: $($hs.Path)"
+                } else {
+                    Fail "Hook script exists: $($hs.Path)" "Resolved to: $resolved (not found)"
+                }
+            } elseif ($hs.Type -eq 'bash') {
                 # On Windows, shell scripts are not applicable — skip instead of fail
                 $onWindows = $false
                 if ($null -ne (Get-Variable -Name 'IsWindows' -ErrorAction SilentlyContinue)) {
