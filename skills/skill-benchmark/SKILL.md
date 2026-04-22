@@ -1,6 +1,6 @@
 ---
 name: skill-benchmark
-description: "Benchmark framework for measuring skill effectiveness. A/B tests agent outputs with and without a target skill, scoring correctness, completeness, and pattern adherence. USE FOR: validating skill quality, comparing before/after skill changes, proving skill ROI with data. DO NOT USE FOR: general testing, unit tests, CI pipelines."
+description: "**MEASUREMENT SKILL** — Benchmark framework for measuring skill effectiveness. A/B tests agent outputs with and without a target skill, scoring correctness, completeness, and pattern adherence. USE FOR: validating skill quality, comparing before/after skill changes, proving skill ROI with data. DO NOT USE FOR: general testing, unit tests, CI pipelines."
 argument-hint: Path to the skill directory you want to benchmark
 license: MIT
 ---
