@@ -7,3 +7,4 @@ docs/
 tests/
 !tests/structural/
 !tests/hooks/
+node_modules/
