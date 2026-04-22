@@ -30,7 +30,7 @@ Ensine ao GitHub Copilot novas habilidades, discipline seu comportamento e garan
 
 - Agents: 4
 - Skills: 12
-- Hooks: 8
+- Hooks: 10
 
 Abaixo estão as listas incluídas neste repositório (mantidas na íntegra):
 
@@ -62,7 +62,7 @@ Agents são **personas determinísticas** que controlam como o Copilot opera. Ca
 | [task-intent](skills/task-intent/) | Entender antes de implementar — força o agente a compreender POR QUÊ/PRA QUÊ/PRA QUEM antes de escrever código |
 | [task-map](skills/task-map/) | Externalizar análise e encadear tarefas — persiste decisões e contexto entre sessões |
 
-### Hooks (8)
+### Hooks (10)
 
 Hooks são **scripts de lifecycle** que rodam automaticamente durante a interação do agente. Funcionam como guardrails em tempo real. Cada hook é um arquivo JavaScript (`.js`) cross-platform, executado via Node.js. Os hooks **globais** são configurados em `hooks/hooks.json` e os **agent-scoped** ficam no frontmatter de cada agent.
 
@@ -76,6 +76,8 @@ Hooks são **scripts de lifecycle** que rodam automaticamente durante a interaç
 | [output-format](hooks/output-format.js) | Stop | Agent | Injeta regras de formatação de output (researcher/validator). |
 | [stop-checklist](hooks/stop-checklist.js) | Stop | Agent | Checklist de qualidade antes de encerrar (implementor). |
 | [subagent-audit](hooks/subagent-audit.js) | SubagentStart | Agent | Audita delegações de sub-agentes (orchestrator). |
+| [session-context](hooks/session-context.js) | SessionStart | Global | Injeta contexto git/projeto no início de cada sessão (branch, HEAD, uncommitted, recent commits). |
+| [context-save](hooks/context-save.js) | PreCompact | Global | Salva snapshot do estado da sessão antes da compactação de contexto. |
 
 ---
 

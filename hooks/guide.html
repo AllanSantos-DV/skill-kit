@@ -155,6 +155,7 @@
     .card.event-Stop { border-left: 4px solid var(--accent-orange); }
     .card.event-SubagentStart { border-left: 4px solid #b07eff; }
     .card.event-SessionStart { border-left: 4px solid var(--accent-green); }
+    .card.event-PreCompact { border-left: 4px solid var(--accent-purple); }
     .card.event-UserPromptSubmit { border-left: 4px solid #f0883e; }
     .card-header {
       display: flex;
@@ -177,6 +178,7 @@
     .card.event-Stop .card-icon { background: rgba(255, 166, 87, 0.1); }
     .card.event-SubagentStart .card-icon { background: rgba(176, 126, 255, 0.1); }
     .card.event-SessionStart .card-icon { background: rgba(126, 231, 135, 0.1); }
+    .card.event-PreCompact .card-icon { background: rgba(210, 168, 255, 0.1); }
     .card.event-UserPromptSubmit .card-icon { background: rgba(240, 136, 62, 0.1); }
     .card-header h3 {
       font-size: 1.1em;
@@ -198,6 +200,7 @@
     .event-badge-Stop { background: var(--accent-orange); }
     .event-badge-SubagentStart { background: #b07eff; }
     .event-badge-SessionStart { background: var(--accent-green); color: #0d1117; }
+    .event-badge-PreCompact { background: var(--accent-purple); }
     .event-badge-UserPromptSubmit { background: #f0883e; }
     .card-desc {
       color: var(--text-secondary);
@@ -361,7 +364,7 @@
   <div class="container">
   <div class="header">
     <a href="../index.html" class="back-link">← Home</a>
-    <h1>⚡ Guia de Hooks <span class="count-badge">8</span></h1>
+    <h1>⚡ Guia de Hooks <span class="count-badge">10</span></h1>
     <p>
       Hooks são scripts JavaScript (Node.js) determinísticos executados em eventos específicos do ciclo de vida
       de uma sessão de agente. Diferente de instruções (que o agente pode ignorar), hooks
@@ -380,6 +383,7 @@
       <div class="legend-item"><span class="legend-dot" style="background:#ffa657"></span> Stop</div>
       <div class="legend-item"><span class="legend-dot" style="background:#b07eff"></span> SubagentStart</div>
       <div class="legend-item"><span class="legend-dot" style="background:#7ee787"></span> SessionStart</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#d2a8ff"></span> PreCompact</div>
       <div class="legend-item"><span class="legend-dot" style="background:#f0883e"></span> UserPromptSubmit</div>
     </div>
   </div>
@@ -734,6 +738,104 @@
       sem ter chamado <code>read_file</code>, <code>grep_search</code> ou qualquer tool nesse arquivo →
       hook bloqueia e lista o path. O agente então usa <code>read_file</code> para verificar ou marca
       explicitamente como "assumed".
+    </div>
+  </div>
+
+  </div>
+
+  <!-- session-context -->
+  <div class="card event-SessionStart">
+    <div class="card-header">
+      <span class="card-icon">🚀</span>
+      <h3>session-context</h3>
+      <span class="event-badge event-badge-SessionStart">SessionStart</span>
+    </div>
+    <p class="card-desc">
+      Injeta automaticamente contexto de git e projeto no início de cada sessão. Elimina a necessidade
+      do agente rodar <code>git status</code>, <code>git log</code> ou verificar <code>package.json</code>
+      manualmente — essas informações já estão disponíveis no contexto.
+    </p>
+
+    <div class="section-label">Lógica detalhada</div>
+    <ul class="logic-list">
+      <li>Detecta branch atual via <code>git branch --show-current</code></li>
+      <li>Captura HEAD commit via <code>git log --oneline -1</code></li>
+      <li>Conta uncommitted changes via <code>git status --porcelain</code></li>
+      <li>Lista 5 commits recentes via <code>git log --oneline -5</code></li>
+      <li>Lê <code>package.json</code> para extrair nome e versão do projeto</li>
+      <li>Timeout de 2000ms por comando — não trava a sessão</li>
+      <li>Se o cwd não é um git repo → pula info git, mostra só package.json</li>
+    </ul>
+
+    <div class="section-label">Usado por</div>
+    <div class="agent-tags">
+      <span class="tag-agent">orchestrator</span>
+      <span class="tag-agent">implementor</span>
+      <span class="tag-agent">researcher</span>
+      <span class="tag-agent">validator</span>
+    </div>
+
+    <div class="section-label">Como o output chega ao agente</div>
+    <div class="output-box">
+      <div class="output-mechanism">
+        <span class="arrow">→</span>
+        <span>Retorna <code>hookSpecificOutput.additionalContext</code> com resumo compacto: "Project: skill-kit@0.6.0 | Branch: main | HEAD: c7b6793 docs: update CHANGELOG | Uncommitted changes: 3 files" seguido dos commits recentes. Máximo 800 chars.</span>
+      </div>
+    </div>
+
+    <div class="trigger-example">
+      <strong>Exemplo de trigger:</strong> Uma nova sessão inicia em um repo git com package.json →
+      hook injeta "Project: my-app@1.2.0 | Branch: feat/auth | HEAD: abc1234 feat: add login | Uncommitted changes: 2 files"
+      no contexto. O agente já sabe o estado do repo sem precisar rodar comandos.
+    </div>
+  </div>
+
+  <!-- context-save -->
+  <div class="card event-PreCompact">
+    <div class="card-header">
+      <span class="card-icon">💾</span>
+      <h3>context-save</h3>
+      <span class="event-badge event-badge-PreCompact">PreCompact</span>
+    </div>
+    <p class="card-desc">
+      Salva um snapshot do estado da sessão em disco <strong>antes</strong> da compactação de contexto.
+      Isso permite que o agente recupere detalhes que seriam perdidos durante a compressão — arquivos
+      editados, comandos executados, decisões tomadas e itens pendentes.
+    </p>
+
+    <div class="section-label">Lógica detalhada</div>
+    <ul class="logic-list">
+      <li>Lê o transcript JSONL e escopa ao conteúdo desde o último <code>user.message</code></li>
+      <li>Extrai <strong>files touched</strong>: paths de <code>tool.execution_start</code> com tools de arquivo</li>
+      <li>Extrai <strong>commands run</strong>: comandos de <code>run_in_terminal</code> (primeiros 80 chars, dedup)</li>
+      <li>Extrai <strong>errors</strong>: busca "error:", "FAIL", "✗", "stderr" em tool outputs e mensagens</li>
+      <li>Extrai <strong>decisions</strong>: busca "decidi", "decision:", "chose", "opted for", "trade-off:" em mensagens</li>
+      <li>Extrai <strong>open work</strong>: busca "TODO:", "next step:", "pending:", "- [ ]" em mensagens</li>
+      <li>Gera snapshot Markdown em <code>docs/maps/session-{id}-snapshot.md</code> (max 10KB)</li>
+      <li>Cada lista limitada a 20 itens. Linhas JSONL malformadas são ignoradas silenciosamente</li>
+    </ul>
+
+    <div class="section-label">Usado por</div>
+    <div class="agent-tags">
+      <span class="tag-agent">orchestrator</span>
+      <span class="tag-agent">implementor</span>
+      <span class="tag-agent">researcher</span>
+      <span class="tag-agent">validator</span>
+    </div>
+
+    <div class="section-label">Como o output chega ao agente</div>
+    <div class="output-box">
+      <div class="output-mechanism">
+        <span class="arrow">→</span>
+        <span>Retorna <code>hookSpecificOutput.additionalContext</code>: "Session context snapshot saved to docs/maps/session-{id}-snapshot.md. If detail was lost during compaction, read this file to recover state." O agente pode ler o snapshot se precisar de detalhes após compactação.</span>
+      </div>
+    </div>
+
+    <div class="trigger-example">
+      <strong>Exemplo de trigger:</strong> O contexto da sessão atinge o limite e a plataforma dispara PreCompact →
+      hook salva snapshot com 5 arquivos editados, 3 comandos, 2 decisões e 1 TODO em
+      <code>docs/maps/session-abc123-snapshot.md</code>. Após compactação, o agente pode ler o arquivo para
+      recuperar detalhes perdidos.
     </div>
   </div>
 

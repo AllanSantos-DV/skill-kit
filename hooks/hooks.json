@@ -28,6 +28,20 @@
         "command": "node hooks/skill-feedback.js",
         "timeout": 5
       }
+    ],
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "node hooks/session-context.js",
+        "timeout": 5
+      }
+    ],
+    "PreCompact": [
+      {
+        "type": "command",
+        "command": "node hooks/context-save.js",
+        "timeout": 10
+      }
     ]
   }
 }
