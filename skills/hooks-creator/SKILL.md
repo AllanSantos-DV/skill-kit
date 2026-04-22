@@ -1,17 +1,17 @@
 ---
 name: hooks-creator
-description: "**WORKFLOW SKILL** — Create and configure agent hooks for VS Code Copilot and Claude Code. USE FOR: creating hook scripts, configuring lifecycle hooks (SessionStart, PreToolUse, PostToolUse, Stop), adding hooks to agent frontmatter, cross-platform hook scripts, security best practices. DO NOT USE FOR: general coding, creating agents (use agent-creator), creating skills (use skill-creator)."
+description: "**WORKFLOW SKILL** \u2014 Create and configure agent hooks for VS Code Copilot and Claude Code using JavaScript (Node.js). USE FOR: creating JS hook scripts, configuring lifecycle hooks (SessionStart, PreToolUse, PostToolUse, Stop), adding hooks to agent frontmatter, cross-platform hook scripts, security best practices. DO NOT USE FOR: general coding, creating agents (use agent-creator), creating skills (use skill-creator)."
 argument-hint: Describe what the hook should enforce or automate
 license: MIT
 ---
 
-# Hooks Creator — Complete Guide to Agent Lifecycle Hooks
+# Hooks Creator \u2014 Complete Guide to Agent Lifecycle Hooks
 
-You are an expert at creating and configuring lifecycle hooks for AI agents. When the user asks you to create a hook, follow this guide to produce a complete, cross-platform, well-structured hook configuration.
+You are an expert at creating and configuring lifecycle hooks for AI agents. When the user asks you to create a hook, follow this guide to produce a complete, cross-platform, well-structured hook configuration. **All hooks should be written in JavaScript (Node.js)** \u2014 a single `.js` file that runs identically on Windows, macOS, and Linux.
 
 ## What are Hooks?
 
-Hooks are **deterministic shell commands** executed at specific lifecycle events during an agent session. Unlike instructions (which are non-deterministic — the agent may or may not follow them), hooks **guarantee execution**. They run as real processes, receive structured JSON input via stdin, and return structured JSON output via stdout. Use hooks when you need certainty: enforcement, logging, validation, or context injection that must happen every time.
+Hooks are **deterministic commands** executed at specific lifecycle events during an agent session. Unlike instructions (which are non-deterministic \u2014 the agent may or may not follow them), hooks **guarantee execution**. They run as real processes, receive structured JSON input via stdin, and return structured JSON output via stdout. Use hooks when you need certainty: enforcement, logging, validation, or context injection that must happen every time.
 
 ## Platform Detection
 
@@ -23,7 +23,7 @@ Before creating hooks, determine the target platform:
 | `.claude/` directory exists | Claude Code | 20 events, 4 hook types |
 | Both present | Hybrid | Use `.claude/settings.json` (read by both) |
 
-**Detection strategy**: Check for `.agent.md` files in `.github/agents/` or workspace root, check for `.claude/` directory, inspect `settings.json` patterns. If the platform is unclear, **ask the user** — don't assume.
+**Detection strategy**: Check for `.agent.md` files in `.github/agents/` or workspace root, check for `.claude/` directory, inspect `settings.json` patterns. If the platform is unclear, **ask the user** \u2014 don\u2019t assume.
 
 ## Lifecycle Events
 
@@ -31,19 +31,19 @@ Complete event table across platforms:
 
 | Event | VS Code | Claude Code | Trigger |
 |-------|:-------:|:-----------:|---------|
-| SessionStart | ✅ | ✅ | First prompt of session |
-| UserPromptSubmit | ✅ | ✅ | User sends message |
-| PreToolUse | ✅ | ✅ | Before any tool invocation |
-| PostToolUse | ✅ | ✅ | After tool completes |
-| PreCompact | ✅ | ✅ | Before context compaction |
-| SubagentStart | ✅ | ✅ | Subagent created |
-| SubagentStop | ✅ | ✅ | Subagent completes |
-| Stop | ✅ | ✅ | Session ends |
-| PermissionRequest | ❌ | ✅ | Tool needs permission |
-| PostToolUseFailure | ❌ | ✅ | Tool fails |
-| Notification | ❌ | ✅ | Status notification |
-| TaskCompleted | ❌ | ✅ | Task finishes |
-| Others (6 more) | ❌ | ✅ | Various |
+| SessionStart | \u2705 | \u2705 | First prompt of session |
+| UserPromptSubmit | \u2705 | \u2705 | User sends message |
+| PreToolUse | \u2705 | \u2705 | Before any tool invocation |
+| PostToolUse | \u2705 | \u2705 | After tool completes |
+| PreCompact | \u2705 | \u2705 | Before context compaction |
+| SubagentStart | \u2705 | \u2705 | Subagent created |
+| SubagentStop | \u2705 | \u2705 | Subagent completes |
+| Stop | \u2705 | \u2705 | Session ends |
+| PermissionRequest | \u274c | \u2705 | Tool needs permission |
+| PostToolUseFailure | \u274c | \u2705 | Tool fails |
+| Notification | \u274c | \u2705 | Status notification |
+| TaskCompleted | \u274c | \u2705 | Task finishes |
+| Others (6 more) | \u274c | \u2705 | Various |
 
 When targeting VS Code only, use the 8 shared events. When targeting Claude Code or hybrid, the full 20 events are available.
 
@@ -57,34 +57,33 @@ When targeting VS Code only, use the 8 shared events. When targeting Claude Code
 | `~/.claude/settings.json` | User global | Claude Code + VS Code |
 
 **Scope rules:**
-- Hooks are **per-workspace** — they only apply inside the project where they are configured. Other workspaces are unaffected.
+- Hooks are **per-workspace** \u2014 they only apply inside the project where they are configured. Other workspaces are unaffected.
 - VS Code has no global hooks path for **workspace hooks** (`.github/hooks/`). To reuse those across projects, copy the files or use a template repo.
-- Claude Code supports `~/.claude/settings.json` as a **user-global** hook location — hooks defined there apply to all projects.
+- Claude Code supports `~/.claude/settings.json` as a **user-global** hook location \u2014 hooks defined there apply to all projects.
 
 **Global vs workspace scripts for agent-scoped hooks:**
-- Agent-scoped hooks (frontmatter) reference **shell scripts by path**. If the scripts live inside the workspace (e.g., `.github/hooks/scripts/`), they only work in that workspace.
-- **Recommended for portable agents**: store hook scripts in a **global user directory** (e.g., `~/.copilot/hooks/scripts/`) and reference them with portable paths:
-  - **bash/macOS/Linux**: `bash ~/.copilot/hooks/scripts/<script>.sh` — `~` expands at runtime
-  - **Windows**: `powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\.copilot\hooks\scripts\<script>.ps1"` — `%USERPROFILE%` is expanded by `cmd.exe` (the shell VS Code uses to spawn hooks on Windows), and `-File` preserves stdin passthrough
+- Agent-scoped hooks (frontmatter) reference **scripts by path**. If the scripts live inside the workspace (e.g., `hooks/`), they only work in that workspace.
+- **Recommended for portable agents**: store hook scripts in a **global user directory** (e.g., `~/.copilot/hooks/scripts/`) and reference them with `node` + the path. Since `node` is cross-platform, a single command works everywhere:
+  - `node ~/.copilot/hooks/scripts/my-hook.js` \u2014 `~` expands on Unix; on Windows use `%USERPROFILE%` or an absolute path
 - This way, agents synced to any workspace always find their hook scripts. No per-workspace setup needed.
-- **Workspace hooks** (`.github/hooks/*.json`) should keep scripts inside the project — they are project-specific by nature (e.g., injecting git context).
+- **Workspace hooks** (`.github/hooks/*.json`) should keep scripts inside the project \u2014 they are project-specific by nature (e.g., injecting git context).
 
 **`chat.useCustomAgentHooks` setting:**
-- This setting **only enables/disables** the agent-scoped hooks feature — it does NOT create or define any hooks.
+- This setting **only enables/disables** the agent-scoped hooks feature \u2014 it does NOT create or define any hooks.
 - Hooks are defined in `.github/hooks/*.json` (workspace) and `.agent.md` frontmatter (agent-scoped). The setting just controls whether VS Code reads the frontmatter hooks.
-- Recommended: set it **once in User Settings (global)** so it applies to all workspaces automatically — avoids repeating it in every `.vscode/settings.json`.
+- Recommended: set it **once in User Settings (global)** so it applies to all workspaces automatically \u2014 avoids repeating it in every `.vscode/settings.json`.
 
-**Precedence**: Agent-scoped hooks (frontmatter) run in addition to workspace hooks (`.github/hooks/`). They do NOT replace each other — both execute.
+**Precedence**: Agent-scoped hooks (frontmatter) run in addition to workspace hooks (`.github/hooks/`). They do NOT replace each other \u2014 both execute.
 
 ## Multiple Hooks Behavior
 
 When multiple hooks are defined for the same event (either multiple entries in the array, or workspace + agent-scoped):
 
-- **All hooks execute** — no short-circuit. Even if hook 1 returns `deny`, hook 2 still runs.
+- **All hooks execute** \u2014 no short-circuit. Even if hook 1 returns `deny`, hook 2 still runs.
 - **Most restrictive wins**: `deny` > `ask` > `allow`. If any hook denies, the tool call is denied.
-- **Independent evaluation**: each hook receives the original tool input. One hook's output does NOT affect another hook's input.
+- **Independent evaluation**: each hook receives the original tool input. One hook\u2019s output does NOT affect another hook\u2019s input.
 - **Synchronous execution** (VS Code): hooks run sequentially, not in parallel. The agent waits for each to complete.
-- **Additive across scopes**: agent-scoped hooks run IN ADDITION TO workspace hooks — they don't replace each other.
+- **Additive across scopes**: agent-scoped hooks run IN ADDITION TO workspace hooks \u2014 they don\u2019t replace each other.
 
 | Hook A | Hook B | Result |
 |--------|--------|--------|
@@ -106,8 +105,7 @@ When multiple hooks are defined for the same event (either multiple entries in t
     "PostToolUse": [
       {
         "type": "command",
-        "command": "./scripts/format.sh",
-        "windows": "powershell -File scripts\\format.ps1",
+        "command": "node hooks/format.js",
         "timeout": 15
       }
     ]
@@ -121,8 +119,7 @@ When multiple hooks are defined for the same event (either multiple entries in t
 hooks:
   PostToolUse:
     - type: command
-      command: "./scripts/format.sh"
-      windows: "powershell -File scripts\\format.ps1"
+      command: "node hooks/format.js"
 ```
 
 **Field reference:**
@@ -130,9 +127,10 @@ hooks:
 | Field | Required | Description |
 |-------|----------|-------------|
 | `type` | Yes | Hook type. VS Code supports `command` only. |
-| `command` | Yes | Shell command (Linux/macOS default). |
-| `windows` | No | Windows override command. **Always provide this.** |
+| `command` | Yes | Command to run. Use `node hooks/my-hook.js` for cross-platform compatibility. |
 | `timeout` | No | Max seconds before the hook is killed. Default varies by platform. |
+
+> **Note:** With JavaScript hooks, the `windows` override field is **no longer needed** \u2014 `node` runs identically on all platforms with a single command.
 
 ## Input/Output Contract
 
@@ -143,7 +141,7 @@ Hooks receive JSON via **stdin** and return JSON via **stdout**.
 | Code | Meaning | Behavior |
 |------|---------|----------|
 | `0` | Success | stdout parsed as JSON |
-| `2` | Blocking error | stderr content → agent feedback |
+| `2` | Blocking error | stderr content \u2192 agent feedback |
 | Other | Warning | Non-blocking, hook output ignored |
 
 ### Key Input Fields
@@ -167,19 +165,19 @@ Hooks receive JSON via **stdin** and return JSON via **stdout**.
 
 ### What Reaches the Agent vs. UI-Only
 
-Not all output mechanisms inject content into the agent's context. Some only display warnings in the VS Code UI that the user sees but the agent does not.
+Not all output mechanisms inject content into the agent\u2019s context. Some only display warnings in the VS Code UI that the user sees but the agent does not.
 
 | Mechanism | Agent sees it? | Use case |
 |-----------|:--------------:|----------|
-| `hookSpecificOutput.additionalContext` | ✅ Yes | Inject context (SessionStart, PreToolUse, PostToolUse, SubagentStart) |
-| `hookSpecificOutput.decision: "block"` + `reason` | ✅ Yes | Force agent to act before stopping (workspace Stop, PostToolUse) |
-| Top-level `decision: "block"` + `reason` | ✅ Yes | Force agent to act before stopping (SubagentStop, custom agent Stop) |
-| `hookSpecificOutput.permissionDecision` + `additionalContext` | ✅ Yes | Control tool approval with context (PreToolUse) |
-| Exit code `2` + stderr | ✅ Yes | Block operation, stderr shown to model (any event) |
-| `systemMessage` (top-level) | ❌ No — UI only | Visual warning for the user |
-| `continue: false` + `stopReason` | ❌ No — UI only | Stop session, reason shown to user |
+| `hookSpecificOutput.additionalContext` | \u2705 Yes | Inject context (SessionStart, PreToolUse, PostToolUse, SubagentStart) |
+| `hookSpecificOutput.decision: "block"` + `reason` | \u2705 Yes | Force agent to act before stopping (workspace Stop, PostToolUse) |
+| Top-level `decision: "block"` + `reason` | \u2705 Yes | Force agent to act before stopping (SubagentStop, custom agent Stop) |
+| `hookSpecificOutput.permissionDecision` + `additionalContext` | \u2705 Yes | Control tool approval with context (PreToolUse) |
+| Exit code `2` + stderr | \u2705 Yes | Block operation, stderr shown to model (any event) |
+| `systemMessage` (top-level) | \u274c No \u2014 UI only | Visual warning for the user |
+| `continue: false` + `stopReason` | \u274c No \u2014 UI only | Stop session, reason shown to user |
 
-**Critical implication**: If you want the agent to react to a Stop hook message (e.g., "run tests before finishing"), use `hookSpecificOutput.decision: "block"` with `reason` — NOT `systemMessage`. The `systemMessage` field only shows a warning banner in the VS Code chat UI; the agent never sees it.
+**Critical implication**: If you want the agent to react to a Stop hook message (e.g., "run tests before finishing"), use `hookSpecificOutput.decision: "block"` with `reason` \u2014 NOT `systemMessage`. The `systemMessage` field only shows a warning banner in the VS Code chat UI; the agent never sees it.
 
 ### PreToolUse-Specific Output
 
@@ -194,21 +192,21 @@ Not all output mechanisms inject content into the agent's context. Some only dis
 
 | Value | Behavior |
 |-------|----------|
-| `"allow"` | Auto-approve the tool call — no user prompt |
+| `"allow"` | Auto-approve the tool call \u2014 no user prompt |
 | `"deny"` | Block the tool call. Agent receives `additionalContext` and must adapt. |
 | `"ask"` | VS Code shows a confirmation prompt to the user. If user approves, tool executes. If user denies, tool is blocked. |
 
-> **⚠️ PreToolUse fields (`permissionDecision`, `permissionDecisionReason`, `updatedInput`, `additionalContext`) MUST be inside `hookSpecificOutput`.** Placing them at the JSON top-level causes VS Code to silently ignore the output — the tool call proceeds as if no hook existed. This is the most common PreToolUse hook bug.
+> **\u26a0\ufe0f PreToolUse fields (`permissionDecision`, `permissionDecisionReason`, `updatedInput`, `additionalContext`) MUST be inside `hookSpecificOutput`.** Placing them at the JSON top-level causes VS Code to silently ignore the output \u2014 the tool call proceeds as if no hook existed. This is the most common PreToolUse hook bug.
 >
 > ```json
-> // ❌ WRONG — VS Code ignores these fields at top-level
+> // \u274c WRONG \u2014 VS Code ignores these fields at top-level
 > {
 >   "permissionDecision": "deny",
 >   "permissionDecisionReason": "reason for user",
 >   "additionalContext": "reason"
 > }
 >
-> // ✅ CORRECT — fields inside hookSpecificOutput
+> // \u2705 CORRECT \u2014 fields inside hookSpecificOutput
 > {
 >   "hookSpecificOutput": {
 >     "permissionDecision": "deny",
@@ -222,115 +220,146 @@ Not all output mechanisms inject content into the agent's context. Some only dis
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `decision` | string | `"block"` — prevents the agent from stopping |
+| `decision` | string | `"block"` \u2014 prevents the agent from stopping |
 | `reason` | string | Required when decision is "block". Tells the agent why it should continue |
 
-> **⚠️ Custom agent Stop hooks are treated as SubagentStop.** When a Stop hook is scoped to a custom agent (defined in `.agent.md` frontmatter), VS Code treats it as a `SubagentStop` event. The SubagentStop format expects `decision` and `reason` at the **JSON top-level**, not inside `hookSpecificOutput`. If you only put them inside `hookSpecificOutput`, the hook fires but the agent **ignores the output** — the block instruction never reaches the agent's context.
+> **\u26a0\ufe0f Custom agent Stop hooks are treated as SubagentStop.** When a Stop hook is scoped to a custom agent (defined in `.agent.md` frontmatter), VS Code treats it as a `SubagentStop` event. The SubagentStop format expects `decision` and `reason` at the **JSON top-level**, not inside `hookSpecificOutput`. If you only put them inside `hookSpecificOutput`, the hook fires but the agent **ignores the output** \u2014 the block instruction never reaches the agent\u2019s context.
 >
 > **Best practice:** Always output `decision`/`reason` at **both** top-level AND inside `hookSpecificOutput`. This ensures the hook works whether VS Code routes it as Stop or SubagentStop:
 >
-> ```json
-> {
->   "decision": "block",
->   "reason": "Run tests before finishing.",
->   "hookSpecificOutput": {
->     "hookEventName": "Stop",
->     "decision": "block",
->     "reason": "Run tests before finishing."
+> ```js
+> const result = {
+>   decision: 'block',
+>   reason: 'Run tests before finishing.',
+>   hookSpecificOutput: {
+>     hookEventName: 'Stop',
+>     decision: 'block',
+>     reason: 'Run tests before finishing.'
 >   }
-> }
+> };
+> process.stdout.write(JSON.stringify(result) + '\n');
 > ```
 
-> **⚠️ Agents with ONLY `Stop` hooks (no `PreToolUse`) crash as subagents.** When an agent defines `hooks:` with only `Stop` events and no `PreToolUse`, invoking it via `runSubagent` crashes with `Cannot read properties of undefined (reading 'length')`. **Workaround:** Always include at least one `PreToolUse` hook entry. For read-only agents, use a no-op guard (e.g., `pre-commit-guard` which only fires on destructive operations).
+> **\u26a0\ufe0f Agents with ONLY `Stop` hooks (no `PreToolUse`) crash as subagents.** When an agent defines `hooks:` with only `Stop` events and no `PreToolUse`, invoking it via `runSubagent` crashes with `Cannot read properties of undefined (reading 'length')`. **Workaround:** Always include at least one `PreToolUse` hook entry. For read-only agents, use a no-op guard (e.g., `pre-commit-guard` which only fires on destructive operations).
 
-> **⚠️ `systemMessage` is UI-only — the agent never sees it.** It displays a warning banner in the chat for the user. If you need the agent to act on a Stop hook, use `decision: "block"` with `reason` — this IS injected into the agent's context. Putting `systemMessage` inside `hookSpecificOutput` is never valid — it's not a recognized field there and causes unintended blocking.
+> **\u26a0\ufe0f `systemMessage` is UI-only \u2014 the agent never sees it.** It displays a warning banner in the chat for the user. If you need the agent to act on a Stop hook, use `decision: "block"` with `reason` \u2014 this IS injected into the agent\u2019s context. Putting `systemMessage` inside `hookSpecificOutput` is never valid \u2014 it\u2019s not a recognized field there and causes unintended blocking.
 
 ## Cross-Platform Scripts
 
-Always provide both `command` (Linux/macOS default) and `windows` override for portability:
+**JavaScript (Node.js) is the primary format for all hook scripts.** A single `.js` file works on Windows, macOS, and Linux \u2014 no platform-specific overrides needed.
+
+### Canonical JS Hook Structure
+
+Every JS hook follows this pattern:
+
+```js
+#!/usr/bin/env node
+// Brief description of what this hook does
+'use strict';
+
+let rawInput = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => { rawInput += chunk; });
+process.stdin.on('end', () => {
+  let inputJson;
+  try { inputJson = JSON.parse(rawInput); } catch (_) { process.exit(0); }
+
+  // ... hook logic here ...
+
+  const result = { /* output JSON */ };
+  process.stdout.write(JSON.stringify(result) + '\n');
+});
+```
+
+**Key rules:**
+- Shebang: `#!/usr/bin/env node`
+- Always include `'use strict';`
+- Read stdin as a stream (`on('data')` + `on('end')`) \u2014 never `fs.readFileSync('/dev/stdin')` (fails on Windows)
+- Parse JSON with try/catch \u2014 exit 0 on parse failure (safe no-op)
+- Only use Node.js built-ins: `fs`, `path`, `os`, `child_process` \u2014 **no external dependencies** (no `npm install`)
+- Output via `process.stdout.write(JSON.stringify(result) + '\n')` \u2014 NOT `console.log` (which may add platform-specific line endings)
+- For no-op / passthrough: call `process.exit(0)` \u2014 don\u2019t just `return` from the callback
+
+### Configuration
 
 ```json
 {
   "type": "command",
-  "command": "bash ./hooks/my-hook.sh",
-  "windows": "powershell -ExecutionPolicy Bypass -File hooks\\my-hook.ps1"
+  "command": "node hooks/my-hook.js",
+  "timeout": 10
 }
 ```
 
-### Windows Quoting — Critical
+No `windows:` override needed \u2014 `node` is cross-platform by default.
 
-The `windows:` field passes through multiple escaping layers. Getting this wrong causes PowerShell errors.
-
-**For workspace hooks (JSON config):** Simple — use `-File` for relative paths:
-```json
-"windows": "powershell -ExecutionPolicy Bypass -File .github\\hooks\\scripts\\my-hook.ps1"
-```
-
-**For global scripts (agent frontmatter YAML):** Use `-Command` with `$HOME`:
+For agent frontmatter:
 ```yaml
-windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\my-hook.ps1'\""
+hooks:
+  Stop:
+    - type: command
+      command: "node hooks/my-hook.js"
 ```
 
-After YAML parsing, this becomes:
+### Using Node.js Built-ins
+
+Hooks can use any Node.js built-in module without external dependencies:
+
+| Module | Use case |
+|--------|----------|
+| `fs` | Read files (transcripts, configs, SKILL.md content) |
+| `path` | Cross-platform path manipulation |
+| `os` | Home directory (`os.homedir()`), platform detection |
+| `child_process` | Run git commands, formatters, linters |
+
+Example: reading a file in a hook:
+```js
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+// Read a config file from the user's home directory
+const configPath = path.join(os.homedir(), '.copilot', 'rules.json');
+if (fs.existsSync(configPath)) {
+  const rules = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  // ... use rules
+}
 ```
-powershell -NoProfile -ExecutionPolicy Bypass -Command "& '$HOME\.copilot\hooks\scripts\my-hook.ps1'"
-```
 
-**Why `-Command` with `$HOME`?**
-- `-Command "& '...'"` correctly passes piped stdin to the script — `$input` and `[Console]::In.ReadToEnd()` both work (tested 2026-03-17).
-- `$HOME` is a PowerShell automatic variable that resolves at runtime to the user's home directory.
-- `%USERPROFILE%` is NOT expanded by PowerShell (VS Code calls PowerShell directly, not via `cmd.exe`).
-- `-File` treats `$HOME` as literal text, so it cannot resolve variable paths.
+### Legacy: PS1+SH Pairs
 
-> **⚠️ YAML ESCAPE TRAP**: In YAML double-quoted strings, `\v` is a valid escape sequence (vertical tab). If a script name starts with `v` (e.g., `verify-claims`), the path `\scripts\verify-claims.ps1` becomes `\scripts` + vertical-tab + `erify-claims.ps1`. **Fix:** double-escape with `\\v` in the YAML source → `\\verify-claims.ps1`. The same applies to any YAML escape: `\n`, `\t`, `\b`, `\f`, `\r`, `\e`, `\a`, `\0`.
+> For backward compatibility, hooks can still be written as paired `.ps1` (Windows) and `.sh` (Linux/macOS) scripts with the `windows:` override field. This pattern is **not recommended** for new hooks due to:
+> - Double maintenance burden (two files per hook)
+> - PowerShell 5.1 encoding issues (UTF-8 BOM, em-dash corruption)
+> - Platform-specific quoting/escaping complexity
+> - Harder to test and debug
+>
+> If you encounter existing PS1+SH hooks, consider migrating them to single JS files.
 
-| Context | Recommended Pattern |
-|---------|-------------------|
-| JSON config, relative path | `powershell -ExecutionPolicy Bypass -File scripts\\my-hook.ps1` |
-| JSON config, global path | `powershell -NoProfile -ExecutionPolicy Bypass -Command "& '$HOME\\.copilot\\hooks\\scripts\\my-hook.ps1'"` |
-| YAML frontmatter, global path | `"powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\\.copilot\\hooks\\scripts\\my-hook.ps1'\""` |
-
-**Rules:**
-- Bash scripts: always start with `#!/bin/bash`
-- PowerShell scripts: read stdin with the pipeline-then-console fallback (see below)
-- Bash scripts: use `INPUT=$(cat 2>/dev/null || true)` then prefer `jq` for JSON parsing with `grep`/`sed` as fallback (jq may not be installed everywhere):
-  ```bash
-  if command -v jq &>/dev/null; then
-    TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""')
-  else
-    TOOL=$(echo "$INPUT" | grep -o '"tool_name"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
-  fi
-  ```
-- Always test both platforms when possible
+> **\u26a0\ufe0f YAML ESCAPE TRAP (still applies to any path)**: In YAML double-quoted strings, `\v` is a valid escape sequence (vertical tab). If a script name starts with `v` (e.g., `verify-claims`), the path `hooks\verify-claims.js` becomes `hooks` + vertical-tab + `erify-claims.js`. **Fix:** use forward slashes in YAML paths: `hooks/verify-claims.js`. Or double-escape: `hooks\\verify-claims.js`.
 
 ## VS Code Matcher Workaround
 
-**CRITICAL**: VS Code currently ignores matchers in hook configuration. To filter by tool name, you must filter **inside the script**.
+**CRITICAL**: VS Code currently ignores matchers in hook configuration. To filter by tool name, filter **inside the script**.
 
-### Bash
+```js
+#!/usr/bin/env node
+'use strict';
 
-```bash
-#!/bin/bash
-INPUT=$(cat 2>/dev/null || true)
-TOOL=$(echo "$INPUT" | grep -o '"tool_name"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
-# Only run for file edits
-if [[ "$TOOL" != "replace_string_in_file" && "$TOOL" != "create_file" && "$TOOL" != "multi_replace_string_in_file" ]]; then
-  exit 0
-fi
-# ... actual hook logic
-```
+let rawInput = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => { rawInput += chunk; });
+process.stdin.on('end', () => {
+  let inputJson;
+  try { inputJson = JSON.parse(rawInput); } catch (_) { process.exit(0); }
 
-### PowerShell
+  // Only run for file-editing tools
+  const tool = inputJson.tool_name;
+  if (tool !== 'replace_string_in_file' && tool !== 'create_file' && tool !== 'multi_replace_string_in_file') {
+    process.exit(0);
+  }
 
-```powershell
-$rawInput = @($input) -join "`n"
-if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
-$input_json = $rawInput | ConvertFrom-Json
-$tool = $input_json.tool_name
-if ($tool -notin @('replace_string_in_file', 'create_file', 'multi_replace_string_in_file')) {
-    exit 0
-}
-# ... actual hook logic
+  // ... actual hook logic
+});
 ```
 
 This pattern is essential for any hook that should only trigger on specific tools.
@@ -351,106 +380,128 @@ Ready-to-use recipes (see `references/examples.md` for complete implementations)
 
 ## Conditional Hook Logic
 
-When a hook needs different decisions for different scenarios, implement decision tree logic **inside the script** rather than using multiple hooks (since multiple hooks aggregate with "most restrictive wins", they can't implement priority/fallback logic).
+When a hook needs different decisions for different scenarios, implement decision tree logic **inside the script** rather than using multiple hooks (since multiple hooks aggregate with "most restrictive wins", they can\u2019t implement priority/fallback logic).
 
-Example: git guard with conventional commit validation:
-- `git commit` + conventional message → `allow`
-- `git commit` + bad message → `deny`
-- `git push` / `git tag` → `ask` (user confirmation)
+Example: git guard with conventional commit validation (based on `hooks/pre-commit-guard.js`):
+- `git commit` + conventional message \u2192 `allow`
+- `git commit` + bad message \u2192 `deny`
+- `git push` / `git tag` \u2192 `ask` (user confirmation)
 
-### PowerShell pattern (abbreviated)
+### JavaScript pattern (abbreviated)
 
-```powershell
-# NOTE: This file MUST be saved with UTF-8 BOM encoding for PS 5.1 compatibility.
-# Avoid em-dash, en-dash, smart quotes, and non-ASCII characters outside regex.
-```
+```js
+#!/usr/bin/env node
+'use strict';
 
+let rawInput = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => { rawInput += chunk; });
+process.stdin.on('end', () => {
+  let inputJson;
+  try { inputJson = JSON.parse(rawInput); } catch (_) { process.exit(0); }
 
-```powershell
-# Extract git action from regex match
-$gitAction = $Matches[2]  # commit, push, or tag
+  // Only intercept terminal commands
+  if (inputJson.tool_name !== 'run_in_terminal' && inputJson.tool_name !== 'Bash') {
+    process.exit(0);
+  }
 
-if ($gitAction -eq 'push' -or $gitAction -eq 'tag') {
-    # Ask user for confirmation
-    @{ hookSpecificOutput = @{ permissionDecision = "ask"; permissionDecisionReason = "git $gitAction requires user confirmation"; additionalContext = "git $gitAction requires user confirmation" } } | ConvertTo-Json -Depth 3 | Write-Output
-    exit 0
-}
+  const cmd = (inputJson.tool_input && inputJson.tool_input.command) || '';
+  if (!cmd) process.exit(0);
 
-# git commit — validate message pattern
-if ($cmd -match '-m\s+["\x27](.+?)["\x27]') {
-    $msg = $Matches[1]
-    if ($msg -match '^(feat|fix|docs|chore|refactor|test|ci|build|perf|style)(\(.+\))?(!)?\.?\:\s+.+') {
-        @{ hookSpecificOutput = @{ permissionDecision = "allow" } } | ConvertTo-Json -Depth 3 | Write-Output
+  const gitMatch = cmd.match(/git\s+(-[^\s]+\s+)*(commit|push|tag)\b/);
+  if (!gitMatch) process.exit(0);
+  const action = gitMatch[2];
+
+  let decision = 'allow';
+  const contexts = [];
+
+  if (action === 'push' || action === 'tag') {
+    decision = 'ask';
+    contexts.push('git ' + action + ' requires user confirmation');
+  } else if (action === 'commit') {
+    const msgMatch = cmd.match(/-a?m\s+["'](.+?)["']/) || cmd.match(/-a?m\s+(\S+)/);
+    if (msgMatch) {
+      const msg = msgMatch[1];
+      if (/^(feat|fix|docs|chore|refactor|test|ci|build|perf|style|revert)(\(.+\))?(!)?\.?\:\s+.+/i.test(msg)) {
+        decision = 'allow';
+      } else {
+        decision = 'deny';
+        contexts.push('Commit must follow conventional commits (e.g. feat: add feature)');
+      }
     } else {
-        @{ hookSpecificOutput = @{ permissionDecision = "deny"; additionalContext = "Commit must follow conventional commits" } } | ConvertTo-Json -Depth 3 | Write-Output
+      decision = 'deny';
+      contexts.push('Commit must include -m with a conventional commit message');
     }
-} else {
-    @{ hookSpecificOutput = @{ permissionDecision = "deny"; additionalContext = "Commit must include -m with message" } } | ConvertTo-Json -Depth 3 | Write-Output
-}
+  }
+
+  const result = { hookSpecificOutput: { permissionDecision: decision } };
+  if (contexts.length > 0) {
+    result.hookSpecificOutput.additionalContext = contexts.join('; ');
+    result.hookSpecificOutput.permissionDecisionReason = contexts.join('; ');
+  }
+  process.stdout.write(JSON.stringify(result) + '\n');
+});
 ```
 
 Key insight: a single script with branching logic is more expressive than multiple hooks, because multiple hooks can only **tighten** permissions (most restrictive wins), never **loosen** them.
 
 ## Security Best Practices
 
-| ❌ Don't | ✅ Do |
+| \u274c Don\u2019t | \u2705 Do |
 |----------|-------|
 | Hardcode secrets in hook scripts | Use environment variables |
 | Trust `tool_input` without validation | Sanitize and quote all inputs |
 | Run hooks from untrusted repos without review | Audit hook scripts before use |
 | Allow agent to edit hook scripts | Set `chat.tools.edits.autoApprove` to require manual approval |
 
-Hook scripts run with **the user's permissions**. A malicious hook in a cloned repo could exfiltrate data, modify files, or run arbitrary commands. Always review hook scripts from external sources.
+Hook scripts run with **the user\u2019s permissions**. A malicious hook in a cloned repo could exfiltrate data, modify files, or run arbitrary commands. Always review hook scripts from external sources.
 
 ## Common Pitfalls
 
-| ❌ Pitfall | ✅ Fix |
+| \u274c Pitfall | \u2705 Fix |
 |-----------|--------|
-| Forgetting `windows:` override | Always provide cross-platform commands |
-| Stop hook infinite loop (hook prevents stop → agent retries → hook prevents again) | Check `stop_hook_active` flag and exit 0 if true |
+| Forgetting `process.exit(0)` for no-op cases | Every early-return path must call `process.exit(0)` \u2014 don\u2019t just `return` inside the `on('end')` callback |
+| Not consuming all stdin data | Always use the stream pattern (`on('data')` + `on('end')`) \u2014 never `fs.readFileSync('/dev/stdin')` (fails on Windows) |
+| Using `console.log` for JSON output | Use `process.stdout.write(JSON.stringify(result) + '\n')` \u2014 `console.log` may behave differently across platforms |
+| Stop hook infinite loop (hook prevents stop \u2192 agent retries \u2192 hook prevents again) | Check `inputJson.stop_hook_active === true` and `process.exit(0)` if true |
 | Hook returning non-JSON to stdout | Return valid JSON or nothing (exit 0) |
 | Assuming matchers work in VS Code | Filter `tool_name` inside the script |
-| Hook script not executable on Linux | Run `chmod +x` on bash scripts |
 | Long-running hooks blocking the agent | Set appropriate `timeout` values |
 | Agent-scoped hooks not working | Enable `chat.useCustomAgentHooks: true` in VS Code User Settings (global) |
-| Using `-File` with `$HOME` variable paths | `-File` treats `$HOME` literally — use `-Command "& '...'"` with `$HOME` instead |
-| YAML `\v` escape in script paths | In double-quoted YAML, `\v` = vertical tab. Script names starting with `v` (e.g., `verify-claims`) need `\\v` escaping: `\\verify-claims.ps1`. Same for `\n`, `\t`, `\b`, `\f`, `\r`, `\e`, `\a` |
-| Marker file for "retry guard" hooks | Marker auto-bypass lets agent pass on 2nd attempt without real verification — always block, let the agent demonstrate compliance |
-| Claude Code terminal tool is `Bash`, not `run_in_terminal` | Check for both: `$tool -notin @('Bash', 'run_in_terminal')` |
-| `INPUT=$(cat)` hanging if stdin empty | Use `INPUT=$(cat 2>/dev/null || true)` |
-| PreToolUse fields at JSON top-level | Wrap in `hookSpecificOutput` — VS Code ignores top-level PreToolUse fields |
-| Stop hook `decision`/`reason` only inside `hookSpecificOutput` for custom agents | VS Code treats custom agent Stop hooks as SubagentStop — needs `decision`/`reason` at **top-level**. Always output at both levels for safety |
-| Claude hooks bleeding into VS Code Copilot sessions | `chat.useClaudeHooks: true` in VS Code imports ALL hooks from `~/.claude/settings.json` as global hooks — they fire for every agent, ignoring agent scoping. If hooks are already in agent frontmatter, set `chat.useClaudeHooks: false` to avoid duplication and unscoped blocking. **Tell the user** to check this setting if they report hooks firing from unexpected agents. |
-| PS 7-only syntax in hook scripts | Windows ships with PS 5.1 (Windows PowerShell). Avoid: `` `u{XXXX} `` (Unicode escape — PS7+), `$var = if (...) {} else {}` (ternary assignment — PS7+), `??` and `?.` (null-coalescing — PS7+). Use instead: `[char]::ConvertFromUtf32(0xXXXX)`, `if (...) { $var = ... } else { $var = ... }`, explicit null checks. Use `[Environment]::NewLine` instead of backtick-n in complex string concatenation. |
-| UTF-8 BOM required for PS 5.1 | PowerShell 5.1 reads files without BOM as ANSI (Windows-1252). Multi-byte characters (em-dash, accented chars) corrupt and break parsing. **Always save .ps1 files with UTF-8 BOM** (byte order mark `EF BB BF`). In PowerShell: `[System.IO.File]::WriteAllText($path, $content, [System.Text.Encoding]::UTF8)` includes BOM. In Node.js: prepend `\xEF\xBB\xBF` to file content. |
-| Em-dash/en-dash in PS1 files | Never use em-dash (U+2014 `---`) or en-dash (U+2013 `--`) in .ps1 hook scripts -- not in strings, not in comments, nowhere. Even with UTF-8 BOM, these characters cause issues across encoding boundaries. Use double-dash `--` instead. Same applies to any non-ASCII punctuation (smart quotes, ellipsis). Keep hook scripts pure ASCII except inside regex character classes where accented chars may be needed. |
+| YAML `\v` escape in script paths | In double-quoted YAML, `\v` = vertical tab. Use forward slashes: `hooks/verify-claims.js` |
+| Marker file for "retry guard" hooks | Marker auto-bypass lets agent pass on 2nd attempt without real verification \u2014 always block, let the agent demonstrate compliance |
+| Claude Code terminal tool is `Bash`, not `run_in_terminal` | Check for both: `inputJson.tool_name !== 'Bash' && inputJson.tool_name !== 'run_in_terminal'` |
+| PreToolUse fields at JSON top-level | Wrap in `hookSpecificOutput` \u2014 VS Code ignores top-level PreToolUse fields |
+| Stop hook `decision`/`reason` only inside `hookSpecificOutput` for custom agents | VS Code treats custom agent Stop hooks as SubagentStop \u2014 needs `decision`/`reason` at **top-level**. Always output at both levels for safety |
+| Claude hooks bleeding into VS Code Copilot sessions | `chat.useClaudeHooks: true` in VS Code imports ALL hooks from `~/.claude/settings.json` as global hooks \u2014 they fire for every agent. Set `chat.useClaudeHooks: false` if hooks are in agent frontmatter to avoid duplication |
+| Using external npm packages in hooks | Hooks must use only Node.js built-ins (`fs`, `path`, `os`, `child_process`) \u2014 no `require('axios')` or similar. Hooks run without `npm install`. |
+| Agents with ONLY Stop hooks (no PreToolUse) crash as subagents | Always include at least one PreToolUse hook entry. Use a no-op guard for read-only agents |
 
-## Claude Code vs Copilot — Key Differences for Hook Scripts
+## Claude Code vs Copilot \u2014 Key Differences for Hook Scripts
 
 When creating hooks that work on both platforms, be aware of these differences:
 
 | Aspect | VS Code Copilot | Claude Code |
 |--------|----------------|-------------|
+| Primary script format | JavaScript (Node.js) | JavaScript (Node.js) |
 | Terminal tool name | `run_in_terminal` | `Bash` (also accepts `run_in_terminal`) |
-| Stop hook enforcement | For **workspace hooks** (`.github/hooks/`): `hookSpecificOutput.decision: "block"` + `reason`. For **custom agent hooks** (frontmatter): output `decision`/`reason` at **top-level** (SubagentStop format) — VS Code treats agent-scoped Stop as SubagentStop. **Best practice:** always include both top-level AND `hookSpecificOutput` for compatibility. Top-level `systemMessage` — rendered as warning in UI only (agent does NOT see it). | `decision: "block"` — blocks the agent from stopping |
-| Windows config field | `windows:` in JSON/YAML | `command_win32` in `hooks-config.json` (not officially documented) |
+| Stop hook enforcement | For **workspace hooks** (`.github/hooks/`): `hookSpecificOutput.decision: "block"` + `reason`. For **custom agent hooks** (frontmatter): output `decision`/`reason` at **top-level** (SubagentStop format). **Best practice:** always include both top-level AND `hookSpecificOutput` for compatibility. Top-level `systemMessage` \u2014 rendered as warning in UI only (agent does NOT see it). | `decision: "block"` \u2014 blocks the agent from stopping |
+| Windows config field | Not needed with JS hooks | Not needed with JS hooks |
 | Global hooks location | `~/.copilot/hooks/scripts/` | `~/.claude/hooks-scripts/` |
-| Matcher support | Ignored — filter inside script | Supported (regex on tool_name) |
-| Hook import setting | `chat.useClaudeHooks` — when `true`, imports `~/.claude/settings.json` hooks as **global** (not agent-scoped). Default: `false` | N/A — Claude Code uses its own `~/.claude/settings.json` natively |
+| Matcher support | Ignored \u2014 filter inside script | Supported (regex on tool_name) |
+| Hook import setting | `chat.useClaudeHooks` \u2014 when `true`, imports `~/.claude/settings.json` hooks as **global** (not agent-scoped). Default: `false` | N/A \u2014 Claude Code uses its own `~/.claude/settings.json` natively |
 
 **Tool name check pattern** (handles both platforms):
-```bash
-# Bash
-if [ "$TOOL" != "Bash" ] && [ "$TOOL" != "run_in_terminal" ]; then exit 0; fi
-```
-```powershell
-# PowerShell
-if ($input_json.tool_name -notin @('Bash', 'run_in_terminal')) { exit 0 }
+```js
+// JavaScript \u2014 works on both platforms
+if (inputJson.tool_name !== 'Bash' && inputJson.tool_name !== 'run_in_terminal') {
+  process.exit(0);
+}
 ```
 
 ## Neural Link Integration
 
-When the user's environment uses **Neural Link** as the hook dispatcher (configured via Skill Manager), newly created hooks should include a `.neural-link.json` companion file. This file lives alongside the `.ps1` and `.sh` scripts and is automatically processed during `Pull All`.
+When the user\u2019s environment uses **Neural Link** as the hook dispatcher (configured via Skill Manager), newly created hooks should include a `.neural-link.json` companion file. This file lives alongside the `.js` scripts and is automatically processed during `Pull All`.
 
 ### When to Generate
 
@@ -461,7 +512,7 @@ Generate a `.neural-link.json` companion file when:
 
 Do NOT generate when:
 - The hook is workspace-only (`.github/hooks/`)
-- The user explicitly says they don't use Neural Link
+- The user explicitly says they don\u2019t use Neural Link
 
 ### Companion File Schema
 
@@ -469,16 +520,15 @@ The file MUST be named `.neural-link.json` and placed in the same `hooks/` direc
 
 ```
 hooks/
-  my-hook.ps1
-  my-hook.sh
-  my-hook.neural-link.json    ← companion file
+  my-hook.js
+  my-hook.neural-link.json    \u2190 companion file
 ```
 
-**IMPORTANT**: The filename pattern is `{hook-name}.neural-link.json` — matching the hook script name (without extension).
+**IMPORTANT**: The filename pattern is `{hook-name}.neural-link.json` \u2014 matching the hook script name (without extension).
 
 ```jsonc
 {
-  // Handler name — must match the script base name (without .ps1/.sh)
+  // Handler name \u2014 must match the script base name (without .js)
   "handler": "my-hook",
 
   // Which lifecycle events this hook handles
@@ -491,7 +541,7 @@ hooks/
     "orchestrator": 0.3
   },
 
-  // Optional modifiers — contextual score adjustments
+  // Optional modifiers \u2014 contextual score adjustments
   "modifiers": [
     {
       "condition": { "field": "tool_name", "op": "in", "value": ["run_in_terminal"] },
@@ -533,17 +583,17 @@ hooks/
 
 | Agent Role | Typical Weight | Rationale |
 |-----------|---------------|----------|
-| implementor | 0.7–0.9 | Full tool access, most hooks are relevant |
-| researcher | 0.3–0.6 | Read-only, fewer hooks apply |
-| orchestrator | 0.2–0.4 | Coordination only, minimal hook relevance |
-| validator | 0.3–0.5 | Analysis focus, some hooks apply |
+| implementor | 0.7\u20130.9 | Full tool access, most hooks are relevant |
+| researcher | 0.3\u20130.6 | Read-only, fewer hooks apply |
+| orchestrator | 0.2\u20130.4 | Coordination only, minimal hook relevance |
+| validator | 0.3\u20130.5 | Analysis focus, some hooks apply |
 
 ### Training Scenario Guidelines
 
-- Include at least 2 scenarios: one that triggers the hook (block/deny) and one that doesn't (allow)
+- Include at least 2 scenarios: one that triggers the hook (block/deny) and one that doesn\u2019t (allow)
 - Use realistic tool names and payloads
-- The `label` field is human-readable — describe the expected behavior
-- The `mockResults` format matches Neural Link's `e2e-pretrain.mjs` pipeline
+- The `label` field is human-readable \u2014 describe the expected behavior
+- The `mockResults` format matches Neural Link\u2019s `e2e-pretrain.mjs` pipeline
 - More scenarios = faster learner convergence. 4-6 scenarios per hook is a good target.
 
 ## Distribution via Skill Manager
@@ -552,21 +602,22 @@ The **Skill Manager extension** can automatically distribute hook scripts alongs
 
 ### How it works
 
-1. Place hook scripts (`.sh` and `.ps1`) in a `hooks/` directory at the repo root (alongside `agents/` and `skills/`)
-2. When the extension runs `Pull All`, it syncs hooks to `~/.copilot/hooks/scripts/` — same global location referenced by agents
+1. Place hook scripts (`.js` files) in a `hooks/` directory at the repo root (alongside `agents/` and `skills/`)
+2. When the extension runs `Pull All`, it syncs hooks to `~/.copilot/hooks/scripts/` \u2014 same global location referenced by agents
 3. Hook scripts are always overwritten from the repo (repo is source of truth, no conflict resolution)
 
 ### Repo structure
 
 ```
 my-repo/
-  agents/         ← agent .md files (synced to ~/.copilot/agents/)
-  skills/         ← skill directories (synced to ~/.copilot/skills/)
-  hooks/          ← hook scripts (synced to ~/.copilot/hooks/scripts/)
-    stop-checklist.sh
-    stop-checklist.ps1
-    output-format.sh
-    output-format.ps1
+  agents/         \u2190 agent .md files (synced to ~/.copilot/agents/)
+  skills/         \u2190 skill directories (synced to ~/.copilot/skills/)
+  hooks/          \u2190 hook scripts (synced to ~/.copilot/hooks/scripts/)
+    pre-commit-guard.js
+    stop-checklist.js
+    output-format.js
+    verify-claims.js
+    hooks.json
 ```
 
 ### Configuration
@@ -584,9 +635,9 @@ The destination directory defaults to `~/.copilot/hooks/scripts/` and can be ove
 ### Why this matters
 
 Without distribution, hook scripts must be manually copied to each machine. With the Skill Manager:
-- **New team member** installs the extension → pulls → agents + hooks are ready
-- **Hook update** pushed to repo → next pull automatically updates scripts everywhere
-- **Cross-platform** — both `.sh` and `.ps1` variants are synced
+- **New team member** installs the extension \u2192 pulls \u2192 agents + hooks are ready
+- **Hook update** pushed to repo \u2192 next pull automatically updates scripts everywhere
+- **Cross-platform** \u2014 single JS file works on all operating systems, no platform-specific variants to sync
 
 ## Advanced Patterns
 
@@ -595,12 +646,12 @@ Without distribution, hook scripts must be manually copied to each machine. With
 Separate rules (WHAT to enforce) from the executor (HOW to enforce). The hook becomes a generic engine that reads rules from a file:
 
 ```
-Hook script → reads rules.json → evaluates input → returns decision
+Hook script \u2192 reads rules.json \u2192 evaluates input \u2192 returns decision
 ```
 
 Rules can be:
-- Local file (`~/.copilot/rules.json`) — synced via Skill Manager
-- Repo file (`.github/hooks/rules.json`) — per-project
+- Local file (`~/.copilot/rules.json`) \u2014 synced via Skill Manager
+- Repo file (`.github/hooks/rules.json`) \u2014 per-project
 - Both (with inheritance/merge)
 
 This enables standardized policies across teams without editing hook scripts.
@@ -609,11 +660,34 @@ This enables standardized policies across teams without editing hook scripts.
 
 For scenarios where the LLM must not be able to bypass the validation logic, move all decision-making to an external HTTP server. The hook becomes a thin client:
 
-```powershell
-$rawInput = @($input) -join "`n"
-if (-not $rawInput) { $rawInput = [Console]::In.ReadToEnd() }
-$response = Invoke-RestMethod -Uri "$env:HOOK_API_URL/validate" -Method POST -ContentType "application/json" -Body $rawInput
-$response | ConvertTo-Json -Depth 3 | Write-Output
+```js
+#!/usr/bin/env node
+'use strict';
+const http = require('http');
+
+let rawInput = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => { rawInput += chunk; });
+process.stdin.on('end', () => {
+  const url = new URL(process.env.HOOK_API_URL + '/validate');
+  const options = {
+    hostname: url.hostname,
+    port: url.port,
+    path: url.pathname,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  };
+  const req = http.request(options, (res) => {
+    let body = '';
+    res.on('data', (chunk) => { body += chunk; });
+    res.on('end', () => {
+      process.stdout.write(body + '\n');
+    });
+  });
+  req.on('error', () => { process.exit(0); });
+  req.write(rawInput);
+  req.end();
+});
 ```
 
 Benefits:
@@ -652,88 +726,79 @@ The hook receives the transcript path via `transcript_path` in the stdin JSON.
 | `tool.execution_complete` | Tool finished |
 | `assistant.turn_end` | Agent turn ends |
 
-Each interaction cycle: `user.message` → `assistant.turn_start` → `assistant.message` (with tool calls) → `assistant.turn_end`.
+Each interaction cycle: `user.message` \u2192 `assistant.turn_start` \u2192 `assistant.message` (with tool calls) \u2192 `assistant.turn_end`.
 
 **Scoping to current interaction:**
 
-A critical pattern — without scoping, hooks re-analyze the entire transcript and produce "sticky" false positives from old turns. Always find the **last `user.message`** and only process from there:
+A critical pattern \u2014 without scoping, hooks re-analyze the entire transcript and produce "sticky" false positives from old turns. Always find the **last `user.message`** and only process from there:
 
-```powershell
-# PowerShell — scope to current interaction
-$startIdx = 0
-for ($i = $lines.Count - 1; $i -ge 0; $i--) {
-    if ($lines[$i] -like '*"user.message"*') {
-        $startIdx = $i
-        break
-    }
+```js
+// JavaScript \u2014 scope to current interaction
+const lines = fs.readFileSync(transcriptPath, 'utf8').split('\n');
+let startIdx = 0;
+for (let i = lines.length - 1; i >= 0; i--) {
+  if (lines[i].includes('"user.message"')) {
+    startIdx = i;
+    break;
+  }
 }
-for ($i = $startIdx; $i -lt $lines.Count; $i++) {
-    # Process only events from this interaction
+for (let i = startIdx; i < lines.length; i++) {
+  const line = lines[i];
+  if (!line || line.length < 20) continue;
+  let evt;
+  try { evt = JSON.parse(line); } catch (_) { continue; }
+  // Process only events from this interaction
 }
-```
-
-```bash
-# Bash — scope to current interaction
-START_LINE=1
-LAST_USER_MSG=$(grep -n '"user\.message"' "$TRANSCRIPT_PATH" | tail -1 | cut -d: -f1 || true)
-if [ -n "$LAST_USER_MSG" ]; then
-  START_LINE=$LAST_USER_MSG
-fi
-tail -n +"$START_LINE" "$TRANSCRIPT_PATH" | while IFS= read -r line; do
-  # Process only events from this interaction
-done
 ```
 
 **Example: Smart skill-feedback (only block when feedback-protocol skills were used)**
 
-Instead of always reminding about feedback, the hook checks if a SKILL.md with "Feedback Protocol" was actually read during the session:
+Instead of always reminding about feedback, the hook checks if a SKILL.md with "Feedback Protocol" was actually read during the session (from `hooks/skill-feedback.js`):
 
-```powershell
-# Find SKILL.md reads in tool.execution_start events
-for ($i = $startIdx; $i -lt $lines.Count; $i++) {
-    $line = $lines[$i]
-    if ($line -notlike '*"tool.execution_start"*') { continue }
-    $evt = $line | ConvertFrom-Json -ErrorAction Stop
-    if ($evt.data.toolName -eq 'read_file') {
-        $fp = $evt.data.arguments.filePath
-        if ($fp -match '[\\/]skills[\\/]' -and $fp -match 'SKILL\.md$') {
-            # Check actual file for "Feedback Protocol"
-            $content = Get-Content $fp -Raw -ErrorAction SilentlyContinue
-            if ($content -match 'Feedback Protocol') {
-                # This skill has feedback — block with reminder
-            }
+```js
+// Find SKILL.md reads in tool.execution_start events
+for (let i = startIdx; i < lines.length; i++) {
+  const line = lines[i];
+  if (!line.includes('"tool.execution_start"')) continue;
+  let evt;
+  try { evt = JSON.parse(line); } catch (_) { continue; }
+  if (evt.data && evt.data.toolName === 'read_file') {
+    const fp = evt.data.arguments && evt.data.arguments.filePath;
+    if (fp && /[\\/]skills[\\/]/.test(fp) && /SKILL\.md$/.test(fp)) {
+      // Check actual file for "Feedback Protocol"
+      if (fs.existsSync(fp)) {
+        const content = fs.readFileSync(fp, 'utf8');
+        if (/Feedback Protocol/.test(content)) {
+          feedbackSkills.push(skillName);
         }
+      }
     }
+  }
 }
 ```
 
 **Example: File reference verification (only block for unverified paths)**
 
-The hook collects paths accessed via tools (`read_file`, `grep_search`, `file_search`, etc.) and compares against paths mentioned in `assistant.message` content. Only unverified mentions trigger a block:
+The hook collects paths accessed via tools (`read_file`, `grep_search`, `file_search`, etc.) and compares against paths mentioned in `assistant.message` content. Only unverified mentions trigger a block (from `hooks/verify-claims.js`):
 
-```powershell
-# Collect accessed paths from tool calls
-if ($evt.type -eq 'tool.execution_start' -and $evt.data.toolName -in $fileTools) {
-    if ($evt.data.arguments.filePath) {
-        [void]$accessedPaths.Add($evt.data.arguments.filePath)
-    }
+```js
+// Collect accessed paths from tool calls
+if (evt.type === 'tool.execution_start' && fileTools.includes(evt.data.toolName)) {
+  if (evt.data.arguments.filePath) accessedPaths.add(evt.data.arguments.filePath);
+  if (evt.data.arguments.path) accessedPaths.add(evt.data.arguments.path);
 }
 
-# Extract mentioned paths from assistant content
-$mentioned = [regex]::Matches($content, $relPathRegex)
-foreach ($m in $mentioned) {
-    if (-not (Test-Accessed $m.Value)) {
-        $unverified.Add($m.Value)
-    }
-}
+// Extract mentioned paths from assistant content
+const winPathRe = /([a-zA-Z]:\\(?:[\w\s._-]+\\)*[\w._-]+\.\w+)/gi;
+const relPathRe = /((src|test|docs|hooks|skills)[\\\/][\w._\/-]+\.\w+)/gi;
+// ... match against content, compare with accessedPaths
 ```
 
 **Key design principles for transcript-aware hooks:**
-- **Scope narrowly** — always use `user.message` boundary to avoid sticky false positives
-- **Exit 0 when condition not met** — silent passthrough is the default; only block when there's a real finding
-- **Read actual files when needed** — the transcript shows which tools were called, but checking file content (e.g., for "Feedback Protocol") requires reading the file from disk
-- **Require `jq` in bash** — JSONL parsing without `jq` is fragile; fall back to a static reminder if `jq` is unavailable
-- **PS 5.1 compatible** — avoid `u{}` escapes, ternary assignment, null-coalescing operators
+- **Scope narrowly** \u2014 always use `user.message` boundary to avoid sticky false positives
+- **Exit 0 when condition not met** \u2014 silent passthrough is the default; only block when there\u2019s a real finding
+- **Read actual files when needed** \u2014 the transcript shows which tools were called, but checking file content (e.g., for "Feedback Protocol") requires reading the file from disk
+- **Node.js built-ins only** \u2014 use `fs` for file reading, `path` for path manipulation, no external JSON parsers needed
 
 ## Companion Skills
 
@@ -745,7 +810,7 @@ foreach ($m in $mentioned) {
 threshold: 5
 ---
 
-## Feedback Protocol — hooks-creator
+## Feedback Protocol \u2014 hooks-creator
 
 ### When to Log a Review
 
@@ -753,7 +818,7 @@ Log a review whenever you help a user create hooks and:
 - The instructions in SKILL.md were insufficient or unclear
 - A hook event, configuration format, or platform behavior changed and the skill is outdated
 - You had to improvise guidance not covered by the skill
-- The user's resulting hook had issues traceable to missing instructions
+- The user\u2019s resulting hook had issues traceable to missing instructions
 - Cross-platform compatibility issues were encountered
 
 ### Review Format
