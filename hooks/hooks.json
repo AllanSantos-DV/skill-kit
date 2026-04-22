@@ -1,0 +1,33 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "node hooks/pre-commit-guard.js",
+        "timeout": 5
+      },
+      {
+        "type": "command",
+        "command": "node hooks/lesson-injector.js",
+        "timeout": 5
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node hooks/verify-claims.js",
+        "timeout": 5
+      },
+      {
+        "type": "command",
+        "command": "node hooks/context-confidence-check.js",
+        "timeout": 10
+      },
+      {
+        "type": "command",
+        "command": "node hooks/skill-feedback.js",
+        "timeout": 5
+      }
+    ]
+  }
+}

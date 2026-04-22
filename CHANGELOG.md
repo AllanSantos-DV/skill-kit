@@ -9,6 +9,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - Seção "Adaptive Delegation" no agente orchestrator — detecta automaticamente se `delegate_child` está disponível e adapta mecanismo de delegação
 
 ### Changed
+- **hooks**: Migrated all 8 hooks from PS1/SH pairs to JavaScript (cross-platform, single file per hook). Reorganized: 5 global hooks via `hooks/hooks.json` + 3 agent-scoped hooks in frontmatter.
 - **hooks-creator**: Added UTF-8 BOM and em-dash/en-dash rules to PS 5.1 compatibility gotchas
 
 ## [0.6.0] — 2026-04-13
