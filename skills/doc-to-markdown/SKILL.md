@@ -1,6 +1,6 @@
 ---
 name: doc-to-markdown
-description: "Convert binary/Office documents to Markdown for LLM consumption. USE FOR: converting Word, Excel, PowerPoint, PDF, Visio, MS Project files to Markdown, batch document conversion, extracting text from non-readable formats. DO NOT USE FOR: Markdown formatting/linting, general file I/O, web scraping, image generation."
+description: "**CONVERSION SKILL** — Convert binary/Office documents to Markdown for LLM consumption. USE FOR: converting Word, Excel, PowerPoint, PDF, Visio, MS Project files to Markdown, batch document conversion, extracting text from non-readable formats. DO NOT USE FOR: Markdown formatting/linting, general file I/O, web scraping, image generation."
 argument-hint: Describe the file format(s) you need converted to Markdown
 license: MIT
 ---
