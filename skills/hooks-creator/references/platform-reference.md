@@ -1,6 +1,6 @@
 # Platform Reference — VS Code Copilot vs Claude Code
 
-Complete comparison of hook capabilities between platforms.
+Complete comparison of hook capabilities between platforms. **JavaScript (Node.js) is the recommended script format for both platforms.**
 
 ---
 
@@ -40,7 +40,35 @@ Complete comparison of hook capabilities between platforms.
 | `prompt` | ❌ | ✅ | Template-based prompt injection |
 | `agent` | ❌ | ✅ | Delegate to another agent |
 
-**VS Code limitation**: Only `command` type hooks are supported. For HTTP webhooks, wrap the HTTP call in a shell script.
+**VS Code limitation**: Only `command` type hooks are supported. For HTTP webhooks, wrap the HTTP call in a JS script (using Node.js built-in `http`/`https` modules).
+
+---
+
+## Script Format Recommendation
+
+| Format | Recommendation | Pros | Cons |
+|--------|---------------|------|------|
+| **JavaScript (.js)** | ✅ **Primary — use this** | Single file, cross-platform, no encoding issues, native JSON support | Requires Node.js installed |
+| PowerShell + Bash pairs | ⚠️ Legacy | Native to each OS | Double maintenance, PS 5.1 encoding bugs, quoting complexity |
+
+**Configuration comparison:**
+
+```json
+// ✅ JavaScript — single command, no windows override needed
+{
+  "type": "command",
+  "command": "node hooks/my-hook.js",
+  "timeout": 10
+}
+
+// ⚠️ Legacy PS1+SH — requires windows override
+{
+  "type": "command",
+  "command": "bash hooks/my-hook.sh",
+  "windows": "powershell -ExecutionPolicy Bypass -File hooks\\my-hook.ps1",
+  "timeout": 10
+}
+```
 
 ---
 
@@ -57,16 +85,10 @@ Complete comparison of hook capabilities between platforms.
 
 **Recommendation**: When writing cross-platform scripts, check for both casing patterns:
 
-```bash
-SESSION=$(echo "$INPUT" | grep -o '"sessionId"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
-if [ -z "$SESSION" ]; then
-  SESSION=$(echo "$INPUT" | grep -o '"session_id"\s*:\s*"[^"]*"' | sed 's/.*:.*"\([^"]*\)"/\1/')
-fi
-```
-
-```powershell
-$session = $input_json.sessionId
-if (-not $session) { $session = $input_json.session_id }
+```js
+// JavaScript — check for both platform field names
+const session = inputJson.sessionId || inputJson.session_id || '';
+const eventName = inputJson.hookEventName || inputJson.hook_event_name || '';
 ```
 
 ---
@@ -85,10 +107,17 @@ Some tools have different names across platforms:
 
 **Recommendation**: When filtering by tool name, include both platform variants:
 
-```bash
-if [[ "$TOOL" == "replace_string_in_file" || "$TOOL" == "edit_file" ]]; then
-  # Handle file edit
-fi
+```js
+// JavaScript — handle both platforms
+const tool = inputJson.tool_name;
+if (tool === 'replace_string_in_file' || tool === 'edit_file') {
+  // Handle file edit
+}
+
+// Terminal commands — check both names
+if (tool !== 'run_in_terminal' && tool !== 'Bash') {
+  process.exit(0); // Not a terminal command
+}
 ```
 
 ---
@@ -161,9 +190,11 @@ Both platforms expect the same JSON output structure from hooks:
 
 | Scenario | Recommendation |
 |----------|---------------|
-| VS Code only | Use `.github/hooks/*.json` + agent frontmatter |
+| VS Code only | Use `.github/hooks/*.json` + agent frontmatter with `node hooks/my-hook.js` |
 | Claude Code only | Use `.claude/settings.json` with full event/type support |
-| Both platforms | Use `.claude/settings.json` (read by both) with `command` type only |
-| Team hooks | `.github/hooks/` (checked into git) |
+| Both platforms | Use `.claude/settings.json` (read by both) with `command` type, JS scripts |
+| Team hooks | `.github/hooks/` (checked into git) with JS scripts |
 | Personal hooks | `~/.claude/settings.json` (user global) |
 | Agent-specific behavior | Agent frontmatter `hooks:` field |
+| New hooks | Always use JavaScript (.js) — single file, cross-platform |
+| Migrating old hooks | Convert PS1+SH pairs to single JS files |
