@@ -7,10 +7,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ### Adicionado
 - Seção "Adaptive Delegation" no agente orchestrator — detecta automaticamente se `delegate_child` está disponível e adapta mecanismo de delegação
+- **skill-creator**: tabela de 6 type tags de description (WORKFLOW, ENFORCEMENT, CONVERSION, MEASUREMENT, GUIDE, REFERENCE) com orientação de quando usar cada
+- Type tags nas descriptions de `doc-to-markdown` (CONVERSION), `skill-benchmark` (MEASUREMENT) e `skill-manager-guide` (GUIDE)
 
 ### Changed
 - **hooks**: Migrated all 8 hooks from PS1/SH pairs to JavaScript (cross-platform, single file per hook). Reorganized: 5 global hooks via `hooks/hooks.json` + 3 agent-scoped hooks in frontmatter.
-- **hooks-creator**: Added UTF-8 BOM and em-dash/en-dash rules to PS 5.1 compatibility gotchas
+- **hooks-creator**: Rewritten to teach JavaScript (Node.js) as the primary hook pattern. Examples, cross-platform scripts, and pitfalls updated to reflect JS-first approach.
+- **skill-creator**: limite de 300 chars reformulado como sugestão (sweet spot para atenção da LLM, max real é 1024). Se description passar de 400 chars, considerar dividir a skill em duas mais focadas.
+- **copilot-instructions.md**: regras de hooks atualizadas de "PS1+SH pairs" para "JavaScript (.js) files — Node.js only, no external dependencies"
 
 ## [0.6.0] — 2026-04-13
 
