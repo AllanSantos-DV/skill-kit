@@ -102,20 +102,33 @@ The body is the actual knowledge injected into the agent. This is where you writ
 
 The `description` field is the **single most critical element** for skill discoverability. The agent reads descriptions to decide which skills to activate. A bad description means the skill never gets used.
 
-### Pattern: Workflow Skill Description
+### Pattern: Type Tag + USE FOR + DO NOT USE
 
-For skills that guide a workflow or process:
+Every description should start with a **type tag** in bold, followed by a one-line summary, use cases, and exclusions:
 
 ```yaml
-description: "**WORKFLOW SKILL** — <one-line summary>. USE FOR: <comma-separated use cases>. DO NOT USE FOR: <explicit exclusions to prevent false matches>."
+description: "**<TYPE> SKILL** — <one-line summary>. USE FOR: <comma-separated use cases>. DO NOT USE FOR: <explicit exclusions to prevent false matches>."
 ```
+
+**Common type tags:**
+
+| Tag | When to use |
+|-----|------------|
+| `**WORKFLOW SKILL**` | Guides a multi-step process or workflow |
+| `**ENFORCEMENT SKILL**` | Enforces rules, checks, or constraints |
+| `**CONVERSION SKILL**` | Converts between formats or representations |
+| `**MEASUREMENT SKILL**` | Measures, benchmarks, or evaluates |
+| `**GUIDE SKILL**` | Teaches how to use a tool or extension |
+| `**REFERENCE SKILL**` | Provides domain knowledge or lookup tables |
+
+Choose the tag that best describes the skill's primary purpose. If none fits, create a descriptive one.
 
 ### Pattern: Knowledge Skill Description
 
-For skills that provide domain knowledge:
+For skills that provide domain knowledge (alternative to type-tag pattern):
 
 ```yaml
-description: "<Domain> knowledge covering <specific topics>. Includes <key features like examples, tables, commands>."
+description: "**REFERENCE SKILL** — <Domain> knowledge covering <specific topics>. Includes <key features like examples, tables, commands>."
 ```
 
 ### Rules for Good Descriptions
@@ -124,7 +137,7 @@ description: "<Domain> knowledge covering <specific topics>. Includes <key featu
 2. **Include action verbs** — "Create, configure, debug, troubleshoot" tells the agent when to activate.
 3. **List explicit exclusions** — "DO NOT USE FOR: runtime debugging" prevents false activations.
 4. **Front-load keywords** — The most relevant terms should appear early.
-5. **Keep under 300 chars** — Long descriptions get truncated. Be dense, not verbose.
+5. **Aim for ~300 chars** — The hard limit is 1024, but ~300 chars is the sweet spot for LLM attention. Beyond that, the model may not weigh all keywords equally during discovery. If your description needs 400+ chars to cover all use cases, consider whether the skill should be **split into two focused skills** — each with a tight, discoverable description.
 
 ## Writing the Body — Effective Instructions
 
@@ -383,7 +396,7 @@ references/
 Before considering a skill complete, verify:
 
 - [ ] **`name`** matches folder name (kebab-case)
-- [ ] **`description`** is specific, keyword-rich, under 300 chars
+- [ ] **`description`** is specific, keyword-rich, ideally ~300 chars (max 1024; if >400, consider splitting the skill)
 - [ ] **`license`** field present in frontmatter
 - [ ] **Body opens with role context** — "You are helping a developer with..."
 - [ ] **Imperative voice** — instructs the agent what to do
