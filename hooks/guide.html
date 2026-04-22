@@ -363,10 +363,11 @@
     <a href="../index.html" class="back-link">← Home</a>
     <h1>⚡ Guia de Hooks <span class="count-badge">8</span></h1>
     <p>
-      Hooks são comandos shell determinísticos executados em eventos específicos do ciclo de vida
+      Hooks são scripts JavaScript (Node.js) determinísticos executados em eventos específicos do ciclo de vida
       de uma sessão de agente. Diferente de instruções (que o agente pode ignorar), hooks
       <strong>garantem execução</strong> — rodam como processos reais, recebem JSON via stdin e
-      retornam JSON via stdout.
+      retornam JSON via stdout. Os hooks globais são configurados em <code>hooks/hooks.json</code> e os
+      agent-scoped ficam no frontmatter de cada agent.
     </p>
     <p>
       O output do hook comunica uma decisão ao agente. As formas principais são:
@@ -639,11 +640,11 @@
   </div>
 
   <!-- lesson-injector -->
-  <div class="card event-UserPromptSubmit">
+  <div class="card event-PreToolUse">
     <div class="card-header">
       <span class="card-icon">📚</span>
       <h3>lesson-injector</h3>
-      <span class="event-badge event-badge-UserPromptSubmit">UserPromptSubmit</span>
+      <span class="event-badge event-badge-PreToolUse">PreToolUse</span>
     </div>
     <p class="card-desc">
       Injeta lições aprendidas relevantes no contexto do agente antes de cada prompt. Faz keyword matching 
@@ -696,8 +697,8 @@
     <p class="card-desc">
       Verifica referências a arquivos nas mensagens do assistant contra chamadas reais de ferramentas
       no transcript. Analisa apenas a <strong>interação atual</strong> (do último <code>user.message</code>
-      em diante), evitando falsos positivos de menções antigas. No bash, requer <code>jq</code> — sem
-      ele, faz fallback para um reminder estático.
+      em diante), evitando falsos positivos de menções antigas. Implementado em JavaScript — sem
+      dependências externas.
     </p>
 
     <div class="section-label">Lógica detalhada</div>

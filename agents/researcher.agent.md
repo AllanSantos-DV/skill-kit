@@ -12,28 +12,10 @@ handoffs:
     prompt: "Validate the research and analysis above. Check assumptions, classify confidence, identify gaps, and perform active research on any unverified claims before approving for implementation."
     send: false
 hooks:
-  PreToolUse:
-    - type: command
-      command: "bash ~/.copilot/hooks/scripts/pre-commit-guard.sh"
-      windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\.copilot\hooks\scripts\pre-commit-guard.ps1'\""
-      timeout: 5
   Stop:
     - type: command
-      command: "bash ~/.copilot/hooks/scripts/output-format.sh"
-      windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\.copilot\hooks\scripts\output-format.ps1'\""
+      command: "node hooks/output-format.js"
       timeout: 10
-    - type: command
-      command: "bash ~/.copilot/hooks/scripts/verify-claims.sh"
-      windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\.copilot\hooks\scripts\\verify-claims.ps1'\""
-      timeout: 5
-    - type: command
-      command: "bash ~/.copilot/hooks/scripts/context-confidence-check.sh"
-      windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\.copilot\hooks\scripts\context-confidence-check.ps1'\""
-      timeout: 10
-    - type: command
-      command: "bash ~/.copilot/hooks/scripts/skill-feedback.sh"
-      windows: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"& '$HOME\.copilot\hooks\scripts\skill-feedback.ps1'\""
-      timeout: 5
 ---
 
 # Researcher — Understand Before Acting
