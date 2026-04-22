@@ -64,18 +64,18 @@ Agents são **personas determinísticas** que controlam como o Copilot opera. Ca
 
 ### Hooks (8)
 
-Hooks são **scripts de lifecycle** que rodam automaticamente durante a interação do agente. Funcionam como guardrails em tempo real. Cada hook tem versão `.ps1` (Windows) e `.sh` (macOS/Linux), e são configurados no frontmatter dos agents.
+Hooks são **scripts de lifecycle** que rodam automaticamente durante a interação do agente. Funcionam como guardrails em tempo real. Cada hook é um arquivo JavaScript (`.js`) cross-platform, executado via Node.js. Os hooks **globais** são configurados em `hooks/hooks.json` e os **agent-scoped** ficam no frontmatter de cada agent.
 
-| Hook | Evento | Propósito |
-|------|--------|-----------|
-| [pre-commit-guard](hooks/pre-commit-guard.ps1) | PreToolUse | Garante convencional commits. Bloqueia commits sem formato adequado. |
-| [output-format](hooks/output-format.ps1) | PreToolUse | Injeta regras de formatação de output no contexto do agente. |
-| [verify-claims](hooks/verify-claims.ps1) | PreToolUse | Exige verificação de fatos antes de declarar afirmações. |
-| [context-confidence-check](hooks/context-confidence-check.ps1) | PreToolUse | Avalia confiança do contexto antes de agir — previne hallucination. |
-| [skill-feedback](hooks/skill-feedback.ps1) | PreToolUse | Injeta protocolo de feedback para captura estruturada. |
-| [lesson-injector](hooks/lesson-injector.ps1) | PreToolUse | Injeta lições aprendidas relevantes (do error-learning) no contexto. |
-| [stop-checklist](hooks/stop-checklist.ps1) | Stop | Checklist de qualidade antes de encerrar — verifica se testes rodaram, se task-map é necessário, etc. |
-| [subagent-audit](hooks/subagent-audit.ps1) | SubagentStart | Audita delegações de sub-agentes — verifica se instruções estão completas. |
+| Hook | Evento | Escopo | Propósito |
+|------|--------|--------|-----------|
+| [pre-commit-guard](hooks/pre-commit-guard.js) | PreToolUse | Global | Garante conventional commits. Bloqueia commits sem formato adequado e operações destrutivas. |
+| [lesson-injector](hooks/lesson-injector.js) | PreToolUse | Global | Injeta lições aprendidas relevantes (do error-learning) no contexto. |
+| [verify-claims](hooks/verify-claims.js) | Stop | Global | Exige verificação de fatos antes de declarar afirmações. |
+| [context-confidence-check](hooks/context-confidence-check.js) | Stop | Global | Avalia confiança do contexto antes de agir — previne hallucination. |
+| [skill-feedback](hooks/skill-feedback.js) | Stop | Global | Captura feedback de skills usadas com Feedback Protocol. |
+| [output-format](hooks/output-format.js) | Stop | Agent | Injeta regras de formatação de output (researcher/validator). |
+| [stop-checklist](hooks/stop-checklist.js) | Stop | Agent | Checklist de qualidade antes de encerrar (implementor). |
+| [subagent-audit](hooks/subagent-audit.js) | SubagentStart | Agent | Audita delegações de sub-agentes (orchestrator). |
 
 ---
 
@@ -249,12 +249,12 @@ Consulte a [documentação de custom agents](https://code.visualstudio.com/docs/
 
 ### Hooks
 
-Crie scripts `.ps1` e `.sh` em `hooks/`:
+Crie scripts `.js` em `hooks/`:
 
 ```
 hooks/
-  nome-do-hook.ps1   ← Windows (PowerShell 5.1+)
-  nome-do-hook.sh    ← macOS/Linux (bash)
+  nome-do-hook.js   ← JavaScript cross-platform (Node.js)
+  hooks.json        ← Config de hooks globais
 ```
 
 Use a skill **hooks-creator** para orientação completa:
