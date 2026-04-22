@@ -309,7 +309,7 @@ foreach ($file in $agentFiles) {
         foreach ($hs in $hookScripts) {
             if ($hs.Type -eq 'node') {
                 # Node.js hook: resolve relative to workspace root
-                $resolved = Join-Path $PSScriptRoot '..\..' $hs.Path
+                $resolved = Join-Path (Join-Path $PSScriptRoot '..\..') $hs.Path
                 if (Test-Path $resolved) {
                     Pass "Hook script exists: $($hs.Path)"
                 } else {
