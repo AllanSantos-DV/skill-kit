@@ -5,6 +5,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+- Hooks PowerShell (.ps1) e Bash (.sh) — todos migrados para JavaScript (.js). Arquivos de teste legados (`tests/hooks/*.ps1`, `tests/hooks/*.sh`) também removidos.
+
 ### Adicionado
 - `hooks/session-context.js` — injeta contexto git/projeto no início de cada sessão (branch, HEAD, uncommitted, recent commits)
 - `hooks/context-save.js` — salva snapshot do estado da sessão em docs/maps/ antes da compactação de contexto (PreCompact)
