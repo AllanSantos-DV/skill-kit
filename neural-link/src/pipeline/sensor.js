@@ -24,6 +24,7 @@ const KNOWN_EVENT_TYPES = [
   'PreToolUse',
   'PostToolUse',
   'SessionStart',
+  'PreCompact',
   'Stop',
   'SubagentStart',
   'SubagentStop',

@@ -158,6 +158,28 @@
           "adjust": "+0.1"
         }
       ]
+    },
+    "session-context": {
+      "enabled": true,
+      "events": ["SessionStart"],
+      "script": {
+        "node": "~/.copilot/hooks/session-context.js"
+      },
+      "timeout": 5000,
+      "threshold": null,
+      "weight": 0.8,
+      "modifiers": []
+    },
+    "context-save": {
+      "enabled": true,
+      "events": ["PreCompact"],
+      "script": {
+        "node": "~/.copilot/hooks/context-save.js"
+      },
+      "timeout": 5000,
+      "threshold": null,
+      "weight": 0.8,
+      "modifiers": []
     }
   }
 }

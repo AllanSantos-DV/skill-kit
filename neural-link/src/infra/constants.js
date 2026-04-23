@@ -97,6 +97,8 @@ export const NAME_EVENT_PATTERNS = [
   { prefix: 'verify-',   events: ['Stop'] },
   { prefix: 'output-',   events: ['Stop'] },
   { prefix: 'subagent-', events: ['SubagentStart'] },
+  { prefix: 'session-',     events: ['SessionStart'] },
+  { prefix: 'context-save', events: ['PreCompact'] },
   { prefix: 'lesson-',   events: ['UserPromptSubmit'] },
   { prefix: 'prompt-',   events: ['UserPromptSubmit'] },
 ];
