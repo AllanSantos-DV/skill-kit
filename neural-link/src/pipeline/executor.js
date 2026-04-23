@@ -183,9 +183,9 @@ function runHandler(name, handler, stdinStr, timeout) {
 
     let scriptPath;
     try {
-      scriptPath = isWindows
-        ? resolvePath(handler.script.windows)
-        : resolvePath(handler.script.bash);
+      const rawScript = handler.script.node
+        ?? (isWindows ? handler.script.windows : handler.script.bash);
+      scriptPath = resolvePath(rawScript);
       
       if (!validateScriptPath(scriptPath)) {
         console.error(`[Security] Invalid or non-existent script path for handler ${name}: ${scriptPath}`);
@@ -200,22 +200,11 @@ function runHandler(name, handler, stdinStr, timeout) {
 
     let child;
     try {
-      if (isWindows) {
-        child = spawn('powershell', [
-          '-NoProfile', 
-          '-ExecutionPolicy', 'Bypass', 
-          '-File', scriptPath
-        ], { 
-          stdio: ['pipe', 'pipe', 'pipe'], 
-          windowsHide: true,
-          shell: false
-        });
-      } else {
-        child = spawn('bash', [scriptPath], {
-          stdio: ['pipe', 'pipe', 'pipe'],
-          shell: false
-        });
-      }
+      child = spawn(process.execPath, [scriptPath], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
+        shell: false,
+      });
     } catch {
       resolve(allowResult);
       return;

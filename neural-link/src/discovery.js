@@ -1,17 +1,16 @@
 /**
  * Auto-registration discovery for Neural Link.
  *
- * When registration mode is "auto", scans ~/.copilot/hooks/scripts/
- * (global) and optionally workspace hook directories for scripts
- * matching the current OS, infers event bindings from names,
- * and writes new handler entries into neural-link.config.json.
+ * When registration mode is "auto", scans ~/.copilot/hooks/
+ * (global) and optionally workspace hook directories for .js scripts,
+ * infers event bindings from names, and writes new handler entries
+ * into neural-link.config.json.
  *
  * Also provides a file-watcher that marks removed scripts as disabled.
  */
 
 import { readdirSync, existsSync, writeFileSync, watch } from 'node:fs';
 import { basename, extname, join } from 'node:path';
-import { platform } from 'node:os';
 import { COPILOT } from './infra/paths.js';
 import { getConfigPath } from './infra/config.js';
 import {
@@ -25,13 +24,10 @@ import {
 // ─── Helpers ────────────────────────────────────────────────
 
 /**
- * Return the script file extension relevant for the current OS.
- * Windows → ".ps1", everything else → ".sh"
+ * Return the script file extension for Node.js hooks.
  */
 export function platformExtension() {
-  return platform() === 'win32'
-    ? PLATFORM_EXTENSIONS.win32
-    : PLATFORM_EXTENSIONS.unix;
+  return PLATFORM_EXTENSIONS.node;
 }
 
 /**
@@ -71,13 +67,12 @@ export function scanDirectory(dir) {
 }
 
 /**
- * Scan the global hooks/scripts directory and return names of scripts
- * that match the current platform extension.
+ * Scan the global hooks directory and return names of .js scripts.
  *
  * @returns {string[]} - Unique hook names (without extension)
  */
 export function scanScripts() {
-  return scanDirectory(COPILOT.HOOKS_SCRIPTS);
+  return scanDirectory(COPILOT.HOOKS);
 }
 
 /**
@@ -103,13 +98,11 @@ export function buildHandlerEntry(name, config, options = {}) {
     );
     const relDir = relDirs[0] ?? WORKSPACE_HOOKS_DIRS[0];
     script = {
-      bash: `./${relDir}/${name}.sh`,
-      windows: `.\\${relDir.replace(/\//g, '\\')}\\${name}.ps1`,
+      node: `./${relDir}/${name}.js`,
     };
   } else {
     script = {
-      bash: `~/.copilot/hooks/scripts/${name}.sh`,
-      windows: `$HOME\\.copilot\\hooks\\scripts\\${name}.ps1`,
+      node: `~/.copilot/hooks/${name}.js`,
     };
   }
 
@@ -251,9 +244,9 @@ export function startWatcher(config) {
 
   const reg = normalizeRegistration(config.registration);
   if (reg.mode !== 'auto') return null;
-  if (!existsSync(COPILOT.HOOKS_SCRIPTS)) return null;
+  if (!existsSync(COPILOT.HOOKS)) return null;
 
-  activeWatcher = watch(COPILOT.HOOKS_SCRIPTS, { persistent: false }, () => {
+  activeWatcher = watch(COPILOT.HOOKS, { persistent: false }, () => {
     try {
       autoRegister(config);
     } catch {
