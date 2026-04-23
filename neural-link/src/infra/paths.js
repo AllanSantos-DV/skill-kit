@@ -24,4 +24,5 @@ export const FILES = {
 
 export const COPILOT = {
   HOOKS_SCRIPTS: join(homedir(), '.copilot', 'hooks', 'scripts'),
+  HOOKS: join(homedir(), '.copilot', 'hooks'),
 };

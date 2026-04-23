@@ -253,15 +253,14 @@ function validateHandler(name, handler) {
   });
 
   if (!handler.script || typeof handler.script !== 'object') {
-    throw new Error(`Handler '${name}': script must be an object with bash/windows paths`);
+    throw new Error(`Handler '${name}': script must be an object`);
   }
 
-  if (typeof handler.script.bash !== 'string' || !handler.script.bash.trim()) {
-    throw new Error(`Handler '${name}': script.bash must be a non-empty string`);
-  }
-
-  if (typeof handler.script.windows !== 'string' || !handler.script.windows.trim()) {
-    throw new Error(`Handler '${name}': script.windows must be a non-empty string`);
+  const hasNode = typeof handler.script.node === 'string' && handler.script.node.trim();
+  const hasLegacy = typeof handler.script.bash === 'string' && handler.script.bash.trim()
+    && typeof handler.script.windows === 'string' && handler.script.windows.trim();
+  if (!hasNode && !hasLegacy) {
+    throw new Error(`Handler '${name}': script must have a 'node' field or both 'bash' and 'windows' fields`);
   }
 
   if (handler.timeout !== undefined && handler.timeout !== null) {

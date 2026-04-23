@@ -108,4 +108,5 @@ export const DEFAULT_INFERRED_EVENTS = ['PreToolUse', 'Stop'];
 export const PLATFORM_EXTENSIONS = {
   win32: '.ps1',
   unix: '.sh',
+  node: '.js',
 };
