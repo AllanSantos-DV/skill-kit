@@ -499,9 +499,11 @@
       <span class="category-badge category-workflow">Workflow Skill</span>
     </div>
     <p class="card-desc">
-      Guia completo para criação e configuração de hooks de ciclo de vida para agentes do VS Code Copilot
-      e Claude Code. Hooks são comandos shell determinísticos executados em eventos específicos — garantem
-      execução (diferente de instruções, que o agente pode ignorar).
+      Guia completo para criação e configuração de hooks de ciclo de vida para agentes.
+      <strong>Plataforma padrão: VS Code GitHub Copilot</strong> — Claude Code só quando o usuário
+      pedir explicitamente ou houver <code>.claude/</code> no workspace. Hooks são comandos
+      determinísticos (Node.js) executados em eventos específicos — garantem execução
+      (diferente de instruções, que o agente pode ignorar).
     </p>
     <div class="section-label">Quando usar</div>
     <ul class="use-list">
