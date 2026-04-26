@@ -118,23 +118,33 @@ process.stdin.on('end', () => {
 
   if (candidates.length === 0) process.exit(0);
 
-  // Sort by confidence DESC, take top 5
+  // Sort by confidence DESC, take top 10
   candidates.sort((a, b) => b.confidence - a.confidence);
-  const top = candidates.slice(0, 5);
+  const top = candidates.slice(0, 10);
 
-  const tagList = [...matchedTags].sort().join(', ');
-  const outputLines = ['Licoes aprendidas relevantes (tags: ' + tagList + '):'];
+  const lines = [];
+  lines.push('### MANDATORY: Lessons-Learned Triage (act on context, not literal prompt match)');
+  lines.push('');
+  lines.push('Below is a shortlist of lessons from `~/.copilot/lessons/` whose tags overlap this turn.');
+  lines.push('These are CANDIDATES, not auto-injected knowledge. The matching was a coarse keyword filter — it has false positives and is blind to nuance.');
+  lines.push('');
+  lines.push('YOU MUST:');
+  lines.push('1. Re-read the user message and infer the REAL intent (including unstated nuance, paraphrase, ambiguity, common pitfalls of the requested action).');
+  lines.push('2. For each lesson below, decide: "Is this likely to prevent a mistake I would otherwise make in THIS task?"');
+  lines.push('3. If YES for any: `read_file` the full lesson at `~/.copilot/lessons/<id>-*.md` BEFORE acting on the user request.');
+  lines.push('4. If NO for all: ignore this block silently — do not mention it to the user.');
+  lines.push('');
+  lines.push('DO NOT skip step 1. DO NOT read every lesson preventively. DO NOT rely on the prompt containing the exact keyword — judge by intent.');
+  lines.push('');
+  lines.push('Candidates (id — tags — summary — confidence):');
   for (const lesson of top) {
-    outputLines.push('- [' + lesson.id + '] ' + lesson.resumo + ' (confidence: ' + lesson.confidence + ')');
+    const tagsStr = lesson.tags.join(',');
+    lines.push('- ' + lesson.id + ' [' + tagsStr + '] ' + lesson.resumo + ' (conf:' + lesson.confidence + ')');
   }
-  outputLines.push('Para detalhes completos: read_file ~/.copilot/lessons/<id>-*.md');
+  lines.push('');
+  lines.push('Path pattern: `~/.copilot/lessons/<id>-*.md` — use `read_file` with the full path after listing the directory if needed.');
 
-  let msg = outputLines.join('\n');
-
-  // Enforce 500 char limit
-  if (msg.length > 500) {
-    msg = msg.substring(0, 497) + '...';
-  }
+  const msg = lines.join('\n');
 
   const result = {
     decision: 'add',

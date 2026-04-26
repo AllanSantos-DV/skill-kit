@@ -16,6 +16,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - Type tags nas descriptions de `doc-to-markdown` (CONVERSION), `skill-benchmark` (MEASUREMENT) e `skill-manager-guide` (GUIDE)
 
 ### Changed
+- **hooks-creator**: description e SKILL.md reforçados para invocação mais agressiva e **default explícito = VS Code GitHub Copilot** (Claude Code só com pedido explícito ou evidência de `.claude/`). Adicionada seção "MANDATORY DEFAULT" e regras de Platform Detection com Copilot priorizado. Card do guia atualizado.
 - **hooks**: Migrated all 8 hooks from PS1/SH pairs to JavaScript (cross-platform, single file per hook). Reorganized: 5 global hooks via `hooks/hooks.json` + 3 agent-scoped hooks in frontmatter.
 - **hooks-creator**: Rewritten to teach JavaScript (Node.js) as the primary hook pattern. Examples, cross-platform scripts, and pitfalls updated to reflect JS-first approach.
 - **skill-creator**: limite de 300 chars reformulado como sugestão (sweet spot para atenção da LLM, max real é 1024). Se description passar de 400 chars, considerar dividir a skill em duas mais focadas.

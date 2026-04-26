@@ -1,13 +1,25 @@
 ---
 name: hooks-creator
-description: "**WORKFLOW SKILL** \u2014 Create and configure agent hooks for VS Code Copilot and Claude Code using JavaScript (Node.js). USE FOR: creating JS hook scripts, configuring lifecycle hooks (SessionStart, PreToolUse, PostToolUse, Stop), adding hooks to agent frontmatter, cross-platform hook scripts, security best practices. DO NOT USE FOR: general coding, creating agents (use agent-creator), creating skills (use skill-creator)."
-argument-hint: Describe what the hook should enforce or automate
+description: "**WORKFLOW SKILL — MANDATORY for ANY hook work.** Create, configure, edit, debug, fix, or review lifecycle hooks for VS Code Copilot (default) and Claude Code. USE FOR (always load this skill, never improvise): criar hook, configurar hook, editar hook, escrever hook, hook do Copilot, hook do GitHub Copilot, hook do Claude, hook do agente, agent hook, lifecycle hook, PreToolUse, PostToolUse, SessionStart, SubagentStop, Stop hook, UserPromptSubmit, PreCompact, bloquear comando, validar tool call, injetar contexto, guard, .agent.md frontmatter hooks, hooks.json, .github/hooks, .claude/settings.json, hook script Node.js, JS hook, cross-platform hook, hook não dispara, hook silencioso, hook ignorado, permissionDecision, hookSpecificOutput, additionalContext. **DEFAULT PLATFORM = VS Code GitHub Copilot.** Only target Claude Code when the user explicitly says \"Claude\" / \"Claude Code\" OR the workspace has a `.claude/` directory. NEVER assume Claude. DO NOT USE FOR: general coding, creating agents (use agent-creator), creating skills (use skill-creator)."
+argument-hint: Describe what the hook should enforce or automate (target platform defaults to VS Code Copilot)
 license: MIT
 ---
 
-# Hooks Creator \u2014 Complete Guide to Agent Lifecycle Hooks
+# Hooks Creator — Complete Guide to Agent Lifecycle Hooks
 
-You are an expert at creating and configuring lifecycle hooks for AI agents. When the user asks you to create a hook, follow this guide to produce a complete, cross-platform, well-structured hook configuration. **All hooks should be written in JavaScript (Node.js)** \u2014 a single `.js` file that runs identically on Windows, macOS, and Linux.
+You are an expert at creating and configuring lifecycle hooks for AI agents. When the user asks you to create a hook, follow this guide to produce a complete, cross-platform, well-structured hook configuration. **All hooks should be written in JavaScript (Node.js)** — a single `.js` file that runs identically on Windows, macOS, and Linux.
+
+## ⚠️ MANDATORY DEFAULT: VS Code GitHub Copilot
+
+**Unless the user explicitly says otherwise, the target platform is ALWAYS VS Code GitHub Copilot.**
+
+- ✅ Default target: **VS Code Copilot** — `.github/hooks/*.json` (workspace) or `.agent.md` frontmatter (agent-scoped)
+- ✅ Switch to Claude Code ONLY if: user explicitly says "Claude" / "Claude Code", OR a `.claude/` directory exists in the workspace, OR the user is editing `~/.claude/settings.json`
+- ❌ NEVER assume Claude Code by default
+- ❌ NEVER write hooks to `.claude/settings.json` without explicit user request or evidence
+- ❌ If unsure, **ASK** which platform — do not guess Claude
+
+When generating examples, paths, configuration snippets, or installation steps, default to the Copilot equivalents (`.github/hooks/`, `~/.copilot/hooks/scripts/`, `chat.useCustomAgentHooks`, `tool_name === 'run_in_terminal'`). Mention Claude Code only as a secondary note when relevant.
 
 ## What are Hooks?
 
@@ -15,15 +27,24 @@ Hooks are **deterministic commands** executed at specific lifecycle events durin
 
 ## Platform Detection
 
-Before creating hooks, determine the target platform:
+**Default = VS Code GitHub Copilot.** Only switch to Claude Code with explicit evidence (see decision table below).
 
 | Signal | Platform | Hook Support |
 |--------|----------|-------------|
+| **Nothing said + no evidence** | **VS Code Copilot (DEFAULT)** | 8 events, `command` type only |
+| User says "Copilot" / "GitHub Copilot" / "VS Code" | VS Code Copilot | 8 events, `command` type only |
 | `.agent.md` in workspace | VS Code Copilot | 8 events, `command` type only |
+| `.github/hooks/` exists | VS Code Copilot | Workspace hooks |
+| User explicitly says "Claude" / "Claude Code" | Claude Code | 20 events, 4 hook types |
 | `.claude/` directory exists | Claude Code | 20 events, 4 hook types |
-| Both present | Hybrid | Use `.claude/settings.json` (read by both) |
+| Both `.agent.md` and `.claude/` present | Ask the user which one | — |
 
-**Detection strategy**: Check for `.agent.md` files in `.github/agents/` or workspace root, check for `.claude/` directory, inspect `settings.json` patterns. If the platform is unclear, **ask the user** \u2014 don\u2019t assume.
+**Detection strategy:**
+1. Re-read the user's exact wording. Did they say "Copilot" or "Claude"? Trust their words.
+2. Check for `.claude/` directory → if absent, target is Copilot.
+3. Check for `.github/hooks/` or `.agent.md` → confirms Copilot.
+4. If still unclear AND there's no signal at all → **default to Copilot**, do not ask.
+5. Only ask when both ecosystems are clearly present and the user didn't pick one.
 
 ## Lifecycle Events
 
