@@ -3,30 +3,15 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { readStdinJson, guardStopActive, readTranscript, lastUserMessageIdx, emitStopBlock } = require('./_lib/hook-io');
 
-let rawInput = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (chunk) => { rawInput += chunk; });
-process.stdin.on('end', () => {
-  let hookInput;
-  try { hookInput = JSON.parse(rawInput); } catch (_) { process.exit(0); }
-  if (hookInput.stop_hook_active === true) process.exit(0);
+readStdinJson((hookInput) => {
+  guardStopActive(hookInput);
 
-  const transcriptPath = hookInput.transcript_path;
-  if (!transcriptPath || !fs.existsSync(transcriptPath)) process.exit(0);
+  const lines = readTranscript(hookInput);
+  if (!lines) process.exit(0);
 
-  let lines;
-  try { lines = fs.readFileSync(transcriptPath, 'utf8').split('\n'); } catch (_) { process.exit(0); }
-  if (!lines || lines.length < 5) process.exit(0);
-
-  // Scope to current interaction: find last user.message
-  let startIdx = 0;
-  for (let i = lines.length - 1; i >= 0; i--) {
-    if (lines[i].includes('"user.message"')) {
-      startIdx = i;
-      break;
-    }
-  }
+  const startIdx = lastUserMessageIdx(lines);
 
   // Find SKILL.md reads in tool.execution_start events
   const skillPaths = new Set();
@@ -72,14 +57,5 @@ process.stdin.on('end', () => {
     '3. Create the review directory if it doesn\'t exist\n\n' +
     'If the session went well and the user didn\'t complain, skip this entirely.';
 
-  const result = {
-    decision: 'block',
-    reason: message,
-    hookSpecificOutput: {
-      hookEventName: 'Stop',
-      decision: 'block',
-      reason: message
-    }
-  };
-  process.stdout.write(JSON.stringify(result) + '\n');
+  emitStopBlock(message);
 });

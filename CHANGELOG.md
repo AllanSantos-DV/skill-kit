@@ -5,6 +5,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Hooks: extracted shared I/O utilities to `hooks/_lib/hook-io.js`, reducing ~160 LoC of duplication across 10 hooks (stdin reading, stop-guard, transcript reading, stop-output formatting)
+
 ### Removed
 - Hooks PowerShell (.ps1) e Bash (.sh) — todos migrados para JavaScript (.js). Arquivos de teste legados (`tests/hooks/*.ps1`, `tests/hooks/*.sh`) também removidos.
 

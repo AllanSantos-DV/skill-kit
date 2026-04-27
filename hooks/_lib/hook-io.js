@@ -4,16 +4,22 @@ const fs = require('fs');
 
 /**
  * Read stdin as UTF-8, parse JSON, call handler(parsed).
- * On parse failure: process.exit(0) (fail-open convention).
+ * On parse failure: process.exit(0) by default (fail-open convention).
+ * If options.onParseError is provided, calls it instead.
  * @param {function(object): void} handler
+ * @param {object} [options]
+ * @param {function(): void} [options.onParseError] - Called on JSON parse failure instead of exit
  */
-function readStdinJson(handler) {
+function readStdinJson(handler, options) {
   let raw = '';
   process.stdin.setEncoding('utf8');
   process.stdin.on('data', (chunk) => { raw += chunk; });
   process.stdin.on('end', () => {
     let parsed;
-    try { parsed = JSON.parse(raw); } catch (_) { process.exit(0); }
+    try { parsed = JSON.parse(raw); } catch (_) {
+      if (options && options.onParseError) { options.onParseError(); return; }
+      process.exit(0);
+    }
     handler(parsed);
   });
 }

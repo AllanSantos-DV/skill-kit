@@ -4,13 +4,9 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { readStdinJson, emitResponse } = require('./_lib/hook-io');
 
-let rawInput = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (chunk) => { rawInput += chunk; });
-process.stdin.on('end', () => {
-  let hookInput;
-  try { hookInput = JSON.parse(rawInput); } catch (_) { process.exit(0); }
+readStdinJson((hookInput) => {
 
   const cwd = hookInput.cwd || process.cwd();
   const parts = [];
@@ -75,11 +71,10 @@ process.stdin.on('end', () => {
   // Cap at 800 chars
   if (context.length > 800) context = context.substring(0, 797) + '...';
 
-  const result = {
+  emitResponse({
     hookSpecificOutput: {
       hookEventName: 'SessionStart',
       additionalContext: context
     }
-  };
-  process.stdout.write(JSON.stringify(result) + '\n');
+  });
 });

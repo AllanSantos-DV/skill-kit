@@ -3,31 +3,16 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { readStdinJson, readTranscript, lastUserMessageIdx, emitResponse } = require('./_lib/hook-io');
 
-let rawInput = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (chunk) => { rawInput += chunk; });
-process.stdin.on('end', () => {
-  let hookInput;
-  try { hookInput = JSON.parse(rawInput); } catch (_) { process.exit(0); }
-
-  const transcriptPath = hookInput.transcript_path;
-  if (!transcriptPath || !fs.existsSync(transcriptPath)) process.exit(0);
+readStdinJson((hookInput) => {
+  const lines = readTranscript(hookInput, { minLines: 0 });
+  if (!lines) process.exit(0);
 
   const sessionId = hookInput.sessionId || 'unknown';
   const cwd = hookInput.cwd || process.cwd();
 
-  let lines;
-  try { lines = fs.readFileSync(transcriptPath, 'utf8').split('\n'); } catch (_) { process.exit(0); }
-
-  // Scope to content since last user.message
-  let startIdx = 0;
-  for (let i = lines.length - 1; i >= 0; i--) {
-    if (lines[i].includes('"user.message"')) {
-      startIdx = i;
-      break;
-    }
-  }
+  const startIdx = lastUserMessageIdx(lines);
 
   const fileTools = [
     'read_file', 'create_file', 'replace_string_in_file',
@@ -180,13 +165,12 @@ process.stdin.on('end', () => {
     fs.writeFileSync(snapshotFile, snapshot, 'utf8');
 
     const relPath = 'docs/maps/session-' + sessionId + '-snapshot.md';
-    const result = {
+    emitResponse({
       hookSpecificOutput: {
         hookEventName: 'PreCompact',
         additionalContext: 'Session context snapshot saved to ' + relPath + '. If detail was lost during compaction, read this file to recover state.'
       }
-    };
-    process.stdout.write(JSON.stringify(result) + '\n');
+    });
   } catch (_) {
     process.exit(0);
   }

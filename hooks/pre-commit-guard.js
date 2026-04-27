@@ -16,17 +16,9 @@
 // - Most restrictive wins: deny > ask > allow
 
 'use strict';
+const { readStdinJson, emitResponse } = require('./_lib/hook-io');
 
-let rawInput = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (chunk) => { rawInput += chunk; });
-process.stdin.on('end', () => {
-  let inputJson;
-  try {
-    inputJson = JSON.parse(rawInput);
-  } catch (_) {
-    process.exit(0);
-  }
+readStdinJson((inputJson) => {
 
   // Only intercept terminal commands
   if (inputJson.tool_name !== 'run_in_terminal' && inputJson.tool_name !== 'Bash') {
@@ -203,5 +195,5 @@ process.stdin.on('end', () => {
     result.hookSpecificOutput.permissionDecisionReason = contextText;
   }
 
-  process.stdout.write(JSON.stringify(result) + '\n');
+  emitResponse(result);
 });
