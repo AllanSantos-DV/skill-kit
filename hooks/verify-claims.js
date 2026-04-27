@@ -1,23 +1,14 @@
 #!/usr/bin/env node
 // Stop hook: verify file references in assistant messages were tool-backed
 'use strict';
-const fs = require('fs');
 const path = require('path');
+const { readStdinJson, guardStopActive, readTranscript, lastUserMessageIdx, emitStopBlock } = require('./_lib/hook-io');
 
-let rawInput = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (chunk) => { rawInput += chunk; });
-process.stdin.on('end', () => {
-  let hookInput;
-  try { hookInput = JSON.parse(rawInput); } catch (_) { process.exit(0); }
-  if (hookInput.stop_hook_active === true) process.exit(0);
+readStdinJson((hookInput) => {
+  guardStopActive(hookInput);
 
-  const transcriptPath = hookInput.transcript_path;
-  if (!transcriptPath || !fs.existsSync(transcriptPath)) process.exit(0);
-
-  let lines;
-  try { lines = fs.readFileSync(transcriptPath, 'utf8').split('\n'); } catch (_) { process.exit(0); }
-  if (!lines || lines.length < 5) process.exit(0);
+  const lines = readTranscript(hookInput);
+  if (!lines) process.exit(0);
 
   const accessedPaths = new Set();
   const unverified = [];
@@ -66,14 +57,7 @@ process.stdin.on('end', () => {
     }
   }
 
-  // Scope to current interaction: find last user.message
-  let startIdx = 0;
-  for (let i = lines.length - 1; i >= 0; i--) {
-    if (lines[i].includes('"user.message"')) {
-      startIdx = i;
-      break;
-    }
-  }
+  const startIdx = lastUserMessageIdx(lines);
 
   for (let i = startIdx; i < lines.length; i++) {
     const line = lines[i];
@@ -119,16 +103,7 @@ process.stdin.on('end', () => {
     const list = unique.map(p => '  - ' + p).join('\n');
     const msg = 'UNVERIFIED FILE REFERENCES - these paths were mentioned without prior tool verification:\n' +
       list + '\nVerify with tools (read_file, grep_search, list_dir) or mark as assumed.';
-    const result = {
-      decision: 'block',
-      reason: msg,
-      hookSpecificOutput: {
-        hookEventName: 'Stop',
-        decision: 'block',
-        reason: msg
-      }
-    };
-    process.stdout.write(JSON.stringify(result) + '\n');
+    emitStopBlock(msg);
   } else {
     process.exit(0);
   }

@@ -3,25 +3,12 @@
 // evidence for every 🟡/🔴 axis, and cross-check listed tools against
 // the session transcript.
 'use strict';
-const fs = require('fs');
+const { readStdinJson, guardStopActive, readTranscriptRaw, emitStopBlock } = require('./_lib/hook-io');
 
-let rawInput = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (chunk) => { rawInput += chunk; });
-process.stdin.on('end', () => {
-  let inputJson;
-  try {
-    inputJson = JSON.parse(rawInput);
-    if (inputJson.stop_hook_active === true) process.exit(0);
-  } catch (_) {
-    process.exit(0);
-  }
+readStdinJson((inputJson) => {
+  guardStopActive(inputJson);
 
-  const transcriptPath = inputJson.transcript_path;
-  if (!transcriptPath || !fs.existsSync(transcriptPath)) process.exit(0);
-
-  let transcript;
-  try { transcript = fs.readFileSync(transcriptPath, 'utf8'); } catch (_) { process.exit(0); }
+  const transcript = readTranscriptRaw(inputJson);
   if (!transcript) process.exit(0);
 
   // Detect Phase 2 confidence table with Tools used column
@@ -88,14 +75,5 @@ process.stdin.on('end', () => {
     reason += ' (+ ' + (violations.length - 1) + ' more violation(s))';
   }
 
-  const result = {
-    decision: 'block',
-    reason: reason,
-    hookSpecificOutput: {
-      hookEventName: 'Stop',
-      decision: 'block',
-      reason: reason
-    }
-  };
-  process.stdout.write(JSON.stringify(result) + '\n');
+  emitStopBlock(reason);
 });

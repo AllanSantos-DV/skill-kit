@@ -5,13 +5,9 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { readStdinJson, emitResponse } = require('./_lib/hook-io');
 
-let rawInput = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (chunk) => { rawInput += chunk; });
-process.stdin.on('end', () => {
-  let hookInput;
-  try { hookInput = JSON.parse(rawInput); } catch (_) { process.exit(0); }
+readStdinJson((hookInput) => {
 
   // Extract user prompt text from the hook input
   let userPrompt = null;
@@ -146,9 +142,8 @@ process.stdin.on('end', () => {
 
   const msg = lines.join('\n');
 
-  const result = {
+  emitResponse({
     decision: 'add',
     content: msg
-  };
-  process.stdout.write(JSON.stringify(result) + '\n');
+  });
 });
