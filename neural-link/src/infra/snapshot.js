@@ -12,11 +12,11 @@
 
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, resolve, normalize } from 'node:path';
-import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import { PATHS, FILES } from '../infra/paths.js';
 import { fnv1a } from '../infra/hash.js';
+import { resolveConfigFile as resolveConfigFileCascade } from '../infra/config-paths.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = dirname(dirname(__dirname));
@@ -24,32 +24,11 @@ const projectRoot = dirname(dirname(__dirname));
 const SNAPSHOT_FILE = join(PATHS.BASE, '.loading-snapshot.json');
 
 /**
- * Resolve the current config file path (same cascade as config.js).
+ * Resolve the current config file path (delegates to config-paths.js cascade).
  * Returns { path, raw } or null.
  */
 function resolveConfigFile() {
-  const cwd = process.cwd();
-  const normalizedCwd = normalize(cwd);
-
-  const candidates = [
-    join(normalizedCwd, '.neural-link.config.json'),
-    join(homedir(), '.copilot', 'neural-link.config.json'),
-    join(projectRoot, 'neural-link.config.json'),
-  ];
-
-  for (const p of candidates) {
-    const resolved = resolve(p);
-    if (resolved.includes('\0')) continue;
-    if (existsSync(resolved)) {
-      try {
-        const raw = readFileSync(resolved, 'utf-8');
-        return { path: resolved, raw };
-      } catch {
-        continue;
-      }
-    }
-  }
-  return null;
+  return resolveConfigFileCascade({ cwd: process.cwd(), projectRoot });
 }
 
 /**
