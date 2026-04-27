@@ -7,38 +7,7 @@ import { tryLoadSnapshot, writeSnapshot } from './infra/snapshot.js';
 import { _primeLearner } from './learning/learner.js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-
-const SENSITIVE_PATTERNS = [
-  /api[_-]?key/i,
-  /secret/i,
-  /password/i,
-  /token/i,
-  /credential/i,
-  /auth/i,
-  /bearer/i
-];
-
-function sanitizeForDebug(obj) {
-  if (typeof obj !== 'object' || obj === null) {
-    return obj;
-  }
-
-  const sanitized = Array.isArray(obj) ? [] : {};
-  
-  for (const [key, value] of Object.entries(obj)) {
-    const isSensitive = SENSITIVE_PATTERNS.some(pattern => pattern.test(key));
-    
-    if (isSensitive && typeof value === 'string') {
-      sanitized[key] = '***REDACTED***';
-    } else if (typeof value === 'object' && value !== null) {
-      sanitized[key] = sanitizeForDebug(value);
-    } else {
-      sanitized[key] = value;
-    }
-  }
-  
-  return sanitized;
-}
+import { sanitize as sanitizeForDebug } from './infra/sanitize.js';
 
 function debugDump(raw, suffix) {
   try {
