@@ -4,6 +4,7 @@ import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { PATHS } from './paths.js';
 import { REGISTRATION_MODES, REGISTRATION_SOURCES } from './constants.js';
+import { fnv1a as fnv1aHash } from './hash.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = dirname(dirname(__dirname)); // src/infra → src → project root
@@ -13,19 +14,6 @@ let lastConfigRaw = null;
 let lastConfigPath = null;
 
 const CONFIG_CACHE_FILE = join(PATHS.BASE, '.config-cache.json');
-
-/**
- * FNV-1a hash (32-bit) — fast, good distribution, zero deps.
- * Duplicated from features.js to avoid circular dependency.
- */
-function fnv1aHash(str) {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < str.length; i++) {
-    hash ^= str.charCodeAt(i);
-    hash = (hash * 0x01000193) >>> 0;
-  }
-  return hash;
-}
 
 /**
  * Try loading config from cross-invocation cache.
