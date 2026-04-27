@@ -16,23 +16,12 @@ import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import { PATHS, FILES } from '../infra/paths.js';
+import { fnv1a } from '../infra/hash.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = dirname(dirname(__dirname));
 
 const SNAPSHOT_FILE = join(PATHS.BASE, '.loading-snapshot.json');
-
-/**
- * FNV-1a hash (32-bit) — duplicated to avoid circular deps.
- */
-function fnv1a(str) {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < str.length; i++) {
-    hash ^= str.charCodeAt(i);
-    hash = (hash * 0x01000193) >>> 0;
-  }
-  return hash;
-}
 
 /**
  * Resolve the current config file path (same cascade as config.js).
