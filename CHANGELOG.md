@@ -8,6 +8,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ### Changed
 - Hooks: extracted shared I/O utilities to `hooks/_lib/hook-io.js`, reducing ~160 LoC of duplication across 10 hooks (stdin reading, stop-guard, transcript reading, stop-output formatting)
 - Neural Link: extracted sensitive data sanitizer to `src/infra/sanitize.js` (was duplicated in `index.js` and `pipeline/executor.js`, security-critical)
+- Neural Link: extracted config path cascade to `src/infra/config-paths.js` (was duplicated in `config.js` and `snapshot.js`)
 
 ### Removed
 - Hooks PowerShell (.ps1) e Bash (.sh) — todos migrados para JavaScript (.js). Arquivos de teste legados (`tests/hooks/*.ps1`, `tests/hooks/*.sh`) também removidos.

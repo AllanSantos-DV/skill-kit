@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { PATHS } from './paths.js';
 import { REGISTRATION_MODES, REGISTRATION_SOURCES } from './constants.js';
 import { fnv1a as fnv1aHash } from './hash.js';
+import { getConfigCandidates } from './config-paths.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = dirname(dirname(__dirname)); // src/infra → src → project root
@@ -73,14 +74,7 @@ export function loadConfig() {
     return cached;
   }
 
-  const cwd = process.cwd();
-  const normalizedCwd = normalize(cwd);
-
-  const candidates = [
-    join(normalizedCwd, '.neural-link.config.json'),
-    join(homedir(), '.copilot', 'neural-link.config.json'),
-    join(projectRoot, 'neural-link.config.json'),
-  ];
+  const candidates = getConfigCandidates({ cwd: process.cwd(), projectRoot });
 
   for (const path of candidates) {
     const resolvedPath = resolve(path);
