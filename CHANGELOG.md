@@ -13,6 +13,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ### Removed
 - Hooks PowerShell (.ps1) e Bash (.sh) — todos migrados para JavaScript (.js). Arquivos de teste legados (`tests/hooks/*.ps1`, `tests/hooks/*.sh`) também removidos.
 
+### Fixed
+- Agents: removed duplicated sections (Review Format / Consolidation) inside orchestrator.agent.md, researcher.agent.md, validator.agent.md
+
 ### Refactored
 - Neural Link: deduplicated FNV-1a hash into `src/infra/hash.js` (was duplicated in 3 files: `features.js`, `config.js`, `snapshot.js`)
 
