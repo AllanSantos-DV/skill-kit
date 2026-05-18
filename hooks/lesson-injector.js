@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // UserPromptSubmit hook: inject relevant lessons learned into agent context
 // Reads user prompt, matches keywords to tags, finds lessons, injects summaries.
+// @permissions: fs.read, fs.write
 'use strict';
 const fs = require('fs');
 const path = require('path');

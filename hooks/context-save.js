@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // PreCompact hook: save session state snapshot before context compaction
+// @permissions: fs.read, fs.write
 'use strict';
 const fs = require('fs');
 const path = require('path');

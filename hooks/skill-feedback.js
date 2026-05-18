@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Stop hook: capture skill feedback — only when skills with Feedback Protocol were used
+// @permissions: fs.read, fs.write
 'use strict';
 const fs = require('fs');
 const path = require('path');

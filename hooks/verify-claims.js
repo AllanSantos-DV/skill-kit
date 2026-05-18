@@ -50,8 +50,7 @@ readStdinJson((hookInput) => {
     }
     if (args.command) {
       const cmdRe = /([a-zA-Z]:\\(?:[\w\s._-]+\\)*[\w._-]+\.\w+)/gi;
-      let m;
-      while ((m = cmdRe.exec(args.command)) !== null) {
+      for (const m of args.command.matchAll(cmdRe)) {
         accessedPaths.add(m[1]);
       }
     }
@@ -86,11 +85,8 @@ readStdinJson((hookInput) => {
       if (!content || content.length < 10) continue;
 
       const mentioned = [];
-      let m;
-      winPathRe.lastIndex = 0;
-      while ((m = winPathRe.exec(content)) !== null) mentioned.push(m[1]);
-      relPathRe.lastIndex = 0;
-      while ((m = relPathRe.exec(content)) !== null) mentioned.push(m[1]);
+      for (const m of content.matchAll(winPathRe)) mentioned.push(m[1]);
+      for (const m of content.matchAll(relPathRe)) mentioned.push(m[1]);
 
       for (const mp of mentioned) {
         if (!testAccessed(mp)) unverified.push(mp);
