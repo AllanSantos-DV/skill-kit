@@ -7,6 +7,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ### Changed
 - **hooks-creator**: description do frontmatter compactada (remoção de sinônimos/duplicidades) para melhorar discoverability sem alteração de comportamento.
+- **hooks**: declarado header explícito `// @permissions: <tokens>` em `context-save.js`, `lesson-injector.js`, `session-context.js` e `skill-feedback.js` para compatibilidade com o detector security-supply-chain do Skill Manager v0.23.1 — elimina diálogo "Permission mismatch" no sync.
+- **hooks**: `context-confidence-check.js` e `verify-claims.js` refatorados para usar `String.prototype.matchAll` no lugar de `RegExp.prototype.exec` em loops — evita falso-positivo do detector que confunde `regex.exec()` com `child_process.exec`. Semântica equivalente (flag `g` preservada, capturas idênticas).
 
 ## [0.7.0] — 2026-04-27
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // SessionStart hook: inject git/project context into agent context at session start
+// @permissions: exec, fs.read, fs.write
 'use strict';
 const fs = require('fs');
 const path = require('path');

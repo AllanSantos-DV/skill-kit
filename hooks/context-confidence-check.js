@@ -27,8 +27,7 @@ readStdinJson((inputJson) => {
   );
 
   const violations = [];
-  let match;
-  while ((match = rowPattern.exec(transcript)) !== null) {
+  for (const match of transcript.matchAll(rowPattern)) {
     const axisName = match[1].trim();
     const emoji = match[2].trim();
     const toolsCell = match[4].trim();

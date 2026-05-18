@@ -378,6 +378,14 @@
       <code>decision: "block"</code> + <code>reason</code> para Stop (força o agente a reconsiderar),
       e <code>additionalContext</code> para injetar contexto adicional.
     </p>
+    <p>
+      <strong>Permission headers:</strong> hooks que usam APIs sensíveis declaram
+      <code>// @permissions: &lt;tokens&gt;</code> logo após o shebang/comentário descritivo
+      (tokens: <code>fs.read</code>, <code>fs.write</code>, <code>net.fetch</code>, <code>exec</code>,
+      <code>env</code>, <code>vscode.api</code>). Compatível com o detector security-supply-chain
+      do Skill Manager — evita o diálogo "Permission mismatch" no sync. Hooks sem APIs detectáveis
+      omitem o header.
+    </p>
     <div class="legend">
       <div class="legend-item"><span class="legend-dot" style="background:#58a6ff"></span> PreToolUse</div>
       <div class="legend-item"><span class="legend-dot" style="background:#ffa657"></span> Stop</div>
