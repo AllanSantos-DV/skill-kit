@@ -144,7 +144,9 @@ readStdinJson((hookInput) => {
   const msg = lines.join('\n');
 
   emitResponse({
-    decision: 'add',
-    content: msg
+    hookSpecificOutput: {
+      hookEventName: 'UserPromptSubmit',
+      additionalContext: msg
+    }
   });
 });

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// SubagentStart hook: log routing decisions
+// SubagentStop hook: log subagent completion / routing decisions
 'use strict';
 const { readStdinJson } = require('./_lib/hook-io');
 

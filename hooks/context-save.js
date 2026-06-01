@@ -10,7 +10,7 @@ readStdinJson((hookInput) => {
   const lines = readTranscript(hookInput, { minLines: 0 });
   if (!lines) process.exit(0);
 
-  const sessionId = hookInput.sessionId || 'unknown';
+  const sessionId = hookInput.session_id || hookInput.sessionId || 'unknown';
   const cwd = hookInput.cwd || process.cwd();
 
   const startIdx = lastUserMessageIdx(lines);
@@ -121,31 +121,37 @@ readStdinJson((hookInput) => {
 
   const sections = [];
   sections.push('# Session Snapshot — ' + ts);
+  sections.push('');
   sections.push('- Session ID: ' + sessionId);
   if (sessionStartTime) sections.push('- Session started: ' + sessionStartTime);
   sections.push('');
 
   sections.push('## Files in progress (' + filesArr.length + ')');
+  sections.push('');
   if (filesArr.length > 0) filesArr.forEach(f => sections.push('- ' + f));
   else sections.push('No files detected.');
   sections.push('');
 
   sections.push('## Commands run (' + cmdsArr.length + ')');
+  sections.push('');
   if (cmdsArr.length > 0) cmdsArr.forEach(c => sections.push('- ' + c));
   else sections.push('No commands detected.');
   sections.push('');
 
   sections.push('## Decisions captured (' + decisionsArr.length + ')');
+  sections.push('');
   if (decisionsArr.length > 0) decisionsArr.forEach(d => sections.push('- ' + d));
   else sections.push('No decisions detected.');
   sections.push('');
 
   sections.push('## Open work items (' + openWorkArr.length + ')');
+  sections.push('');
   if (openWorkArr.length > 0) openWorkArr.forEach(o => sections.push('- ' + o));
   else sections.push('No open items detected.');
   sections.push('');
 
   sections.push('## Recent errors (' + errorsArr.length + ')');
+  sections.push('');
   if (errorsArr.length > 0) errorsArr.forEach(e => sections.push('- ' + e));
   else sections.push('No errors detected.');
   sections.push('');
@@ -165,13 +171,12 @@ readStdinJson((hookInput) => {
     const snapshotFile = path.join(mapsDir, 'session-' + sessionId + '-snapshot.md');
     fs.writeFileSync(snapshotFile, snapshot, 'utf8');
 
-    const relPath = 'docs/maps/session-' + sessionId + '-snapshot.md';
-    emitResponse({
-      hookSpecificOutput: {
-        hookEventName: 'PreCompact',
-        additionalContext: 'Session context snapshot saved to ' + relPath + '. If detail was lost during compaction, read this file to recover state.'
-      }
-    });
+    // PreCompact has no documented context-injection channel (per Claude docs:
+    // only `decision:"block"` + common fields are supported). Snapshot is
+    // written to disk; agent can read docs/maps/session-<id>-snapshot.md
+    // post-compact if context recovery is needed. Emitting hookSpecificOutput
+    // with additionalContext here fails schema validation in some runtimes.
+    process.exit(0);
   } catch (_) {
     process.exit(0);
   }

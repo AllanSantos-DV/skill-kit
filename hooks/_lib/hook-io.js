@@ -80,19 +80,18 @@ function lastUserMessageIdx(lines) {
 
 /**
  * Build and write a Stop hook block response to stdout.
- * @param {string} reason
+ *
+ * IMPORTANT: Stop hooks use ONLY the top-level `{decision, reason}` shape.
+ * The nested `hookSpecificOutput` envelope is valid for PreToolUse /
+ * PostToolUse / UserPromptSubmit / SessionStart / PreCompact — emitting it
+ * for Stop fails schema validation in VS Code Copilot Chat with
+ * "Hook JSON output validation failed — (root): Invalid input".
+ * Both Claude Code CLI/Desktop and Copilot Chat accept the top-level shape.
+ *
+ * @param {string} reason - Human-readable instruction injected back into the agent.
  */
 function emitStopBlock(reason) {
-  const result = {
-    decision: 'block',
-    reason: reason,
-    hookSpecificOutput: {
-      hookEventName: 'Stop',
-      decision: 'block',
-      reason: reason
-    }
-  };
-  process.stdout.write(JSON.stringify(result) + '\n');
+  process.stdout.write(JSON.stringify({ decision: 'block', reason: reason }) + '\n');
 }
 
 /**

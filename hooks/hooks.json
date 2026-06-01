@@ -5,7 +5,9 @@
         "type": "command",
         "command": "node hooks/pre-commit-guard.js",
         "timeout": 5
-      },
+      }
+    ],
+    "UserPromptSubmit": [
       {
         "type": "command",
         "command": "node hooks/lesson-injector.js",
