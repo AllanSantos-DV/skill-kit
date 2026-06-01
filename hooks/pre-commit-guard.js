@@ -184,15 +184,20 @@ readStdinJson((inputJson) => {
   // No git commands found — passthrough
   if (!hasGitCommand) process.exit(0);
 
+  // PreToolUse output schema:
+  //   hookSpecificOutput.hookEventName: 'PreToolUse'           (REQUIRED)
+  //   hookSpecificOutput.permissionDecision: allow|deny|ask    (REQUIRED)
+  //   hookSpecificOutput.permissionDecisionReason: string      (optional, shown to user)
+  //   hookSpecificOutput.updatedInput: object                  (optional, rewrites tool input)
+  // `additionalContext` is NOT valid here (it belongs to UserPromptSubmit/SessionStart).
   const result = {
     hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
       permissionDecision: finalDecision
     }
   };
   if (contexts.length > 0) {
-    const contextText = contexts.join('; ');
-    result.hookSpecificOutput.additionalContext = contextText;
-    result.hookSpecificOutput.permissionDecisionReason = contextText;
+    result.hookSpecificOutput.permissionDecisionReason = contexts.join('; ');
   }
 
   emitResponse(result);
