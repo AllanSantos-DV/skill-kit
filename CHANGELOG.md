@@ -3,9 +3,19 @@
 Todas as mudanças notáveis do projeto são documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
-## [Unreleased]
+## [0.8.0] — 2026-07-01
+
+### Adicionado
+- **Recall semântico de lições** — nova pipeline que substitui o keyword-match do `lesson-injector` por busca vetorial via daemon MCP Memory (namespace fixo `__lessons__`, cross-project):
+  - `hooks/_lib/mcp-lessons-client.js` — cliente MCP Streamable HTTP (zero deps, fail-open, nunca escreve em stdout/stderr, nunca lança). Exporta `searchLessons`/`addLessons`/`deleteLessons`/`syncLessons` + helpers puros testáveis. O `searchLessons` pede ao daemon um pool de candidatos com `minScore:0` e aplica o threshold real **client-side** (com ordenação por score): o filtro `minScore` do próprio daemon é evitado de propósito porque acima de ~0.68 ele troca para uma métrica não-cosseno (BM25-like), devolvendo scores incomparáveis — o filtro client-side garante recall determinístico e seletivo.
+  - `hooks/_lib/lessons-store.js` — parse do corpus on-disk (`~/.copilot/lessons/L*.md`) em documentos (título + resumo = conteúdo embutido) + manifesto de sincronização por fingerprint.
+  - `hooks/lessons-sync.js` — hook `SessionStart` silencioso que reconcilia o namespace com o disco a cada sessão (upsert do delta, prune do removido), incremental via manifesto e deadline-aware. Guarda contra prune em massa quando o disco lê zero lições.
+  - `tests/hooks/mcp-lessons-client.test.js`, `tests/hooks/lesson-injector.test.js`, `tests/hooks/lessons-store.test.js`, `tests/hooks/lessons-sync.test.js` — 63 testes (mock in-process do daemon MCP; hooks exercitados como processo-filho real).
 
 ### Changed
+- **hooks/lesson-injector.js** — reescrito de keyword-match (injetava até 10 lições por overlap de palavra) para recall semântico: delega ao `mcp-lessons-client`, injeta só lições acima de um score mínimo calibrado empiricamente (0.68 no bge-m3: separa queries reais, que pontuam ≥0.72, de confirmações triviais como "ok"/"obrigado", que ficam ≤0.645), com deadline e clamps de configuração. Elimina a injeção cega que inflava o contexto.
+- **hooks/hooks.json** — registrado `lessons-sync.js` no `SessionStart`; timeout do `lesson-injector` elevado de 5s para 10s (agora faz recall pela rede com deadline interno de 4s).
+- **CI** — adicionado job que roda os testes de hooks JS (`node --test`) em Windows e Ubuntu.
 - **hooks-creator**: description do frontmatter compactada (remoção de sinônimos/duplicidades) para melhorar discoverability sem alteração de comportamento.
 - **hooks**: declarado header explícito `// @permissions: <tokens>` em `context-save.js`, `lesson-injector.js`, `session-context.js` e `skill-feedback.js` para compatibilidade com o detector security-supply-chain do Skill Manager v0.23.1 — elimina diálogo "Permission mismatch" no sync.
 - **hooks**: `context-confidence-check.js` e `verify-claims.js` refatorados para usar `String.prototype.matchAll` no lugar de `RegExp.prototype.exec` em loops — evita falso-positivo do detector que confunde `regex.exec()` com `child_process.exec`. Semântica equivalente (flag `g` preservada, capturas idênticas).
