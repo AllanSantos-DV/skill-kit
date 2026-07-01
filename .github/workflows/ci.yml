@@ -16,6 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       # --- Structural Tests (pwsh available on both OSes) ---
       - name: Run agent structure tests
         shell: pwsh
@@ -29,5 +34,9 @@ jobs:
           pwsh -NoProfile -ExecutionPolicy Bypass -File "tests/structural/test-skills-structure.ps1"
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
-      # Hook tests (PS1/SH) were removed — hooks migrated to JS (Node.js only).
-      # JS hook tests run via: node tests/hooks/<name>.test.js (not yet in CI)
+      # --- JS hook tests (Node's built-in test runner) ---
+      # Node's --test expands glob patterns natively (since Node 21), so this
+      # works identically on Windows and Ubuntu without relying on shell globbing
+      # (`node --test <dir>/` is unreliable on Windows).
+      - name: Run JS hook tests
+        run: node --test "tests/hooks/**/*.test.js"
