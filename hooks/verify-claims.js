@@ -1,6 +1,19 @@
 #!/usr/bin/env node
-// Stop hook: verify file references in assistant messages were tool-backed
+// Stop hook: MECHANICAL file-reference check.
+//
+// The hook does the verification ITSELF — it is not the agent's job to re-open a file just to "prove"
+// it exists. For every file path the assistant mentions in its message this turn, the hook resolves
+// the path and checks the filesystem. It ONLY warns when a cited path does NOT exist on disk (a likely
+// typo / hallucination). Paths that exist, or that the agent actively operated on this turn (create /
+// edit / delete / read via ANY tool), never trigger a warning.
+//
+// This replaces the old behavior, which flagged EVERY mention as "unverified" because it keyed off a
+// hardcoded list of VS-Code tool names (read_file, grep_search, …) that don't match this runtime's
+// tools (view, create, edit, grep, glob, powershell). That produced a false positive on every file
+// path the agent named. The only accepted residual false positive now is naming a file you are ABOUT
+// to create in a LATER turn — rare and specific, by design.
 'use strict';
+const fs = require('fs');
 const path = require('path');
 const { readStdinJson, guardStopActive, readTranscript, lastUserMessageIdx, emitStopBlock } = require('./_lib/hook-io');
 
@@ -10,95 +23,80 @@ readStdinJson((hookInput) => {
   const lines = readTranscript(hookInput);
   if (!lines) process.exit(0);
 
-  const accessedPaths = new Set();
-  const unverified = [];
+  const cwd = hookInput.cwd || process.cwd();
 
-  const fileTools = [
-    'read_file','create_file','replace_string_in_file','multi_replace_string_in_file',
-    'list_dir','create_directory','vscode_listCodeUsages','grep_search',
-    'edit_notebook_file','copilot_getNotebookSummary','file_search','semantic_search',
-    'run_in_terminal'
-  ];
+  // Absolute Windows path (C:\a\b\file.ext) and workspace-relative path (dir/.../file.ext) matchers.
+  const winPathRe = /([a-zA-Z]:\\(?:[\w .\-]+\\)*[\w .\-]+\.\w+)/g;
+  const relPathRe = /(?:^|[\s`"'(\[<>])((?:src|test|tests|docs|dist|lib|bin|scripts|daemon|bridge|app|util|utils|commands|services|providers|webview|hooks|skills|agents|resources|config|public)[\\/][\w.\-/\\]+\.\w+)/gi;
 
-  function norm(p) {
-    return p ? p.replace(/\//g, '\\').replace(/\\+$/, '').toLowerCase() : '';
+  const operated = new Set();   // paths the agent touched via ANY tool this turn (tool-name-agnostic)
+  const mentioned = new Set();  // paths the assistant cited in prose this turn
+
+  function harvest(target, text) {
+    if (!text || typeof text !== 'string') return;
+    for (const m of text.matchAll(winPathRe)) target.add(m[1]);
+    for (const m of text.matchAll(relPathRe)) target.add(m[1]);
   }
-
-  function testAccessed(mention) {
-    const nm = norm(mention);
-    if (!nm || nm.length < 6) return true;
-    for (const ap of accessedPaths) {
-      const na = norm(ap);
-      if (na.endsWith(nm) || nm.endsWith(na)) return true;
-    }
-    return false;
-  }
-
-  const winPathRe = /(?:^|[\s`"'()\[\]>\/])([a-zA-Z]:\\(?:[\w\s._-]+\\)*[\w._-]+\.\w+)/gi;
-  const relPathRe = /(?:^|[\s`"'()\[\]>\/])((src|test|docs|dist|lib|utils|commands|services|providers|webview|hooks|skills|agents|resources|config)[\\\/][\w._\/-]+\.\w+)/gi;
-
-  function addToolPaths(args) {
+  function harvestArgs(args) {
     if (!args) return;
-    if (args.filePath) accessedPaths.add(args.filePath);
-    if (args.path) accessedPaths.add(args.path);
-    if (args.query && /[\\\/]/.test(args.query)) accessedPaths.add(args.query);
-    if (args.includePattern && /[\\\/]/.test(args.includePattern)) accessedPaths.add(args.includePattern);
-    if (args.replacements) {
-      for (const r of args.replacements) {
-        if (r.filePath) accessedPaths.add(r.filePath);
-      }
-    }
-    if (args.command) {
-      const cmdRe = /([a-zA-Z]:\\(?:[\w\s._-]+\\)*[\w._-]+\.\w+)/gi;
-      for (const m of args.command.matchAll(cmdRe)) {
-        accessedPaths.add(m[1]);
-      }
-    }
+    try { harvest(operated, typeof args === 'string' ? args : JSON.stringify(args)); } catch (_) {}
   }
 
   const startIdx = lastUserMessageIdx(lines);
-
   for (let i = startIdx; i < lines.length; i++) {
     const line = lines[i];
     if (!line || line.length < 20) continue;
     if (!line.includes('"tool.execution_start"') && !line.includes('"assistant.message"')) continue;
-
     let evt;
     try { evt = JSON.parse(line); } catch (_) { continue; }
 
-    if (evt.type === 'tool.execution_start' && fileTools.includes(evt.data && evt.data.toolName)) {
-      addToolPaths(evt.data.arguments);
+    if (evt.type === 'tool.execution_start') {
+      harvestArgs(evt.data && evt.data.arguments);
     } else if (evt.type === 'assistant.message') {
-      // Register paths from tool requests in this message first
       if (evt.data && evt.data.toolRequests) {
-        for (const req of evt.data.toolRequests) {
-          if (fileTools.includes(req.name) && req.arguments) {
-            try {
-              const reqArgs = JSON.parse(req.arguments);
-              addToolPaths(reqArgs);
-            } catch (_) {}
-          }
-        }
+        for (const req of evt.data.toolRequests) harvestArgs(req.arguments);
       }
-
       const content = evt.data && evt.data.content;
-      if (!content || content.length < 10) continue;
-
-      const mentioned = [];
-      for (const m of content.matchAll(winPathRe)) mentioned.push(m[1]);
-      for (const m of content.matchAll(relPathRe)) mentioned.push(m[1]);
-
-      for (const mp of mentioned) {
-        if (!testAccessed(mp)) unverified.push(mp);
-      }
+      if (content && content.length >= 10) harvest(mentioned, content);
     }
   }
 
-  if (unverified.length > 0) {
-    const unique = [...new Set(unverified)].slice(0, 10);
-    const list = unique.map(p => '  - ' + p).join('\n');
-    const msg = 'UNVERIFIED FILE REFERENCES - these paths were mentioned without prior tool verification:\n' +
-      list + '\nVerify with tools (read_file, grep_search, list_dir) or mark as assumed.';
+  const norm = (p) => (p ? p.replace(/\//g, '\\').replace(/\\+$/, '').toLowerCase() : '');
+
+  function existsResolved(p) {
+    const isAbs = path.isAbsolute(p) || /^[a-zA-Z]:\\/.test(p);
+    try {
+      if (isAbs) return fs.existsSync(p);
+      // workspace-relative: resolve against the session cwd (and, as a fallback, process.cwd()).
+      if (fs.existsSync(path.resolve(cwd, p))) return true;
+      if (fs.existsSync(path.resolve(process.cwd(), p))) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  function wasOperatedOn(p) {
+    const np = norm(p);
+    if (!np) return false;
+    for (const op of operated) {
+      const no = norm(op);
+      if (no && (no.endsWith(np) || np.endsWith(no))) return true;
+    }
+    return false;
+  }
+
+  const missing = [];
+  for (const mp of mentioned) {
+    if (!mp || mp.length < 6) continue;
+    if (existsResolved(mp)) continue;   // the hook verified it exists — nothing for the agent to do
+    if (wasOperatedOn(mp)) continue;    // created/edited/deleted this turn (may not exist right now)
+    missing.push(mp);
+  }
+
+  if (missing.length > 0) {
+    const unique = [...new Set(missing)].slice(0, 10);
+    const list = unique.map((p) => '  - ' + p).join('\n');
+    const msg = 'CAMINHO NÃO ENCONTRADO NO DISCO — estes caminhos citados não existem (possível erro de digitação ou nome; ignore se você ainda vai criá-lo):\n' +
+      list;
     emitStopBlock(msg);
   } else {
     process.exit(0);
