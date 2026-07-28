@@ -9,7 +9,7 @@
  * Also provides a file-watcher that marks removed scripts as disabled.
  */
 
-import { readdirSync, existsSync, writeFileSync, readFileSync, watch } from 'node:fs';
+import { readdirSync, existsSync, writeFileSync, readFileSync, statSync, watch } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import { COPILOT } from './infra/paths.js';
 import { getConfigPath } from './infra/config.js';
@@ -84,13 +84,17 @@ export function scanDirectory(dir) {
  * @param {string} dir - pasta com os hooks
  * @returns {Record<string, object>} - entradas de handler por nome
  */
-export function readCompanions(dir) {
+export function readCompanions(dir, options = {}) {
   if (!existsSync(dir)) return {};
 
+  const { prefix = null, baseDir = dir } = options;
   const out = {};
   for (const f of readdirSync(dir)) {
     if (!f.endsWith('.neural-link.json')) continue;
-    const name = f.slice(0, -'.neural-link.json'.length);
+    const base = f.slice(0, -'.neural-link.json'.length);
+    // Namespace por dono: seis extensões trazem um `boot` — sem prefixo, uma sobrescreveria
+    // as outras e cinco hooks sumiriam em silêncio.
+    const name = prefix ? `${prefix}.${base}` : base;
     try {
       const raw = JSON.parse(readFileSync(join(dir, f), 'utf-8'));
       // Um companion inválido NÃO pode derrubar o dispatcher: ele é ignorado, e o hook
@@ -98,16 +102,19 @@ export function readCompanions(dir) {
       if (!raw || typeof raw !== 'object') continue;
       out[name] = {
         enabled: raw.enabled !== false,
-        events: Array.isArray(raw.events) ? raw.events : inferEvents(name),
-        script: raw.script ?? { node: `~/.copilot/hooks/${name}.js` },
+        events: Array.isArray(raw.events) ? raw.events : inferEvents(base),
+        script: resolveCompanionScript(raw.script, base, baseDir, prefix),
         timeout: raw.timeout ?? 5000,
         threshold: raw.threshold ?? null,
         weight: typeof raw.weight === 'number' ? raw.weight : 0.55,
         // Campos que o pipeline itera direto — ausência aqui derruba o dispatcher inteiro.
         modifiers: Array.isArray(raw.modifiers) ? raw.modifiers : [],
         routing: raw.routing ?? undefined,
+        ...(Array.isArray(raw.args) ? { args: raw.args.filter(a => typeof a === 'string') } : {}),
         // Quem registrou: é o que permite responder "de qual projeto veio este hook".
-        project: raw.project ?? null,
+        project: raw.project ?? prefix ?? null,
+        // Extensão era invocada pelo host de dentro da própria pasta; preservar isso.
+        ...(raw.cwd ? { cwd: raw.cwd } : prefix ? { cwd: baseDir } : {}),
         source: 'companion',
       };
     } catch {
@@ -115,6 +122,57 @@ export function readCompanions(dir) {
     }
   }
   return out;
+}
+
+/**
+ * Resolve o caminho do script de um companion.
+ *
+ * Um companion que viaja dentro de uma extensão declara o script RELATIVO à própria pasta
+ * (`lib/gates/grepGuard.mjs`) — a extensão não sabe onde foi instalada. Caminho absoluto ou
+ * ancorado em `~` é respeitado como veio.
+ */
+function resolveCompanionScript(script, base, baseDir, prefix) {
+  const anchor = (p) =>
+    typeof p === 'string' && !p.startsWith('~') && !p.startsWith('/') && !/^[A-Za-z]:/.test(p)
+      ? join(baseDir, p)
+      : p;
+
+  if (script && typeof script === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(script)) out[k] = anchor(v);
+    return out;
+  }
+  if (typeof script === 'string') return { node: anchor(script) };
+
+  if (prefix) {
+    for (const ext of ['.mjs', '.js', '.cjs']) {
+      const guess = join(baseDir, `${base}${ext}`);
+      if (existsSync(guess)) return { node: guess };
+    }
+    return { node: join(baseDir, `${base}.mjs`) };
+  }
+  return { node: `~/.copilot/hooks/${base}.js` };
+}
+
+/**
+ * Todas as pastas que podem trazer calibragem: os hooks globais e CADA extensão instalada.
+ *
+ * É isto que permite uma extensão parar de declarar hook próprio. Se cada uma declarasse a
+ * chamada ao dispatcher, o host o invocaria uma vez POR extensão — nove processos por evento
+ * em vez de um, o oposto do objetivo. A extensão declara zero e só entrega a calibragem.
+ */
+export function companionRoots() {
+  const roots = [{ dir: COPILOT.HOOKS, prefix: null }];
+  if (existsSync(COPILOT.EXTENSIONS)) {
+    for (const name of readdirSync(COPILOT.EXTENSIONS)) {
+      const dir = join(COPILOT.EXTENSIONS, name);
+      try {
+        if (!statSync(dir).isDirectory()) continue;
+      } catch { continue; }
+      roots.push({ dir, prefix: name });
+    }
+  }
+  return roots;
 }
 
 /**
@@ -213,7 +271,10 @@ export function autoRegister(config, options = {}) {
   // adivinhação como o auto-scan, que registraria até biblioteca compartilhada como se fosse
   // handler. Por isso vale mesmo em `registration: "manual"`: manual é sobre não adivinhar,
   // não sobre ignorar o que foi declarado.
-  const companions = readCompanions(COPILOT.HOOKS);
+  const companions = {};
+  for (const root of companionRoots()) {
+    Object.assign(companions, readCompanions(root.dir, { prefix: root.prefix, baseDir: root.dir }));
+  }
   for (const [name, entry] of Object.entries(companions)) {
     if (handlers[name]) continue;   // config global vence: ajuste à mão não é desfeito por update
     handlers[name] = entry;
