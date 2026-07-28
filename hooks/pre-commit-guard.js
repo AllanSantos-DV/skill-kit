@@ -2,13 +2,12 @@
 // PreToolUse hook: guard destructive commands (supports chained commands)
 // - Splits chained commands by ; && || (respecting quoted strings)
 // - git commit: deny unless -m with conventional commit message
+// - git add -A/./--all and git commit -a: deny (scoped staging — see below)
 // - git push/tag: ask user for confirmation
 // - git push --force-with-lease: ask (confirmation)
 // - git push --force: deny (destructive)
-// - git reset --hard: ask (recoverable via reflog)
+// - git reset --hard / clean -f / checkout -- : deny when the tree is DIRTY, else ask
 // - git rebase: ask (history rewrite)
-// - git clean -f*: ask (routine cleanup)
-// - git checkout -- <path>: ask (discards working tree changes)
 // - git branch -D: ask (force-deletes branch)
 // - git stash drop/clear: ask (loses stashed changes)
 // - Remove-Item -Recurse -Force: deny (PS equivalent of rm -rf)
@@ -17,11 +16,39 @@
 
 'use strict';
 const { readStdinJson, emitResponse } = require('./_lib/hook-io');
+const { spawnSync } = require('node:child_process');
+
+// Tool names that carry a shell command. `run_in_terminal`/`Bash` alone left PowerShell
+// and other terminal tools completely unguarded, so a destructive command issued through
+// them bypassed every rule below. Matched case-insensitively against a known set.
+const TERMINAL_TOOLS = new Set([
+  'run_in_terminal', 'bash', 'shell', 'powershell', 'terminal',
+  'execution_subagent', 'copilot-delegate_run_shell',
+]);
+
+/**
+ * Is the working tree dirty (uncommitted changes or untracked files)?
+ *
+ * This is what separates "recoverable" from "destroys work": `git reset --hard` on a clean
+ * tree is a no-op, but on a dirty tree it deletes work that exists NOWHERE else — not in
+ * the reflog, not in a commit. Same for `clean -fd` and `checkout -- .`.
+ *
+ * Returns null when git can't answer (not a repo, git missing, timeout). The caller must
+ * treat null as "unknown", NOT as clean — guessing clean is what loses work.
+ */
+function isTreeDirty(cwd) {
+  const res = spawnSync('git', ['status', '--porcelain'], {
+    cwd: cwd || process.cwd(), encoding: 'utf8', timeout: 3000, windowsHide: true,
+  });
+  if (!res || res.error || res.status !== 0 || typeof res.stdout !== 'string') { return null; }
+  return res.stdout.trim().length > 0;
+}
 
 readStdinJson((inputJson) => {
 
   // Only intercept terminal commands
-  if (inputJson.tool_name !== 'run_in_terminal' && inputJson.tool_name !== 'Bash') {
+  const toolName = String(inputJson.tool_name || '');
+  if (!TERMINAL_TOOLS.has(toolName.toLowerCase())) {
     process.exit(0);
   }
 
@@ -63,6 +90,31 @@ readStdinJson((inputJson) => {
   let finalDecision = 'allow';
   const contexts = [];
   let hasGitCommand = false;
+  // Resolved lazily and reused: one `git status` per tool call, not one per sub-command.
+  let treeDirty;
+  const dirty = () => (treeDirty === undefined ? (treeDirty = isTreeDirty(inputJson.cwd)) : treeDirty);
+
+  /**
+   * Escalate a work-destroying command: DENY when the tree is dirty (or when git could not
+   * answer), ASK when it is provably clean.
+   *
+   * `ask` was not enough: the agent reads its own prompt and answers "yes", so the guard
+   * became a formality on exactly the operations that delete uncommitted work. On a clean
+   * tree there is nothing to lose, so `ask` still applies and the workflow is not blocked.
+   */
+  const guardWorkLoss = (what) => {
+    hasGitCommand = true;
+    const d = dirty();
+    if (d === false) {
+      contexts.push(what + ' — tree is clean, confirm to proceed');
+      if (finalDecision !== 'deny') finalDecision = 'ask';
+      return;
+    }
+    contexts.push(d === null
+      ? what + ' — DENIED: could not verify the working tree (unknown state is treated as unsafe)'
+      : what + ' — DENIED: the working tree has uncommitted work that exists nowhere else. Commit or stash it first.');
+    finalDecision = 'deny';
+  };
 
   for (const sub of subCommands) {
     // --- Destructive filesystem commands ---
@@ -78,9 +130,7 @@ readStdinJson((inputJson) => {
     // --- Git destructive commands ---
     // git reset --hard
     if (/git\s+(-[^\s]+\s+)*reset\s+--hard/.test(sub)) {
-      hasGitCommand = true;
-      contexts.push('git reset --hard discards uncommitted changes — requires confirmation');
-      if (finalDecision !== 'deny') finalDecision = 'ask';
+      guardWorkLoss('git reset --hard discards uncommitted changes');
       continue;
     }
 
@@ -108,19 +158,39 @@ readStdinJson((inputJson) => {
       continue;
     }
 
-    // git clean with -f flag (routine cleanup — ask)
+    // git clean with -f flag (deletes untracked files — unrecoverable, no reflog)
     if (/git\s+(-[^\s]+\s+)*clean\s+.*-[a-zA-Z]*f/.test(sub)) {
-      hasGitCommand = true;
-      contexts.push('git clean removes untracked files — requires confirmation');
-      if (finalDecision !== 'deny') finalDecision = 'ask';
+      guardWorkLoss('git clean deletes untracked files (no reflog, unrecoverable)');
       continue;
     }
 
     // git checkout -- (discards working tree changes)
     if (/git\s+(-[^\s]+\s+)*checkout\s+.*--\s/.test(sub)) {
+      guardWorkLoss('git checkout -- discards working tree changes');
+      continue;
+    }
+
+    // --- Broad staging: the incident guard ---
+    // `git add -A` / `git add .` stage EVERYTHING in the repo, including files another
+    // session is editing right now. That is not hypothetical: a publish script did exactly
+    // this and swallowed a sibling project's work into an unrelated release commit, and
+    // carried a review marker along with it, neutralising the review gate.
+    // There is no safe "yes" here, so this is a hard deny — the escape is explicit paths.
+    if (/git\s+(-[^\s]+\s+)*add\s+(.*\s)?(-A\b|--all\b|\.(\s|$))/.test(sub)) {
       hasGitCommand = true;
-      contexts.push('git checkout -- discards working tree changes — requires confirmation');
-      if (finalDecision !== 'deny') finalDecision = 'ask';
+      contexts.push('git add -A/. stages files that may belong to another session — DENIED. '
+        + 'Stage explicit paths instead: git add <path1> <path2>');
+      finalDecision = 'deny';
+      continue;
+    }
+
+    // `git commit -a` (and `-am`) is the same failure with one fewer step: it stages every
+    // tracked modification, so a sibling's edits ride along into your commit.
+    if (/git\s+(-[^\s]+\s+)*commit\s+(.*\s)?(-a\b|-am\b|--all\b)/.test(sub)) {
+      hasGitCommand = true;
+      contexts.push('git commit -a/-am stages every tracked change, including another session\'s — DENIED. '
+        + 'Stage explicit paths first: git add <path> && git commit -m "..."');
+      finalDecision = 'deny';
       continue;
     }
 
@@ -169,7 +239,10 @@ readStdinJson((inputJson) => {
     const msgMatch = sub.match(/-a?m\s+["'](.+?)["']/) || sub.match(/-a?m\s+(\S+)/);
     if (msgMatch) {
       const commitMsg = msgMatch[1];
-      if (/^(feat|fix|docs|chore|refactor|test|ci|build|perf|style|revert)(\(.+\))?(!)?\:\s+.+/i.test(commitMsg)) {
+      // `release` and `sync` are this ecosystem's own publish verbs (the marketplace uses
+      // `release(<plugin>): x.y.z` and `sync(<plugin>): vX`). Leaving them out made the
+      // guard block the very pipeline it ships in.
+      if (/^(feat|fix|docs|chore|refactor|test|ci|build|perf|style|revert|release|sync)(\(.+\))?(!)?\:\s+.+/i.test(commitMsg)) {
         // valid conventional commit — allow (don't override higher restriction)
       } else {
         contexts.push('Commit message must follow conventional commits pattern (e.g. feat: add feature, fix(scope): description)');
