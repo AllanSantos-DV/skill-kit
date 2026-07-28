@@ -9,7 +9,7 @@
  * Also provides a file-watcher that marks removed scripts as disabled.
  */
 
-import { readdirSync, existsSync, writeFileSync, watch } from 'node:fs';
+import { readdirSync, existsSync, writeFileSync, readFileSync, watch } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import { COPILOT } from './infra/paths.js';
 import { getConfigPath } from './infra/config.js';
@@ -64,6 +64,57 @@ export function scanDirectory(dir) {
   }
 
   return names;
+}
+
+/**
+ * Lê os companions `<hook>.neural-link.json` da pasta de hooks.
+ *
+ * Por que isto existe: um repositório de skills (skill-kit, e qualquer outro) instala seus
+ * hooks por `pull`. Sem um jeito de ELE declarar como o hook deve ser pontuado, o dono tinha
+ * duas opções ruins: registrar tudo à mão no config global — e perder na próxima atualização —
+ * ou deixar cada hook se declarar solto em `hooks.json`, que é o que multiplica processo.
+ *
+ * O companion resolve: o hook viaja com a própria calibragem, o `pull` traz os dois, e o
+ * dispatcher registra sozinho. A mensagem de calibragem já prometia este arquivo; agora ele
+ * é lido de verdade.
+ *
+ * Precedência deliberada: o config global VENCE o companion. Quem ajustou peso/limiar à mão
+ * não pode ter isso desfeito por uma atualização de repositório.
+ *
+ * @param {string} dir - pasta com os hooks
+ * @returns {Record<string, object>} - entradas de handler por nome
+ */
+export function readCompanions(dir) {
+  if (!existsSync(dir)) return {};
+
+  const out = {};
+  for (const f of readdirSync(dir)) {
+    if (!f.endsWith('.neural-link.json')) continue;
+    const name = f.slice(0, -'.neural-link.json'.length);
+    try {
+      const raw = JSON.parse(readFileSync(join(dir, f), 'utf-8'));
+      // Um companion inválido NÃO pode derrubar o dispatcher: ele é ignorado, e o hook
+      // simplesmente não fica registrado (visível na calibragem) em vez de matar o processo.
+      if (!raw || typeof raw !== 'object') continue;
+      out[name] = {
+        enabled: raw.enabled !== false,
+        events: Array.isArray(raw.events) ? raw.events : inferEvents(name),
+        script: raw.script ?? { node: `~/.copilot/hooks/${name}.js` },
+        timeout: raw.timeout ?? 5000,
+        threshold: raw.threshold ?? null,
+        weight: typeof raw.weight === 'number' ? raw.weight : 0.55,
+        // Campos que o pipeline itera direto — ausência aqui derruba o dispatcher inteiro.
+        modifiers: Array.isArray(raw.modifiers) ? raw.modifiers : [],
+        routing: raw.routing ?? undefined,
+        // Quem registrou: é o que permite responder "de qual projeto veio este hook".
+        project: raw.project ?? null,
+        source: 'companion',
+      };
+    } catch {
+      // json ilegível: ignora este companion, segue com os outros.
+    }
+  }
+  return out;
 }
 
 /**
@@ -153,11 +204,28 @@ export function autoRegister(config, options = {}) {
   const result = { registered: [], disabled: [] };
 
   const reg = normalizeRegistration(config.registration);
-  if (reg.mode !== 'auto') return result;
-
   const { workingDirectory } = options;
   const handlers = config.handlers ?? {};
   let dirty = false;
+
+  // COMPANIONS primeiro, e independentes do modo: um hook que viaja com a própria calibragem
+  // (`<hook>.neural-link.json`) é uma DECLARAÇÃO explícita de quem o instalou — não é
+  // adivinhação como o auto-scan, que registraria até biblioteca compartilhada como se fosse
+  // handler. Por isso vale mesmo em `registration: "manual"`: manual é sobre não adivinhar,
+  // não sobre ignorar o que foi declarado.
+  const companions = readCompanions(COPILOT.HOOKS);
+  for (const [name, entry] of Object.entries(companions)) {
+    if (handlers[name]) continue;   // config global vence: ajuste à mão não é desfeito por update
+    handlers[name] = entry;
+    result.registered.push(name);
+    dirty = true;
+  }
+  if (dirty) { config.handlers = handlers; }
+
+  if (reg.mode !== 'auto') {
+    if (dirty) { writeConfigFile(config); }
+    return result;
+  }
 
   // Collect scripts from each enabled source
   const globalNames = reg.sources.includes('global') ? scanScripts() : [];
