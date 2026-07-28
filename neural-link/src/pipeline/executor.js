@@ -200,11 +200,28 @@ function runHandler(name, handler, stdinStr, timeout) {
 
     let child;
     try {
-      child = spawn(process.execPath, [scriptPath], {
+      // cwd: um hook de extensão era invocado pelo host DE DENTRO da pasta da extensão
+      // (`node boot.mjs` só resolve assim). Sem honrar isso, o hook migrado para cá quebraria
+      // ao ler arquivo relativo. Handler sem `cwd` mantém o comportamento antigo (herda o da
+      // sessão), para não mudar o significado dos hooks que já rodavam.
+      const spawnOpts = {
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true,
         shell: false,
-      });
+      };
+      if (handler.cwd) {
+        const dir = resolvePath(handler.cwd);
+        if (existsSync(dir) && statSync(dir).isDirectory()) {
+          spawnOpts.cwd = dir;
+        } else {
+          console.error(`[neural-link] cwd inexistente para ${name}: ${dir}`);
+        }
+      }
+      // args: um mesmo script pode atender dois eventos e se diferenciar pelo argumento
+      // (`scan-hook.mjs session-start` vs `user-prompt`). Sem passar isso adiante, os dois
+      // registros virariam a mesma chamada e um dos comportamentos sumiria em silêncio.
+      const args = Array.isArray(handler.args) ? handler.args.filter(a => typeof a === 'string') : [];
+      child = spawn(process.execPath, [scriptPath, ...args], spawnOpts);
     } catch {
       resolve(allowResult);
       return;

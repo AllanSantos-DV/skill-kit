@@ -25,4 +25,7 @@ export const FILES = {
 export const COPILOT = {
   HOOKS_SCRIPTS: join(homedir(), '.copilot', 'hooks', 'scripts'),
   HOOKS: join(homedir(), '.copilot', 'hooks'),
+  // Extensões instaladas. Cada uma pode trazer a própria calibragem (`*.neural-link.json`)
+  // em vez de declarar hook próprio — declaração própria é o que multiplica processo.
+  EXTENSIONS: join(homedir(), '.copilot', 'extensions'),
 };

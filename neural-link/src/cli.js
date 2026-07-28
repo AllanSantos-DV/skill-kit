@@ -20,6 +20,17 @@ import { loadConfig } from './infra/config.js';
 import { _resetLearner } from './learning/learner.js';
 import { FILES } from './infra/paths.js';
 import { MIN_ACTIVATIONS } from './infra/constants.js';
+import { install } from './install.js';
+
+function commandInstall(dryRun) {
+  const r = install({ dryRun });
+  console.log(`dispatcher: ${r.entry}`);
+  if (r.written.length) console.log(`  declarados : ${r.written.join(', ')}`);
+  if (r.unchanged.length) console.log(`  ja em dia  : ${r.unchanged.join(', ')}`);
+  if (r.removed.length) console.log(`  removidos  : ${r.removed.join(', ')} (sem handler)`);
+  if (!r.written.length && !r.removed.length) console.log('  nada a fazer.');
+  if (dryRun) console.log('\n(dry-run: nada foi escrito)');
+}
 
 const [cmd, ...rest] = process.argv.slice(2);
 
@@ -35,6 +46,9 @@ switch (cmd) {
     break;
   case 'rollback':
     commandRollback();
+    break;
+  case 'install':
+    commandInstall(rest.includes('--dry-run'));
     break;
   default:
     console.log(`Neural Link CLI
