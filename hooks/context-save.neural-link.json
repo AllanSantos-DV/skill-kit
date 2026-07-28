@@ -1,0 +1,12 @@
+{
+  "events": [
+    "PreCompact"
+  ],
+  "script": {
+    "node": "~/.copilot/hooks/context-save.js"
+  },
+  "timeout": 10000,
+  "weight": 0.55,
+  "modifiers": [],
+  "project": "skill-kit"
+}

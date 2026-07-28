@@ -1,0 +1,12 @@
+{
+  "events": [
+    "SessionStart"
+  ],
+  "script": {
+    "node": "~/.copilot/hooks/session-context.js"
+  },
+  "timeout": 5000,
+  "weight": 0.55,
+  "modifiers": [],
+  "project": "skill-kit"
+}

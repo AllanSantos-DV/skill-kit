@@ -1,0 +1,12 @@
+{
+  "events": [
+    "UserPromptSubmit"
+  ],
+  "script": {
+    "node": "~/.copilot/hooks/lesson-injector.js"
+  },
+  "timeout": 10000,
+  "weight": 0.55,
+  "modifiers": [],
+  "project": "skill-kit"
+}

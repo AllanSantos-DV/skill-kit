@@ -1,0 +1,12 @@
+{
+  "events": [
+    "Stop"
+  ],
+  "script": {
+    "node": "~/.copilot/hooks/context-confidence-check.js"
+  },
+  "timeout": 10000,
+  "weight": 0.55,
+  "modifiers": [],
+  "project": "skill-kit"
+}

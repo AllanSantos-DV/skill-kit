@@ -1,0 +1,12 @@
+{
+  "events": [
+    "Stop"
+  ],
+  "script": {
+    "node": "~/.copilot/hooks/verify-claims.js"
+  },
+  "timeout": 5000,
+  "weight": 0.55,
+  "modifiers": [],
+  "project": "skill-kit"
+}
