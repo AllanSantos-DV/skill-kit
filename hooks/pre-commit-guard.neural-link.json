@@ -1,0 +1,12 @@
+{
+  "events": [
+    "PreToolUse"
+  ],
+  "script": {
+    "node": "~/.copilot/hooks/pre-commit-guard.js"
+  },
+  "timeout": 5000,
+  "weight": 0.55,
+  "modifiers": [],
+  "project": "skill-kit"
+}
