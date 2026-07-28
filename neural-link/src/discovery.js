@@ -103,7 +103,7 @@ export function readCompanions(dir, options = {}) {
       out[name] = {
         enabled: raw.enabled !== false,
         events: Array.isArray(raw.events) ? raw.events : inferEvents(base),
-        script: resolveCompanionScript(raw.script, base, baseDir, prefix),
+        script: resolveCompanionScript(raw.script, base, baseDir),
         timeout: raw.timeout ?? 5000,
         threshold: raw.threshold ?? null,
         weight: typeof raw.weight === 'number' ? raw.weight : 0.55,
@@ -127,11 +127,12 @@ export function readCompanions(dir, options = {}) {
 /**
  * Resolve o caminho do script de um companion.
  *
- * Um companion que viaja dentro de uma extensão declara o script RELATIVO à própria pasta
- * (`lib/gates/grepGuard.mjs`) — a extensão não sabe onde foi instalada. Caminho absoluto ou
- * ancorado em `~` é respeitado como veio.
+ * Um companion declara o script RELATIVO à própria pasta — o repositório não sabe onde vai ser
+ * instalado (o Skill Manager, por exemplo, instala em `hooks/scripts/`, não na raiz). Ancorar no
+ * companion é o que faz a mesma calibragem valer nos dois lugares. Caminho absoluto ou ancorado
+ * em `~` é respeitado como veio, para quem precisa apontar para fora.
  */
-function resolveCompanionScript(script, base, baseDir, prefix) {
+function resolveCompanionScript(script, base, baseDir) {
   const anchor = (p) =>
     typeof p === 'string' && !p.startsWith('~') && !p.startsWith('/') && !/^[A-Za-z]:/.test(p)
       ? join(baseDir, p)
@@ -144,14 +145,12 @@ function resolveCompanionScript(script, base, baseDir, prefix) {
   }
   if (typeof script === 'string') return { node: anchor(script) };
 
-  if (prefix) {
-    for (const ext of ['.mjs', '.js', '.cjs']) {
-      const guess = join(baseDir, `${base}${ext}`);
-      if (existsSync(guess)) return { node: guess };
-    }
-    return { node: join(baseDir, `${base}.mjs`) };
+  // Sem `script`: o arquivo irmão com o mesmo nome.
+  for (const ext of ['.js', '.mjs', '.cjs']) {
+    const guess = join(baseDir, `${base}${ext}`);
+    if (existsSync(guess)) return { node: guess };
   }
-  return { node: `~/.copilot/hooks/${base}.js` };
+  return { node: join(baseDir, `${base}.js`) };
 }
 
 /**
@@ -163,6 +162,11 @@ function resolveCompanionScript(script, base, baseDir, prefix) {
  */
 export function companionRoots() {
   const roots = [{ dir: COPILOT.HOOKS, prefix: null }];
+  // O Skill Manager instala em `hooks/scripts/`, não na raiz — sem esta pasta, um repositório
+  // de skills entregaria calibragem que ninguém lê e os hooks ficariam sem registro.
+  if (COPILOT.HOOKS_SCRIPTS !== COPILOT.HOOKS) {
+    roots.push({ dir: COPILOT.HOOKS_SCRIPTS, prefix: null });
+  }
   if (existsSync(COPILOT.EXTENSIONS)) {
     for (const name of readdirSync(COPILOT.EXTENSIONS)) {
       const dir = join(COPILOT.EXTENSIONS, name);
