@@ -1,10 +1,8 @@
 {
+  "_comment": "Calibragem do neural-link. O script e o arquivo irmao de mesmo nome; o caminho e resolvido pela pasta onde este companion for instalado (raiz ou hooks/scripts). Requer neural-link >= 0.7.2.",
   "events": [
     "PreToolUse"
   ],
-  "script": {
-    "node": "~/.copilot/hooks/pre-commit-guard.js"
-  },
   "timeout": 5000,
   "weight": 0.55,
   "modifiers": [],
