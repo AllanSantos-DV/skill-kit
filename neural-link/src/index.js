@@ -113,24 +113,27 @@ async function main() {
     process.exit(0);
   }
 
-  // SessionStart auto-calibration check
+  // Aviso de calibragem: informa SEM desligar o SessionStart.
+  //
+  // Antes isto dava `return` e a mensagem SUBSTITUÍA o dispatch inteiro. Quando cada hook tinha
+  // declaração própria, o estrago era pequeno; agora que o dispatcher é o ÚNICO caminho, um
+  // script sem calibragem derrubava TODOS os handlers de SessionStart em silêncio — inclusive o
+  // boot das extensões. Um aviso nunca pode desabilitar o que ele está avisando.
   const eventName = stdinJson.event ?? stdinJson.hook_event_name ?? stdinJson.hookEventName;
+  let calibrationNotice = null;
   if (eventName === 'SessionStart') {
     const config = loadConfig();
     const calibrationResult = checkCalibration(config);
     if (calibrationResult) {
       const { uncalibrated = [], autoRegistered = [] } = calibrationResult;
       if (uncalibrated.length > 0 || autoRegistered.length > 0) {
-        const response = buildCalibrationResponse(uncalibrated, autoRegistered);
-        const calibrationOutput = JSON.stringify(response);
-        if (debug) debugDump(calibrationOutput, 'out');
-        process.stdout.write(calibrationOutput);
-        return;
+        calibrationNotice = buildCalibrationResponse(uncalibrated, autoRegistered);
       }
     }
   }
 
   const { output, runPostResponse } = await dispatch(stdinJson, { earlyReturn: true });
+  if (calibrationNotice) mergeCalibration(output, calibrationNotice);
   const json = JSON.stringify(output);
 
   if (debug) debugDump(json, 'out');
@@ -155,8 +158,33 @@ async function main() {
   });
 }
 
-main().catch((error) => {
-  // Fail-open: any unhandled error → silent exit
+/**
+ * Anexa o aviso de calibragem à resposta do dispatch, sem sobrepor o que os handlers decidiram.
+ *
+ * A decisão continua sendo a deles: um aviso não bloqueia nem libera nada. O texto entra junto
+ * ao contexto que já iria (ou como `content`), e o diagnóstico fica registrado ao lado dos
+ * dados do dispatch para quem for depurar.
+ */
+function mergeCalibration(output, notice) {
+  const texto = notice.content ?? notice.reason ?? '';
+  if (!texto) return;
+
+  const hso = output.hookSpecificOutput ?? (output.hookSpecificOutput = {});
+  const nl = notice.hookSpecificOutput?.neural_link;
+  if (nl?.calibration) {
+    hso.neural_link = { ...(hso.neural_link ?? {}), calibration: nl.calibration };
+  }
+
+  if (typeof hso.additionalContext === 'string' && hso.additionalContext) {
+    hso.additionalContext += `\n\n${texto}`;
+  } else if (typeof output.content === 'string' && output.content) {
+    output.content += `\n\n${texto}`;
+  } else {
+    hso.additionalContext = texto;
+  }
+}
+
+main().catch((error) => {  // Fail-open: any unhandled error → silent exit
   handleError(error, SEVERITY.CRITICAL, { component: 'index', operation: 'main' });
   process.exit(EXIT_CODES.DISPATCH_ERROR);
 });
