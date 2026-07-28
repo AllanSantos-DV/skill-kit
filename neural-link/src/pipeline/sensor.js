@@ -36,6 +36,19 @@ const MAX_STRING_LENGTH = 100000; // 100KB
 const MAX_PATH_LENGTH = 4096;
 const MAX_COMMAND_LENGTH = 50000;
 
+// Identificador do projeto consumidor. Curto e restrito de propósito: ele acaba em log, em
+// nome de arquivo de peso e (no próximo passo) em regra de escopo — aceitar texto livre aqui
+// seria abrir travessia de caminho e poluição de log por um campo que o host não controla.
+const MAX_PROJECT_LENGTH = 64;
+const PROJECT_ALLOWED = /^[a-zA-Z0-9._-]+$/;
+
+function sanitizeProject(value) {
+  if (typeof value !== 'string') return null;
+  const v = value.trim();
+  if (!v || v.length > MAX_PROJECT_LENGTH) return null;
+  return PROJECT_ALLOWED.test(v) ? v : null;
+}
+
 /**
  * Truncate a string if it exceeds max length.
  */
@@ -107,6 +120,13 @@ export function sense(stdinJson) {
     // Core identity
     event_type: eventType,
     agent: stdinJson.copilot_chat?.agentName ?? stdinJson.agentName ?? stdinJson.agent_type ?? process.env.NEURAL_LINK_AGENT ?? null,
+
+    // QUEM registrou este hook — o projeto/extensão consumidor (skill-manager, octopus, ...).
+    // Simétrico ao `agent`, que diz qual AGENTE está rodando; este diz de qual PRODUTO veio o
+    // hook. Sem ele não dá para responder "quem registrou o quê" nem, depois, escopar a execução
+    // por projeto: hoje todo handler registrado roda em todo lugar.
+    // Opcional e retrocompatível: consumidor que não manda nada continua funcionando com null.
+    project: sanitizeProject(stdinJson.project ?? stdinJson.projectId ?? process.env.NEURAL_LINK_PROJECT),
 
     // Workspace & session (official VS Code fields)
     cwd,

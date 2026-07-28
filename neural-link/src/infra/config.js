@@ -4,8 +4,6 @@ import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { PATHS } from './paths.js';
 import { REGISTRATION_MODES, REGISTRATION_SOURCES } from './constants.js';
-import { fnv1a as fnv1aHash } from './hash.js';
-import { getConfigCandidates } from './config-paths.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = dirname(dirname(__dirname)); // src/infra → src → project root
@@ -15,6 +13,19 @@ let lastConfigRaw = null;
 let lastConfigPath = null;
 
 const CONFIG_CACHE_FILE = join(PATHS.BASE, '.config-cache.json');
+
+/**
+ * FNV-1a hash (32-bit) — fast, good distribution, zero deps.
+ * Duplicated from features.js to avoid circular dependency.
+ */
+function fnv1aHash(str) {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = (hash * 0x01000193) >>> 0;
+  }
+  return hash;
+}
 
 /**
  * Try loading config from cross-invocation cache.
@@ -74,7 +85,14 @@ export function loadConfig() {
     return cached;
   }
 
-  const candidates = getConfigCandidates({ cwd: process.cwd(), projectRoot });
+  const cwd = process.cwd();
+  const normalizedCwd = normalize(cwd);
+
+  const candidates = [
+    join(normalizedCwd, '.neural-link.config.json'),
+    join(homedir(), '.copilot', 'neural-link.config.json'),
+    join(projectRoot, 'neural-link.config.json'),
+  ];
 
   for (const path of candidates) {
     const resolvedPath = resolve(path);
