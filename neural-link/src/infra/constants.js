@@ -106,6 +106,29 @@ export const NAME_EVENT_PATTERNS = [
 /** Default events when no prefix matches */
 export const DEFAULT_INFERRED_EVENTS = ['PreToolUse', 'Stop'];
 
+/**
+ * Eventos GLOBAIS: os que o host entrega a declarações em `~/.copilot/hooks/`.
+ *
+ * É a fronteira do que o dispatcher consegue servir. Extensões também têm eventos PRÓPRIOS
+ * (`agentStop`, `postToolUseFailure`, camelCase por convenção), e esses o host entrega apenas
+ * a hooks declarados no `hooks.json` DA extensão. Registrar um deles aqui produz um handler
+ * que nunca é chamado — e pior, cala um hook que funcionava, sem erro em lugar nenhum.
+ *
+ * Foi exatamente o que aconteceu: os dois hooks do voice-chat viraram companions, o dispatcher
+ * os registrou, o smoke test com payload na mão passou, e o app nunca chamou. Um dia inteiro de
+ * log com zero eventos reais — enquanto PreToolUse acumulava 9886.
+ */
+export const GLOBAL_HOOK_EVENTS = [
+  'SessionStart',
+  'UserPromptSubmit',
+  'PreToolUse',
+  'PostToolUse',
+  'Stop',
+  'SubagentStop',
+  'SubagentStart',
+  'PreCompact',
+];
+
 /** Script extensions per platform */
 export const PLATFORM_EXTENSIONS = {
   win32: '.ps1',
