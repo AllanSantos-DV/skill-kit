@@ -116,13 +116,52 @@ readStdinJson((inputJson) => {
     finalDecision = 'deny';
   };
 
-  for (const sub of subCommands) {
+  /**
+   * O nome do comando é insensível a maiúsculas; os FLAGS não são.
+   *
+   * No Windows o shell resolve o executável sem olhar caixa, e o PowerShell também ignora
+   * caixa em cmdlet e parâmetro. Medido nesta máquina: `GIT --version` roda, e `RM -RF x`
+   * é `Remove-Item`. Como todas as regras abaixo casavam o comando em minúsculo, `RM -RF`
+   * atravessava o guard inteiro. Um guard que se desarma com Shift não é um guard.
+   *
+   * Sobre o subcomando do git, medi antes de afirmar: `git STATUS` responde
+   * "'STATUS' is not a git command" — ou seja, `GIT PUSH --force` não empurra nada, o git
+   * recusa. Não era buraco explorável, ao contrário do que parecia. Normalizo mesmo assim,
+   * por defesa em profundidade: assim o guard não depende de conhecer o parser do git, e o
+   * custo de bloquear algo que falharia sozinho é zero.
+   *
+   * A correção não pode ser um `/i` geral: a caixa dos flags carrega significado e as regras
+   * dependem disso. `git branch -D` apaga à força e `-d` recusa apagar branch não mesclada;
+   * com `/i` o guard passaria a interromper o `-d`, que é seguro. Por isso normalizo apenas
+   * os tokens de COMANDO — executável e, quando é git, o subcomando — nunca os flags.
+   */
+  const normalizarComando = (s) => {
+    let normalizados = 0;
+    let ehGit = false;
+    return s.replace(/\S+/g, (token) => {
+      if (token.startsWith('-')) return token;          // flag: caixa é significativa
+      if (normalizados === 0) {                          // executável
+        normalizados = 1;
+        ehGit = /^git$/i.test(token);
+        return token.toLowerCase();
+      }
+      if (normalizados === 1 && ehGit) {                 // subcomando do git
+        normalizados = 2;
+        return token.toLowerCase();
+      }
+      return token;                                      // argumentos: intocados
+    });
+  };
+
+  for (const original of subCommands) {
+    const sub = normalizarComando(original);
+
     // --- Destructive filesystem commands ---
     if (/\brm\s+.*-[rR]/.test(sub) || /\brm\s+-[fF][rR]/.test(sub) || /\brm\s+-[rR][fF]/.test(sub) ||
         /\brmdir\s+\/[sS]/.test(sub) || /\bdel\s+\/[sS]/.test(sub) ||
         /\bformat\s+[a-zA-Z]:/.test(sub) || /\bmkfs\b/.test(sub)) {
       hasGitCommand = true;
-      contexts.push('Destructive filesystem command requires confirmation: ' + sub);
+      contexts.push('Destructive filesystem command requires confirmation: ' + original);
       finalDecision = 'deny';
       continue;
     }
