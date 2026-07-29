@@ -157,8 +157,10 @@ readStdinJson((inputJson) => {
     const sub = normalizarComando(original);
 
     // --- Destructive filesystem commands ---
+    // `rd` é o alias do cmd.exe para `rmdir` — mesma destruição de árvore, outro nome.
+    // Estava fora da lista, então `rd /s /q` passava enquanto `rmdir /s /q` era negado.
     if (/\brm\s+.*-[rR]/.test(sub) || /\brm\s+-[fF][rR]/.test(sub) || /\brm\s+-[rR][fF]/.test(sub) ||
-        /\brmdir\s+\/[sS]/.test(sub) || /\bdel\s+\/[sS]/.test(sub) ||
+        /\b(rmdir|rd)\s+\/[sS]/.test(sub) || /\bdel\s+\/[sS]/.test(sub) ||
         /\bformat\s+[a-zA-Z]:/.test(sub) || /\bmkfs\b/.test(sub)) {
       hasGitCommand = true;
       contexts.push('Destructive filesystem command requires confirmation: ' + original);
@@ -250,7 +252,14 @@ readStdinJson((inputJson) => {
     }
 
     // Remove-Item -Recurse -Force (PowerShell equivalent of rm -rf)
-    if (/\b(Remove-Item|ri|del|erase|rd|rmdir)\b.*-Recurse.*-Force|\b(Remove-Item|ri|del|erase|rd|rmdir)\b.*-Force.*-Recurse/.test(sub)) {
+    //
+    // Case-insensitive por natureza do alvo, não por preguiça: no PowerShell o nome do
+    // cmdlet E os parâmetros são insensíveis a caixa — `remove-item -recurse -force` apaga
+    // exatamente igual a `Remove-Item -Recurse -Force`. Casar só a grafia canônica deixava
+    // as outras passarem, e a normalização do executável (que baixa a caixa do primeiro
+    // token) fazia até a canônica deixar de casar. É o oposto das regras do git logo acima,
+    // onde a caixa do flag carrega significado (`-D` apaga à força, `-d` recusa).
+    if (/\b(remove-item|ri|del|erase|rd|rmdir)\b.*-recurse.*-force|\b(remove-item|ri|del|erase|rd|rmdir)\b.*-force.*-recurse/i.test(sub)) {
       hasGitCommand = true;
       contexts.push('Remove-Item -Recurse -Force is destructive — denied');
       finalDecision = 'deny';
