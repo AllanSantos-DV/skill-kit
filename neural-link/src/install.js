@@ -11,6 +11,7 @@
 
 import { readdirSync, existsSync, writeFileSync, unlinkSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { COPILOT } from './infra/paths.js';
 import { loadConfig } from './infra/config.js';
@@ -18,8 +19,19 @@ import { autoRegister } from './discovery.js';
 
 const PREFIX = '_dispatcher-';
 
-/** Caminho real deste dispatcher — é o que a declaração precisa chamar. */
+/**
+ * Caminho do dispatcher que as declarações devem invocar.
+ *
+ * Preferir o runtime INSTALADO pelo engine-registry, não o módulo em execução. Derivar de
+ * `import.meta.url` parece natural e é uma armadilha: rodar `neural-link install` de dentro de
+ * um checkout gravaria nas declarações GLOBAIS o caminho da cópia de trabalho de quem rodou —
+ * e mover ou apagar aquela pasta derrubaria TODOS os hooks da máquina, sem pista da causa.
+ *
+ * Só cai para o módulo atual quando não há runtime instalado (desenvolvimento puro).
+ */
 export function dispatcherEntry() {
+  const instalado = join(homedir(), '.copilot', 'neural-link', 'runtimes', 'neural-link', 'src', 'index.js');
+  if (existsSync(instalado)) return instalado.replace(/\\/g, '/');
   return join(dirname(fileURLToPath(import.meta.url)), 'index.js').replace(/\\/g, '/');
 }
 
@@ -66,7 +78,7 @@ export function install(options = {}) {
   autoRegister(config);
 
   const entry = dispatcherEntry();
-  if (!existsSync(fileURLToPath(new URL('./index.js', import.meta.url)))) {
+  if (!existsSync(entry.replace(/\//g, '\\'))) {
     throw new Error(`dispatcher nao encontrado em ${entry}`);
   }
 
