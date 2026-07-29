@@ -14,6 +14,7 @@ import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { COPILOT } from './infra/paths.js';
+import { GLOBAL_HOOK_EVENTS } from './infra/constants.js';
 import { loadConfig } from './infra/config.js';
 import { autoRegister } from './discovery.js';
 
@@ -38,19 +39,26 @@ export function dispatcherEntry() {
 /**
  * Eventos que têm ao menos um handler habilitado, com o timeout necessário para o mais lento.
  *
+ * Evento fora de :const:`GLOBAL_HOOK_EVENTS` é DESCARTADO com aviso: o host nunca entrega esse
+ * evento a uma declaração global, então escrever o arquivo criaria um handler que jamais roda —
+ * e daria a impressão de que o hook está coberto. Quem precisa de evento próprio de extensão
+ * declara no `hooks.json` da extensão.
+ *
  * @param {object} config
- * @returns {Map<string, number>} evento -> timeout em segundos
+ * @returns {{events: Map<string, number>, ignorados: string[]}}
  */
 export function eventsInUse(config) {
   const events = new Map();
+  const ignorados = new Set();
   for (const handler of Object.values(config.handlers ?? {})) {
     if (handler?.enabled === false) continue;
     for (const ev of handler?.events ?? []) {
+      if (!GLOBAL_HOOK_EVENTS.includes(ev)) { ignorados.add(ev); continue; }
       const needed = Math.ceil((handler.timeout ?? 5000) / 1000) + 5;
       events.set(ev, Math.max(events.get(ev) ?? 10, needed));
     }
   }
-  return events;
+  return { events, ignorados: [...ignorados] };
 }
 
 function declaration(event, timeout, entry, count) {
@@ -82,7 +90,7 @@ export function install(options = {}) {
     throw new Error(`dispatcher nao encontrado em ${entry}`);
   }
 
-  const wanted = eventsInUse(config);
+  const { events: wanted, ignorados } = eventsInUse(config);
   const counts = new Map();
   for (const handler of Object.values(config.handlers ?? {})) {
     if (handler?.enabled === false) continue;
@@ -91,7 +99,7 @@ export function install(options = {}) {
 
   if (!dryRun && !existsSync(COPILOT.HOOKS)) mkdirSync(COPILOT.HOOKS, { recursive: true });
 
-  const result = { written: [], removed: [], unchanged: [], entry };
+  const result = { written: [], removed: [], unchanged: [], ignorados, entry };
 
   for (const [event, timeout] of wanted) {
     const file = join(COPILOT.HOOKS, `${PREFIX}${event}.json`);

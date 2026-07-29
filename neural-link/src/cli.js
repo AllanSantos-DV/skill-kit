@@ -28,6 +28,12 @@ function commandInstall(dryRun) {
   if (r.written.length) console.log(`  declarados : ${r.written.join(', ')}`);
   if (r.unchanged.length) console.log(`  ja em dia  : ${r.unchanged.join(', ')}`);
   if (r.removed.length) console.log(`  removidos  : ${r.removed.join(', ')} (sem handler)`);
+  if (r.ignorados?.length) {
+    console.log(`\n  ATENCAO — eventos IGNORADOS: ${r.ignorados.join(', ')}`);
+    console.log('  O host nao entrega esses eventos a declaracoes globais; eles pertencem a');
+    console.log('  extensoes. Um handler registrado neles NUNCA seria chamado. Declare-os no');
+    console.log('  hooks.json da propria extensao.');
+  }
   if (!r.written.length && !r.removed.length) console.log('  nada a fazer.');
   if (dryRun) console.log('\n(dry-run: nada foi escrito)');
 }
