@@ -1,4 +1,5 @@
 import { dispatch } from './pipeline/dispatcher.js';
+import { espelharNoTopo } from './pipeline/compositor.js';
 import { loadConfig, getConfigRaw } from './infra/config.js';
 import { checkCalibration, buildCalibrationResponse } from './calibration.js';
 import { handleError, SEVERITY, EXIT_CODES } from './infra/error-handler.js';
@@ -133,7 +134,10 @@ async function main() {
   }
 
   const { output, runPostResponse } = await dispatch(stdinJson, { earlyReturn: true });
-  if (calibrationNotice) mergeCalibration(output, calibrationNotice);
+  if (calibrationNotice) {
+    mergeCalibration(output, calibrationNotice);
+    espelharNoTopo(output);   // o aviso entrou depois da composição: o topo precisa refletir
+  }
   const json = JSON.stringify(output);
 
   if (debug) debugDump(json, 'out');

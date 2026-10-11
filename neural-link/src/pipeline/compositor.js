@@ -95,6 +95,36 @@ export function compose(results, context) {
     composer(output, normalized, composedReason, finalDecision, mergedHookOutput, context);
   }
 
+  return espelharNoTopo(output);
+}
+
+/**
+ * Copia para o TOPO da resposta os campos que o Copilot CLI lê de lá.
+ *
+ * O formato do Claude Code / VS Code aninha tudo em `hookSpecificOutput`. Medido no Copilot CLI
+ * real (2026-10-11, declarações em PascalCase): `permissionDecision` aninhado é honrado, mas
+ * `additionalContext` aninhado é DESCARTADO em SessionStart, UserPromptSubmit e PostToolUse —
+ * nenhum contexto dos handlers chegava ao agente. No topo, os três chegam. As duas formas
+ * convivem: cada host lê a sua e ignora a outra.
+ *
+ * Idempotente: o `index.js` chama de novo depois de anexar o aviso de calibragem.
+ *
+ * @param {object} output - resposta composta (mutada e devolvida)
+ * @returns {object}
+ */
+export function espelharNoTopo(output) {
+  const hso = output?.hookSpecificOutput;
+  if (!hso || typeof hso !== 'object') return output;
+
+  // `content` é o contexto dos handlers "add" de UserPromptSubmit: para o Copilot, contexto
+  // só existe como `additionalContext`.
+  const partes = [hso.additionalContext, output.content]
+    .filter(t => typeof t === 'string' && t.trim());
+  const contexto = [...new Set(partes)].join('\n\n');
+  if (contexto) output.additionalContext = contexto;
+
+  if (hso.permissionDecision) output.permissionDecision = hso.permissionDecision;
+  if (hso.permissionDecisionReason) output.permissionDecisionReason = hso.permissionDecisionReason;
   return output;
 }
 
