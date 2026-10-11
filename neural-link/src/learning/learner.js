@@ -119,8 +119,12 @@ export class Learner {
    * reward: 0.0 (bad decision) to 1.0 (good decision)
    */
   update(handlerName, featureVector, reward) {
-    // Track activations
+    // Track activations — e PERSISTIR a contagem já. Cada evento de hook é um processo novo: se
+    // só marcássemos sujo depois de `minActivations`, cada processo começaria do 0, chegaria a 1
+    // e sairia sem salvar — a partir de um estado limpo (pasta apagada, máquina nova) o
+    // aprendizado nunca recomeçava.
     this.activations[handlerName] = (this.activations[handlerName] || 0) + 1;
+    this._dirty = true;
 
     // Don't adjust until minimum observations reached
     if (this.activations[handlerName] < this.config.minActivations) return;
