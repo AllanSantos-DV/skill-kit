@@ -34,7 +34,17 @@ function commandInstall(dryRun) {
     console.log('  extensoes. Um handler registrado neles NUNCA seria chamado. Declare-os no');
     console.log('  hooks.json da propria extensao.');
   }
-  if (!r.written.length && !r.removed.length) console.log('  nada a fazer.');
+  const c = r.companions;
+  if (c?.selados?.length) {
+    console.log(`\n  companions selados: ${c.selados.length}`);
+    console.log('  (o host varre a pasta de hooks e rejeitava cada um deles a cada sessao;');
+    console.log('   com um "hooks" vazio ele aceita, nao registra nada e para de logar erro)');
+  }
+  if (c?.ilegiveis?.length) {
+    console.log(`\n  companions ILEGIVEIS (json invalido, ignorados pelo dispatcher tambem):`);
+    for (const f of c.ilegiveis) console.log(`    ${f}`);
+  }
+  if (!r.written.length && !r.removed.length && !c?.selados?.length) console.log('  nada a fazer.');
   if (dryRun) console.log('\n(dry-run: nada foi escrito)');
 }
 

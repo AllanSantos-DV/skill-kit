@@ -2,7 +2,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync, unlinkSync } from '
 import { join, dirname, resolve, normalize } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { PATHS } from './paths.js';
+import { PATHS, COPILOT } from './paths.js';
 import { REGISTRATION_MODES, REGISTRATION_SOURCES } from './constants.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -68,13 +68,42 @@ function writeDiskCache(configPath, raw, config) {
 
 /**
  * Load config from (in order):
- * 0. Cross-invocation disk cache (hash-validated, skips re-validation)
- * 1. .neural-link.config.json in cwd (workspace)
- * 2. ~/.copilot/neural-link.config.json (global)
- * 3. bundled neural-link.config.json (project root)
+ * 0. NEURAL_LINK_CONFIG (pino explícito — vence tudo, inclusive o cache de disco)
+ * 1. Cross-invocation disk cache (hash-validated, skips re-validation)
+ * 2. .neural-link.config.json in cwd (workspace)
+ * 3. ~/.copilot/neural-link.config.json (global)
+ * 4. bundled neural-link.config.json (project root)
+ *
+ * Por que o pino existe: a suíte de testes chamava `loadConfig()` e caía no config GLOBAL da
+ * máquina de quem rodava. Numa máquina real, com 50 handlers auto-registrados, 23 testes
+ * falhavam — todos afirmando pesos e modificadores da calibragem CURADA que o repositório
+ * distribui. O mesmo commit passava numa máquina limpa e falhava na do dono, e o gate de
+ * release virava loteria. Um teste que lê o ambiente de quem o roda não testa o código.
+ *
+ * O pino também serve a sandbox e CI: aponta o config sem depender de cwd nem de HOME.
  */
 export function loadConfig() {
   if (cached) return cached;
+
+  // O pino ignora o cache de disco de propósito: o cache é do último config resolvido nesta
+  // máquina, e honrá-lo aqui devolveria exatamente o estado que o pino existe para excluir.
+  const pinned = process.env.NEURAL_LINK_CONFIG;
+  if (pinned) {
+    const resolvedPin = resolve(pinned);
+    if (!existsSync(resolvedPin)) {
+      // Falha ALTO: pino apontando para o nada significa que os testes/sandbox rodariam
+      // contra o config da máquina achando que estão isolados — o pior dos dois mundos.
+      throw new Error(`NEURAL_LINK_CONFIG aponta para arquivo inexistente: ${resolvedPin}`);
+    }
+    const raw = readFileSync(resolvedPin, 'utf-8');
+    const config = JSON.parse(raw);
+    validateConfig(config);
+    validateEvaluatorNames(config);
+    cached = config;
+    lastConfigRaw = raw;
+    lastConfigPath = resolvedPin;
+    return cached;
+  }
 
   // E-03/E-05: Try cross-invocation cache first
   const diskCached = tryLoadFromDiskCache();
@@ -90,7 +119,7 @@ export function loadConfig() {
 
   const candidates = [
     join(normalizedCwd, '.neural-link.config.json'),
-    join(homedir(), '.copilot', 'neural-link.config.json'),
+    join(COPILOT.ROOT, 'neural-link.config.json'),
     join(projectRoot, 'neural-link.config.json'),
   ];
 

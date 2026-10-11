@@ -10,7 +10,8 @@
  */
 
 import { readdirSync, existsSync, writeFileSync, readFileSync, statSync, watch } from 'node:fs';
-import { basename, extname, join } from 'node:path';
+import { basename, extname, join, isAbsolute } from 'node:path';
+import { homedir } from 'node:os';
 import { COPILOT } from './infra/paths.js';
 import { getConfigPath } from './infra/config.js';
 import {
@@ -233,6 +234,24 @@ export function buildHandlerEntry(name, config, options = {}) {
 
 // ─── Core: auto-register ────────────────────────────────────
 
+/** Marca de quem desabilitou: a descoberta, porque o script do companion não está no disco. */
+const SCRIPT_AUSENTE = 'script-ausente';
+
+/**
+ * O script de um handler está no disco?
+ *
+ * @param {object} script - `handler.script` (`{ node: caminho }`)
+ * @returns {boolean|null} - null quando o caminho não dá para afirmar (ausente ou relativo, que
+ *   depende do cwd do evento): nesse caso a descoberta não mexe no handler.
+ */
+function scriptPresente(script) {
+  const p = script?.node;
+  if (typeof p !== 'string' || !p.trim()) return null;
+  const expandido = p.replace(/^\$HOME/, homedir()).replace(/^~/, homedir());
+  if (!isAbsolute(expandido)) return null;
+  return existsSync(expandido);
+}
+
 /**
  * Normalize a registration value (string or object) into canonical object form.
  *
@@ -258,9 +277,10 @@ export function normalizeRegistration(registration) {
  * @param {object} config - The loaded neural-link config object
  * @param {object} [options] - Discovery options
  * @param {string} [options.workingDirectory] - CWD for resolving workspace hooks
- * @returns {{ registered: string[], disabled: string[] }}
+ * @returns {{ registered: string[], disabled: string[], reenabled?: string[] }}
  *   registered — names that were added to config
  *   disabled   — names whose scripts are gone (marked enabled:false)
+ *   reenabled  — companions disabled for a missing script whose script is back
  */
 export function autoRegister(config, options = {}) {
   const result = { registered: [], disabled: [] };
@@ -284,6 +304,28 @@ export function autoRegister(config, options = {}) {
     handlers[name] = entry;
     result.registered.push(name);
     dirty = true;
+  }
+
+  // Companion cujo script SUMIU (extensão desinstalada) continuava habilitado para sempre: o
+  // registro sobrevive à pasta, e todo SessionStart reclamava de um script inexistente
+  // (`action-bridge.boot`, 2026-10-11). Desabilita com marca própria — e só reabilita o que
+  // ELE desabilitou, quando o script voltar; quem desligou à mão continua desligado.
+  result.reenabled = [];
+  for (const [name, handler] of Object.entries(handlers)) {
+    if (handler?.source !== 'companion') continue;
+    const presente = scriptPresente(handler.script);
+    if (presente === null) continue;
+    if (handler.enabled !== false && !presente) {
+      handler.enabled = false;
+      handler.disabledBy = SCRIPT_AUSENTE;
+      result.disabled.push(name);
+      dirty = true;
+    } else if (handler.enabled === false && handler.disabledBy === SCRIPT_AUSENTE && presente) {
+      handler.enabled = true;
+      delete handler.disabledBy;
+      result.reenabled.push(name);
+      dirty = true;
+    }
   }
   if (dirty) { config.handlers = handlers; }
 
