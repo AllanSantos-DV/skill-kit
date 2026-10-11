@@ -51,9 +51,6 @@ export const HANDLER_TIMEOUT_MS = 5000;
 // Persistence and I/O
 // ========================================
 
-/** Save weights to disk every N total activations (minimize I/O overhead) */
-export const SAVE_INTERVAL = 50;
-
 /** Maximum session history entries to retain (FIFO) */
 export const MAX_SESSION_HISTORY = 50;
 
