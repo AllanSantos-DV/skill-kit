@@ -9,14 +9,14 @@
  * Agora o próprio dispatcher as instala, a partir de quem está registrado.
  */
 
-import { readdirSync, existsSync, writeFileSync, unlinkSync, mkdirSync, readFileSync } from 'node:fs';
+import { readdirSync, existsSync, writeFileSync, unlinkSync, mkdirSync, readFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { COPILOT } from './infra/paths.js';
-import { GLOBAL_HOOK_EVENTS } from './infra/constants.js';
+import { COPILOT, PATHS } from './infra/paths.js';
+import { GLOBAL_HOOK_EVENTS, COMPANION_SUFFIX } from './infra/constants.js';
 import { loadConfig } from './infra/config.js';
 import { autoRegister } from './discovery.js';
+import { selarCompanions } from './companions.js';
 
 const PREFIX = '_dispatcher-';
 
@@ -31,7 +31,7 @@ const PREFIX = '_dispatcher-';
  * Só cai para o módulo atual quando não há runtime instalado (desenvolvimento puro).
  */
 export function dispatcherEntry() {
-  const instalado = join(homedir(), '.copilot', 'neural-link', 'runtimes', 'neural-link', 'src', 'index.js');
+  const instalado = join(PATHS.BASE, 'runtimes', 'neural-link', 'src', 'index.js');
   if (existsSync(instalado)) return instalado.replace(/\\/g, '/');
   return join(dirname(fileURLToPath(import.meta.url)), 'index.js').replace(/\\/g, '/');
 }
@@ -61,6 +61,35 @@ export function eventsInUse(config) {
   return { events, ignorados: [...ignorados] };
 }
 
+/**
+ * Comando que a declaração executa: confere o entry ANTES de carregá-lo.
+ *
+ * `node <entry>` direto morre com MODULE_NOT_FOUND quando a pasta do runtime some, e o host trata
+ * PreToolUse que falha como negação — UMA pasta apagada negou todas as ferramentas do Copilot
+ * (2026-10-11). Nada do dispatcher roda nesse caso, então a proteção tem de viver aqui: entry
+ * ausente libera o evento (exit 0, sem handlers) e grita no stderr; entry presente é importado
+ * e qualquer outra falha continua derrubando o processo, como antes.
+ *
+ * O host NÃO grava o stderr de hook que sai com 0 (medido em 2026-10-11), então no SessionStart
+ * o aviso também vai como `additionalContext`: é o único canal que chega a alguém — o agente
+ * lê e repassa. Nos outros eventos, contexto extra a cada ferramenta seria ruído.
+ *
+ * O texto passa por shell (cmd, PowerShell ou bash, conforme o host): nada de aspas duplas
+ * internas, `$`, crase, `!`, `%` ou redirecionamento.
+ */
+export function guardedCommand(entry, event) {
+  const f = entry.replace(/\\/g, '/').replace(/'/g, '\\x27');
+  const aviso = 'var m=\'[neural-link] dispatcher ausente em \'+f+' +
+    '\' - evento liberado SEM rodar handlers. Reinstale o runtime (engine-registry ensureNeuralLink) e rode neural-link install.\';' +
+    'process.stderr.write(m+\'\\n\');';
+  const contexto = event === 'SessionStart'
+    ? 'process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:\'SessionStart\',additionalContext:m}}));'
+    : '';
+  return 'node -e "var f=\'' + f + '\';' +
+    'if(require(\'fs\').existsSync(f)){import(require(\'url\').pathToFileURL(f).href)}' +
+    'else{' + aviso + contexto + '}"';
+}
+
 function declaration(event, timeout, entry, count) {
   return JSON.stringify({
     version: 1,
@@ -68,7 +97,7 @@ function declaration(event, timeout, entry, count) {
       `Gerado por 'neural-link install'. ${count} handler(s) de ${event} rodam num processo so. ` +
       `Registro, pesos e escopo ficam no neural-link.config.json — nao edite este arquivo a mao.`,
     hooks: {
-      [event]: [{ type: 'command', command: `node ${entry}`, timeout }],
+      [event]: [{ type: 'command', command: guardedCommand(entry, event), timeout }],
     },
   }, null, 2) + '\n';
 }
@@ -118,6 +147,38 @@ export function install(options = {}) {
       if (wanted.has(event)) continue;
       if (!dryRun) unlinkSync(join(COPILOT.HOOKS, f));
       result.removed.push(event);
+    }
+  }
+
+  // O host varre esta pasta inteira e rejeita todo .json que não seja declaração — inclusive os
+  // companions que ele mesmo nunca deveria ler. Selar aqui é o que mantém o log limpo sem
+  // exigir passo manual: quem instala o dispatcher já sai com a máquina em ordem. E como um
+  // `pull` do repositório de skills pode trazer companions crus de novo, o conserto precisa
+  // viver no comando que se roda de novo, não numa correção de uma vez só.
+  result.companions = selarCompanions({ dryRun });
+
+  // Um .json avulso direto em hooks/ (fora do PREFIX) é uma declaração de hook que o host
+  // roda POR CONTA PRÓPRIA, em paralelo ao dispatcher — se o handler correspondente também
+  // está registrado no config, ele executa DUAS VEZES por evento (uma vez pelo avulso, outra
+  // dentro do dispatcher). Foi assim que 24 arquivos ficaram órfãos nesta máquina: cada um
+  // migrou para virar handler do neural-link, mas a declaração antiga nunca foi apagada.
+  // Só avisa — apagar sem confirmação humana é decisão de quem instala, não deste script.
+  result.orfaos = [];
+  if (existsSync(COPILOT.HOOKS)) {
+    for (const f of readdirSync(COPILOT.HOOKS)) {
+      // Companion não é declaração avulsa: é calibragem selada que TEM de morar aqui. Listá-lo
+      // mandava o usuário movê-lo para fora — e tirava a calibragem de todos os handlers.
+      if (!f.endsWith('.json') || f.startsWith(PREFIX) || f.endsWith(COMPANION_SUFFIX)) continue;
+      if (!statSync(join(COPILOT.HOOKS, f)).isFile()) continue;
+      result.orfaos.push(f);
+    }
+    if (result.orfaos.length > 0) {
+      console.warn(
+        `[neural-link] ${result.orfaos.length} declaração(ões) avulsa(s) em ${COPILOT.HOOKS} ` +
+        `fora do dispatcher (${result.orfaos.join(', ')}) — se o handler correspondente já está ` +
+        `no neural-link.config.json, ele roda em DOBRO a cada evento. Mova pra fora de hooks/ ` +
+        `se já estiver coberto pelo dispatcher.`
+      );
     }
   }
 

@@ -129,6 +129,15 @@ export const GLOBAL_HOOK_EVENTS = [
   'PreCompact',
 ];
 
+/**
+ * Sufixo do arquivo de calibragem que viaja junto com um hook.
+ *
+ * Existe como constante porque dois lados dependem dele: quem LÊ a calibragem (descoberta) e
+ * quem a torna inerte para o host (selo). Duplicar a string faria os dois divergirem em
+ * silêncio na primeira renomeação.
+ */
+export const COMPANION_SUFFIX = '.neural-link.json';
+
 /** Script extensions per platform */
 export const PLATFORM_EXTENSIONS = {
   win32: '.ps1',
