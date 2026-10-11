@@ -83,7 +83,9 @@ export function guardedCommand(entry, event) {
     '\' - evento liberado SEM rodar handlers. Reinstale o runtime (engine-registry ensureNeuralLink) e rode neural-link install.\';' +
     'process.stderr.write(m+\'\\n\');';
   const contexto = event === 'SessionStart'
-    ? 'process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:\'SessionStart\',additionalContext:m}}));'
+    // As duas formas: o Copilot CLI só consome `additionalContext` no TOPO do objeto (doc de
+    // hooks-reference); `hookSpecificOutput` é o formato do Claude Code.
+    ? 'process.stdout.write(JSON.stringify({additionalContext:m,hookSpecificOutput:{hookEventName:\'SessionStart\',additionalContext:m}}));'
     : '';
   return 'node -e "var f=\'' + f + '\';' +
     'if(require(\'fs\').existsSync(f)){import(require(\'url\').pathToFileURL(f).href)}' +
