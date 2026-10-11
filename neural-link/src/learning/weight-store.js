@@ -11,7 +11,7 @@
 
 import { readFileSync, existsSync, copyFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { writeFile, mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { PATHS, FILES } from '../infra/paths.js';
 
 const WEIGHT_PATH_HINT = join(PATHS.BASE, '.weight-path-hint');
@@ -69,17 +69,43 @@ export class WeightStore {
     }
     candidates.push(FILES.LEARNED_WEIGHTS);
     candidates.push(FILES.BACKUP_WEIGHTS);
+    // Por último, a cópia de fora da pasta do runtime: só chega aqui quando a pasta foi
+    // apagada ou recriada — e então os pesos voltam para o lugar em vez de recomeçar do zero.
+    candidates.push(FILES.SAFE_WEIGHTS);
+    candidates.push(FILES.SAFE_WEIGHTS_PREV);
 
     for (const path of candidates) {
       const result = this._tryRead(path);
       if (result) {
         this._loadedFrom = path;
-        this._writePathHint(path);
+        if (path === FILES.SAFE_WEIGHTS || path === FILES.SAFE_WEIGHTS_PREV) {
+          this._restaurar(path);
+        } else {
+          this._writePathHint(path);
+        }
         return result;
       }
     }
 
     return null;
+  }
+
+  /**
+   * Devolve a cópia segura para `weights/learned.json` quando a pasta do runtime foi recriada.
+   *
+   * Sem isto o learner até carregaria da cópia, mas o arquivo principal só renasceria no próximo
+   * `save` — e um novo sumiço antes disso não teria nada no lugar. Avisa no stderr: restaurar é
+   * sintoma de que alguém apagou a pasta, e isso tem de aparecer.
+   */
+  _restaurar(origem) {
+    try {
+      mkdirSync(PATHS.WEIGHTS, { recursive: true });
+      copyFileSync(origem, FILES.LEARNED_WEIGHTS);
+      this._writePathHint(FILES.LEARNED_WEIGHTS);
+      console.error(`[neural-link] pesos restaurados de ${origem} (a pasta do runtime tinha sumido)`);
+    } catch (e) {
+      console.error(`[neural-link] pesos carregados de ${origem}, mas a restauracao falhou: ${e.message}`);
+    }
   }
 
   /**
@@ -122,6 +148,20 @@ export class WeightStore {
       await writeFile(FILES.LEARNED_WEIGHTS, json);
     } catch {
       // Persistence failure is non-critical
+    }
+
+    // Cópia rotativa fora da pasta do runtime (a anterior vira `prev`): é a que sobrevive se
+    // `~/.copilot/neural-link` for apagada inteira, como aconteceu em 2026-10-11.
+    try {
+      await mkdir(dirname(FILES.SAFE_WEIGHTS), { recursive: true });
+      if (existsSync(FILES.SAFE_WEIGHTS)) {
+        copyFileSync(FILES.SAFE_WEIGHTS, FILES.SAFE_WEIGHTS_PREV);
+      }
+      await writeFile(FILES.SAFE_WEIGHTS, json);
+    } catch (e) {
+      // Não derruba o dispatch, mas não pode sumir em silêncio: sem a cópia, o próximo
+      // apagamento da pasta leva os pesos de novo.
+      console.error(`[neural-link] copia segura dos pesos falhou: ${e.message}`);
     }
   }
 

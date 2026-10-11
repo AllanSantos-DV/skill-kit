@@ -12,7 +12,6 @@
 
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, resolve, normalize } from 'node:path';
-import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import { PATHS, FILES, COPILOT } from '../infra/paths.js';

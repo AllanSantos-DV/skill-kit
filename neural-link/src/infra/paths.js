@@ -38,9 +38,16 @@ export const PATHS = {
   DEBUG: join(BASE, 'debug'),
 };
 
+// Cópia dos pesos FORA da pasta do runtime. `learned.backup.json` mora ao lado de `learned.json`:
+// em 2026-10-11 a pasta inteira sumiu e levou os dois. A irmã `<base>-backup` sobrevive a quem
+// apaga ou reinstala o runtime.
+const SAFE_WEIGHTS = `${BASE}-backup`;
+
 export const FILES = {
   LEARNED_WEIGHTS: join(PATHS.WEIGHTS, 'learned.json'),
   BACKUP_WEIGHTS: join(PATHS.WEIGHTS, 'learned.backup.json'),
+  SAFE_WEIGHTS: join(SAFE_WEIGHTS, 'learned.json'),
+  SAFE_WEIGHTS_PREV: join(SAFE_WEIGHTS, 'learned.prev.json'),
 };
 
 export const COPILOT = {
