@@ -18,7 +18,6 @@
 
 import { extractFeatures, classifyCommand } from './features.js';
 import { getLearner } from './learner.js';
-import { SAVE_INTERVAL } from '../infra/constants.js';
 
 // Error patterns in tool_response
 const ERROR_PATTERNS = /\berror\b|\bfailed\b|\bfailure\b|\bexit code [1-9]|\bEXIT_FAILURE\b|\bENOENT\b|\bEACCES\b|\bcommand not found\b|\bPermission denied\b|\bfatal:/i;
@@ -57,12 +56,8 @@ export async function processFeedback(context, scored, results, learningConfig) 
     // we don't update — absence of activation is not a signal.
   }
 
-  // Fire-and-forget save (every N events to minimize I/O)
-  const totalActivations = Object.values(learner.activations)
-    .reduce((a, b) => a + b, 0);
-  if (totalActivations % SAVE_INTERVAL === 0) {
-    learner.save().catch(() => {});
-  }
+  // Gravação: uma vez por evento, no `saveStage` do dispatcher — depois de TODOS os estágios
+  // que atualizam o learner, não só este.
 }
 
 /**

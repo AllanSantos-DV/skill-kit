@@ -57,7 +57,7 @@ function createResponsePipeline() {
 
 /**
  * Create the deferred pipeline (post-response stages).
- * Stages: logger → record → feedback → postTool → falseNeg.
+ * Stages: logger → record → feedback → postTool → falseNeg → save.
  */
 function createDeferredPipeline() {
   return createPipeline()
@@ -65,7 +65,8 @@ function createDeferredPipeline() {
     .use(recordDecisionsStage)
     .use(feedbackStage)
     .use(postToolFeedbackStage)
-    .use(falseNegativeStage);
+    .use(falseNegativeStage)
+    .use(saveStage);
 }
 
 /**
@@ -85,7 +86,8 @@ function createDefaultPipeline() {
     .use(filterStage)
     .use(executeStage)
     .use(composeStage)
-    .use(postResponseStage);
+    .use(postResponseStage)
+    .use(saveStage);
 }
 
 /**
@@ -281,6 +283,22 @@ async function postToolFeedbackStage(ctx) {
   await tryNonCriticalAsync(
     () => processPostToolFeedback(ctx.context, ctx.config, ctx.config.learning || {}),
     'processPostToolFeedback'
+  );
+  return ctx;
+}
+
+/**
+ * Grava o learner UMA vez, depois de todos os estágios que o atualizam.
+ *
+ * Cada evento de hook é um processo que sai em seguida. Gravar "a cada N ativações"
+ * (`totalActivations % 50`) pressupunha um processo de vida longa: aqui o total de um evento
+ * quase nunca caía num múltiplo, e tudo o que o evento aprendeu morria com o processo — medido
+ * em 2026-10-11, `weights/` nunca era recriado. `save()` não faz nada quando nada mudou.
+ */
+async function saveStage(ctx) {
+  await tryNonCriticalAsync(
+    async () => (await getLearner(ctx.config?.learning || {})).save(),
+    'learner.save'
   );
   return ctx;
 }
