@@ -94,7 +94,9 @@ export function filterByThreshold(scored, config) {
   // ε-greedy exploration
   const epsilon = config.learning?.epsilon ?? EPSILON;
   if (Math.random() < epsilon) {
-    const belowThreshold = scored.filter(s => !active.includes(s));
+    // Score 0 é veto explícito (modifier =0.0), não "quase passou": explorar ressuscitava o
+    // handler vetado em ~5% das chamadas — e o teste que afirma o veto falhava na mesma taxa.
+    const belowThreshold = scored.filter(s => !active.includes(s) && s.score > 0);
     if (belowThreshold.length > 0) {
       // Pick the one closest to threshold (most likely to be useful)
       belowThreshold.sort((a, b) => b.score - a.score);

@@ -1,6 +1,5 @@
 import { readFileSync, existsSync, writeFileSync, mkdirSync, unlinkSync } from 'node:fs';
 import { join, dirname, resolve, normalize } from 'node:path';
-import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { PATHS, COPILOT } from './paths.js';
 import { REGISTRATION_MODES, REGISTRATION_SOURCES } from './constants.js';
