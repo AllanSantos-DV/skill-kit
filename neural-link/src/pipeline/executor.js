@@ -2,7 +2,8 @@ import { spawn } from 'node:child_process';
 import { homedir } from 'node:os';
 import { resolve, normalize, isAbsolute } from 'node:path';
 import { existsSync, statSync } from 'node:fs';
-import { HANDLER_TIMEOUT_MS } from '../infra/constants.js';
+import { resolveHandlerTimeout } from '../infra/handler-timeout.js';
+import { sense } from './sensor.js';
 
 const isWindows = process.platform === 'win32';
 
@@ -72,7 +73,9 @@ function checkRoutingSkip(handlerName, handlerConfig, stdinJson, resolvedAgent) 
 export async function executeHandlers(active, stdinJson, config, context = null) {
   const sanitizedStdin = sanitizeStdinForHandlers(stdinJson);
   const stdinStr = JSON.stringify(sanitizedStdin);
-  const eventType = stdinJson.event ?? '';
+  // The pipeline already resolved event / hook_event_name / hookEventName. Reuse that
+  // context; direct callers without it use the same sensor, never a second alias list.
+  const eventType = context?.event_type ?? sense(stdinJson).event_type;
 
   const promises = active.map(({ name, handler, score }) => {
     // Check routing skipWhen rules before executing
@@ -83,10 +86,7 @@ export async function executeHandlers(active, stdinJson, config, context = null)
       return Promise.resolve({ name, score, result: { ...FAIL_OPEN_RESULT }, skipped: true });
     }
 
-    const timeout = handler.timeout
-      ?? config.eventTimeouts?.[eventType]
-      ?? config.defaultTimeout
-      ?? HANDLER_TIMEOUT_MS;
+    const timeout = resolveHandlerTimeout(handler, config, eventType);
 
     const handlerExec = runHandler(name, handler, stdinStr, timeout);
 

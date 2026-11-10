@@ -17,8 +17,13 @@ import { GLOBAL_HOOK_EVENTS, COMPANION_SUFFIX } from './infra/constants.js';
 import { loadConfig } from './infra/config.js';
 import { autoRegister } from './discovery.js';
 import { selarCompanions } from './companions.js';
+import { guardedCommand } from './infra/hook-launcher.js';
+import { resolveHandlerTimeout } from './infra/handler-timeout.js';
+
+export { guardedCommand, guardedScript } from './infra/hook-launcher.js';
 
 const PREFIX = '_dispatcher-';
+const DISABLED_SUFFIXES = ['.disable', '.disabled'];
 
 /**
  * Caminho do dispatcher que as declarações devem invocar.
@@ -54,52 +59,21 @@ export function eventsInUse(config) {
     if (handler?.enabled === false) continue;
     for (const ev of handler?.events ?? []) {
       if (!GLOBAL_HOOK_EVENTS.includes(ev)) { ignorados.add(ev); continue; }
-      const needed = Math.ceil((handler.timeout ?? 5000) / 1000) + 5;
+      const needed = Math.ceil(resolveHandlerTimeout(handler, config, ev) / 1000) + 5;
       events.set(ev, Math.max(events.get(ev) ?? 10, needed));
     }
   }
   return { events, ignorados: [...ignorados] };
 }
 
-/**
- * Comando que a declaração executa: confere o entry ANTES de carregá-lo.
- *
- * `node <entry>` direto morre com MODULE_NOT_FOUND quando a pasta do runtime some, e o host trata
- * PreToolUse que falha como negação — UMA pasta apagada negou todas as ferramentas do Copilot
- * (2026-10-11). Nada do dispatcher roda nesse caso, então a proteção tem de viver aqui: entry
- * ausente libera o evento (exit 0, sem handlers) e grita no stderr; entry presente é importado
- * e qualquer outra falha continua derrubando o processo, como antes.
- *
- * O host NÃO grava o stderr de hook que sai com 0 (medido em 2026-10-11), então no SessionStart
- * o aviso também vai como `additionalContext`: é o único canal que chega a alguém — o agente
- * lê e repassa. Nos outros eventos, contexto extra a cada ferramenta seria ruído.
- *
- * O texto passa por shell (cmd, PowerShell ou bash, conforme o host): nada de aspas duplas
- * internas, `$`, crase, `!`, `%` ou redirecionamento.
- */
-export function guardedCommand(entry, event) {
-  const f = entry.replace(/\\/g, '/').replace(/'/g, '\\x27');
-  const aviso = 'var m=\'[neural-link] dispatcher ausente em \'+f+' +
-    '\' - evento liberado SEM rodar handlers. Reinstale o runtime (engine-registry ensureNeuralLink) e rode neural-link install.\';' +
-    'process.stderr.write(m+\'\\n\');';
-  const contexto = event === 'SessionStart'
-    // As duas formas: o Copilot CLI só consome `additionalContext` no TOPO do objeto (doc de
-    // hooks-reference); `hookSpecificOutput` é o formato do Claude Code.
-    ? 'process.stdout.write(JSON.stringify({additionalContext:m,hookSpecificOutput:{hookEventName:\'SessionStart\',additionalContext:m}}));'
-    : '';
-  return 'node -e "var f=\'' + f + '\';' +
-    'if(require(\'fs\').existsSync(f)){import(require(\'url\').pathToFileURL(f).href)}' +
-    'else{' + aviso + contexto + '}"';
-}
-
 function declaration(event, timeout, entry, count) {
   return JSON.stringify({
     version: 1,
     _comment:
-      `Gerado por 'neural-link install'. ${count} handler(s) de ${event} rodam num processo so. ` +
+      `Gerado por 'neural-link install'. Supervisor isolado para ${count} handler(s) de ${event}. ` +
       `Registro, pesos e escopo ficam no neural-link.config.json — nao edite este arquivo a mao.`,
     hooks: {
-      [event]: [{ type: 'command', command: guardedCommand(entry, event), timeout }],
+      [event]: [{ type: 'command', command: guardedCommand(entry, event, timeout), timeout }],
     },
   }, null, 2) + '\n';
 }
@@ -109,15 +83,17 @@ function declaration(event, timeout, entry, count) {
  *
  * @param {object} [options]
  * @param {boolean} [options.dryRun] - só relata, não escreve
- * @returns {{written: string[], removed: string[], unchanged: string[], entry: string}}
+ * @returns {{written: string[], removed: string[], unchanged: string[], disabled: string[], skipped: object[], entry: string}}
  */
 export function install(options = {}) {
   const { dryRun = false } = options;
-  const config = loadConfig();
-  autoRegister(config);
+  // Discovery mutates config; a preview must not poison the cached config or persist changes.
+  const config = dryRun ? JSON.parse(JSON.stringify(loadConfig())) : loadConfig();
+  const discovery = autoRegister(config, { dryRun });
 
   const entry = dispatcherEntry();
-  if (!existsSync(entry.replace(/\//g, '\\'))) {
+  // `entry` já usa `/`, que o Windows também aceita; trocar por `\` quebrava no Linux/macOS.
+  if (!existsSync(entry)) {
     throw new Error(`dispatcher nao encontrado em ${entry}`);
   }
 
@@ -130,9 +106,46 @@ export function install(options = {}) {
 
   if (!dryRun && !existsSync(COPILOT.HOOKS)) mkdirSync(COPILOT.HOOKS, { recursive: true });
 
-  const result = { written: [], removed: [], unchanged: [], ignorados, entry };
+  const result = { written: [], removed: [], unchanged: [], disabled: [], skipped: [], ignorados, entry, discovery };
+  const protectedEvents = new Set();
+  if (existsSync(COPILOT.HOOKS)) {
+    const files = readdirSync(COPILOT.HOOKS);
+    // An OFF marker wins even when an old installer accidentally recreated the active file.
+    // Never overwrite/rename/delete the marker: it is the user's persistent selection.
+    for (const name of files) {
+      if (!name.startsWith(PREFIX)) continue;
+      const suffix = DISABLED_SUFFIXES.find(s => name.endsWith('.json' + s));
+      if (!suffix) continue;
+      const event = name.slice(PREFIX.length, -('.json' + suffix).length);
+      if (protectedEvents.has(event)) continue;
+      protectedEvents.add(event);
+      result.disabled.push(event);
+      result.skipped.push({ event, reason: 'marker' });
+      const active = join(COPILOT.HOOKS, `${PREFIX}${event}.json`);
+      if (existsSync(active)) {
+        if (!dryRun) unlinkSync(active);
+        result.removed.push(event);
+      }
+    }
+    for (const name of files) {
+      if (!name.startsWith(PREFIX) || !name.endsWith('.json')) continue;
+      const event = name.slice(PREFIX.length, -'.json'.length);
+      if (protectedEvents.has(event)) continue;
+      try {
+        const current = JSON.parse(readFileSync(join(COPILOT.HOOKS, name), 'utf-8'));
+        if (current?.enabled !== false && !current?.hooks?.[event]?.some(h => h.enabled === false)) continue;
+        result.disabled.push(event);
+        result.skipped.push({ event, reason: 'enabled:false' });
+      } catch {
+        // A declaration we cannot interpret is not permission to erase user selection.
+        result.skipped.push({ event, reason: 'invalid declaration' });
+      }
+      protectedEvents.add(event);
+    }
+  }
 
   for (const [event, timeout] of wanted) {
+    if (protectedEvents.has(event)) continue;
     const file = join(COPILOT.HOOKS, `${PREFIX}${event}.json`);
     const content = declaration(event, timeout, entry, counts.get(event) ?? 0);
     const current = existsSync(file) ? readFileSync(file, 'utf-8') : null;
@@ -146,7 +159,7 @@ export function install(options = {}) {
     for (const f of readdirSync(COPILOT.HOOKS)) {
       if (!f.startsWith(PREFIX) || !f.endsWith('.json')) continue;
       const event = f.slice(PREFIX.length, -'.json'.length);
-      if (wanted.has(event)) continue;
+      if (wanted.has(event) || protectedEvents.has(event)) continue;
       if (!dryRun) unlinkSync(join(COPILOT.HOOKS, f));
       result.removed.push(event);
     }

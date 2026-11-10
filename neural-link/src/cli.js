@@ -27,7 +27,8 @@ function commandInstall(dryRun) {
   console.log(`dispatcher: ${r.entry}`);
   if (r.written.length) console.log(`  declarados : ${r.written.join(', ')}`);
   if (r.unchanged.length) console.log(`  ja em dia  : ${r.unchanged.join(', ')}`);
-  if (r.removed.length) console.log(`  removidos  : ${r.removed.join(', ')} (sem handler)`);
+  if (r.removed.length) console.log(`  removidos  : ${r.removed.join(', ')} (sem handler ou marker OFF)`);
+  for (const item of r.skipped) console.log(`  preservado : ${item.event} (${item.reason})`);
   if (r.ignorados?.length) {
     console.log(`\n  ATENCAO — eventos IGNORADOS: ${r.ignorados.join(', ')}`);
     console.log('  O host nao entrega esses eventos a declaracoes globais; eles pertencem a');

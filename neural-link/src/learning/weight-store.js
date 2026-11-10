@@ -11,10 +11,24 @@
 
 import { readFileSync, existsSync, copyFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { writeFile, mkdir } from 'node:fs/promises';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
 import { PATHS, FILES } from '../infra/paths.js';
 
 const WEIGHT_PATH_HINT = join(PATHS.BASE, '.weight-path-hint');
+
+/**
+ * Arquivo de pesos de um workspace, dentro da pasta do runtime: nada é gravado na pasta do
+ * projeto, e apagar a pasta do runtime leva os pesos por workspace junto com os globais.
+ *
+ * @param {string} workspacePath cwd do evento
+ * @returns {string}
+ */
+export function workspaceWeightsFile(workspacePath) {
+  const chave = resolve(workspacePath).replace(/\\/g, '/').toLowerCase();
+  const id = createHash('sha256').update(chave).digest('hex').slice(0, 16);
+  return join(PATHS.WORKSPACE_WEIGHTS, `${id}.json`);
+}
 
 /**
  * Persistent weight storage with backup fallback.
@@ -52,7 +66,7 @@ export class WeightStore {
 
     // E-02: Try last-known-good path hint first (fast path)
     const hintPath = this._readPathHint();
-    if (hintPath) {
+    if (hintPath && this._hintPermitido(hintPath)) {
       const result = this._tryRead(hintPath);
       if (result) {
         this._loadedFrom = hintPath;
@@ -63,7 +77,7 @@ export class WeightStore {
     // Full cascade fallback
     const candidates = [];
     if (this._workspacePath) {
-      const wsFile = join(this._workspacePath, '.neural-link.weights.json');
+      const wsFile = workspaceWeightsFile(this._workspacePath);
       candidates.push(wsFile);
       candidates.push(wsFile.replace('.json', '.backup.json'));
     }
@@ -125,9 +139,10 @@ export class WeightStore {
 
     // Save to workspace if available
     if (this._workspacePath) {
-      const wsPath = join(this._workspacePath, '.neural-link.weights.json');
+      const wsPath = workspaceWeightsFile(this._workspacePath);
       const wsBackup = wsPath.replace('.json', '.backup.json');
       try {
+        await mkdir(PATHS.WORKSPACE_WEIGHTS, { recursive: true });
         if (existsSync(wsPath)) {
           copyFileSync(wsPath, wsBackup);
         }
@@ -163,6 +178,23 @@ export class WeightStore {
       // apagamento da pasta leva os pesos de novo.
       console.error(`[neural-link] copia segura dos pesos falhou: ${e.message}`);
     }
+  }
+
+  /**
+   * A dica só vale para o que este processo usaria primeiro: os arquivos do próprio workspace
+   * ou, sem workspace, os globais. Sem isto, a dica de outro workspace emprestava os pesos dele
+   * a este, um global mais genérico vencia o arquivo específico, e dicas antigas apontando para
+   * `<cwd>/.neural-link.weights.json` seguiam valendo.
+   *
+   * @param {string} caminho
+   * @returns {boolean}
+   */
+  _hintPermitido(caminho) {
+    if (this._workspacePath) {
+      const ws = workspaceWeightsFile(this._workspacePath);
+      return caminho === ws || caminho === ws.replace('.json', '.backup.json');
+    }
+    return [FILES.LEARNED_WEIGHTS, FILES.BACKUP_WEIGHTS, FILES.SAFE_WEIGHTS, FILES.SAFE_WEIGHTS_PREV].includes(caminho);
   }
 
   /**

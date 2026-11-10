@@ -277,6 +277,7 @@ export function normalizeRegistration(registration) {
  * @param {object} config - The loaded neural-link config object
  * @param {object} [options] - Discovery options
  * @param {string} [options.workingDirectory] - CWD for resolving workspace hooks
+ * @param {boolean} [options.dryRun] - mutate the supplied preview config, but do not persist
  * @returns {{ registered: string[], disabled: string[], reenabled?: string[] }}
  *   registered — names that were added to config
  *   disabled   — names whose scripts are gone (marked enabled:false)
@@ -286,7 +287,7 @@ export function autoRegister(config, options = {}) {
   const result = { registered: [], disabled: [] };
 
   const reg = normalizeRegistration(config.registration);
-  const { workingDirectory } = options;
+  const { workingDirectory, dryRun = false } = options;
   const handlers = config.handlers ?? {};
   let dirty = false;
 
@@ -330,7 +331,7 @@ export function autoRegister(config, options = {}) {
   if (dirty) { config.handlers = handlers; }
 
   if (reg.mode !== 'auto') {
-    if (dirty) { writeConfigFile(config); }
+    if (dirty && !dryRun) { writeConfigFile(config); }
     return result;
   }
 
@@ -384,7 +385,7 @@ export function autoRegister(config, options = {}) {
   // 4. Persist to config file if anything changed
   if (dirty) {
     config.handlers = handlers;
-    writeConfigFile(config);
+    if (!dryRun) writeConfigFile(config);
   }
 
   return result;

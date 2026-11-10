@@ -34,6 +34,7 @@ const BASE = doAmbiente('NEURAL_LINK_HOME') ?? join(COPILOT_ROOT, 'neural-link')
 export const PATHS = {
   BASE,
   WEIGHTS: join(BASE, 'weights'),
+  WORKSPACE_WEIGHTS: join(BASE, 'weights', 'workspaces'),
   LOGS: join(BASE, 'logs'),
   DEBUG: join(BASE, 'debug'),
 };
