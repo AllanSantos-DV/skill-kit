@@ -275,31 +275,21 @@ foreach ($file in $agentFiles) {
     }
 
     # --- Hook tests (bug workaround) ---
-    # Note: PreToolUse hooks may be in hooks/hooks.json (global) instead of frontmatter
     $hasHooks = Has-FmSection -Frontmatter $frontmatter -Section 'hooks'
-    $hasPreToolUse = Has-FmSection -Frontmatter $frontmatter -Section '  PreToolUse'
-    # Also check indented form
-    if (-not $hasPreToolUse) {
-        foreach ($line in ($frontmatter -split "`n")) {
-            if ($line -match '^\s*PreToolUse:') {
-                $hasPreToolUse = $true
-                break
-            }
+    $hasPreToolUse = $false
+    foreach ($line in ($frontmatter -split "`n")) {
+        if ($line -match '^\s*PreToolUse:') {
+            $hasPreToolUse = $true
+            break
         }
     }
 
-    # 6. If has hooks:, check for PreToolUse: (crash workaround) — or global hooks.json
-    $hooksJsonPath = Join-Path $PSScriptRoot '..\..\hooks\hooks.json'
-    $hasGlobalPreToolUse = $false
-    if (Test-Path $hooksJsonPath) {
-        $hooksJsonContent = Get-Content $hooksJsonPath -Raw -ErrorAction SilentlyContinue
-        if ($hooksJsonContent -match '"PreToolUse"') { $hasGlobalPreToolUse = $true }
-    }
+    # 6. An agent with hooks: but no PreToolUse crashes as a subagent
     if ($hasHooks) {
-        if ($hasPreToolUse -or $hasGlobalPreToolUse) {
-            Pass "PreToolUse: present (frontmatter or hooks.json)"
+        if ($hasPreToolUse) {
+            Pass "PreToolUse: present in frontmatter"
         } else {
-            Fail "PreToolUse: present (frontmatter or hooks.json)" "hooks: present but PreToolUse: missing everywhere — will crash as subagent"
+            Fail "PreToolUse: present in frontmatter" "hooks: present but PreToolUse: missing — will crash as subagent"
         }
     }
 
