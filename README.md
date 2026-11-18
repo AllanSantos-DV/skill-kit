@@ -64,7 +64,7 @@ Agents são **personas determinísticas** que controlam como o Copilot opera. Ca
 
 ### Hooks (10)
 
-Hooks são **scripts de lifecycle** que rodam automaticamente durante a interação do agente. Funcionam como guardrails em tempo real. Cada hook é um arquivo JavaScript (`.js`) cross-platform, executado via Node.js. Os hooks **globais** são configurados em `hooks/hooks.json` e os **agent-scoped** ficam no frontmatter de cada agent.
+Hooks são **scripts de lifecycle** que rodam automaticamente durante a interação do agente. Funcionam como guardrails em tempo real. Cada hook é um arquivo JavaScript (`.js`) cross-platform, executado via Node.js. Os hooks **globais** viajam com um companion `<hook>.neural-link.json` (evento, timeout, peso) e quem os registra no host é o dispatcher do neural-link; o repositório não declara hooks globais. Os **agent-scoped** ficam no frontmatter de cada agent.
 
 Hooks que acessam APIs sensíveis (fs, child_process, net, etc.) declaram um header `// @permissions: <tokens>` logo após o shebang/comentário descritivo. Essa convenção é compatível com o detector security-supply-chain do Skill Manager — declarar explicitamente evita o diálogo "Permission mismatch" no sync. Tokens canônicos: `fs.read`, `fs.write`, `net.fetch`, `exec`, `env`, `vscode.api`.
 
@@ -258,7 +258,7 @@ Crie scripts `.js` em `hooks/`:
 ```
 hooks/
   nome-do-hook.js   ← JavaScript cross-platform (Node.js)
-  hooks.json        ← Config de hooks globais
+  nome-do-hook.neural-link.json  ← Companion do hook global (evento, timeout, peso)
 ```
 
 Use a skill **hooks-creator** para orientação completa:

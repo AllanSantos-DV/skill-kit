@@ -369,8 +369,8 @@
       Hooks são scripts JavaScript (Node.js) determinísticos executados em eventos específicos do ciclo de vida
       de uma sessão de agente. Diferente de instruções (que o agente pode ignorar), hooks
       <strong>garantem execução</strong> — rodam como processos reais, recebem JSON via stdin e
-      retornam JSON via stdout. Os hooks globais são configurados em <code>hooks/hooks.json</code> e os
-      agent-scoped ficam no frontmatter de cada agent.
+      retornam JSON via stdout. Os hooks globais viajam com um companion <code>&lt;hook&gt;.neural-link.json</code> e são registrados pelo
+      dispatcher do neural-link; os agent-scoped ficam no frontmatter de cada agent.
     </p>
     <p>
       O output do hook comunica uma decisão ao agente. As formas principais são:
