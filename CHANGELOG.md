@@ -3,6 +3,25 @@
 Todas as mudanças notáveis do projeto são documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [0.9.0] — 2026-11-18
+
+### Adicionado
+- **doc-to-markdown**: `convert.py --ocr` agora usa o plugin `markitdown-ocr` com cliente LLM (novo `--llm-model`) e falha com mensagem clara se faltar o plugin, o `openai` ou o modelo.
+- **tests/hooks/doc-to-markdown-skill.test.js** — 6 testes que prendem a redação da skill ao que o markitdown converte de fato.
+- **guard**: staging escopado, dirty-check nos comandos destrutivos e cobertura de `tool_name`; normalização de caixa do comando sem afetar os flags (inclui o alias curto).
+- **hooks**: dispatcher único do neural-link com a calibragem viajando em cada hook (`<hook>.neural-link.json`); descoberta de companions em `hooks/scripts`; publicação no engine-registry.
+
+### Corrigido
+- **doc-to-markdown**: `.doc` e `.ppt` deixam de ser listados como lidos pelo markitdown (converter antes com LibreOffice); `.xls` só pelo extra `[xls]`; imagem rende EXIF e legenda, texto exige o plugin de OCR e um cliente LLM; `[all]` não traz OCR e pode resolver para versão antiga. `SUPPORTED` dos scripts alinhado.
+- **agents**: `implementor`, `orchestrator`, `researcher` e `validator` declaram `PreToolUse` no frontmatter (agent só com `Stop`/`SubagentStart` derruba o subagente).
+- **hooks**: companions selados para o host parar de rejeitá-los; `verify-claims` checa existência no disco; companion sem caminho fixo; o aviso de calibragem não desliga mais o `SessionStart`; `executor` repassa os args do handler.
+- **install**: recusa evento que o host não entrega e não aponta a máquina inteira para um checkout de desenvolvimento.
+- **docs**: README e guide dos hooks descrevem o registro pelo dispatcher, sem o `hooks.json` removido; exemplo do skill-creator sem nome pessoal.
+
+### Removido
+- Workflow de CI hospedado (rodava testes em runner Windows); os testes rodam localmente.
+- Backups `.legado` do controle de versão.
+
 ## [0.8.0] — 2026-07-01
 
 ### Adicionado
