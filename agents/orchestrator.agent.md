@@ -21,6 +21,10 @@ handoffs:
     prompt: "Implement the task described above."
     send: false
 hooks:
+  PreToolUse:
+    - type: command
+      command: "node hooks/pre-commit-guard.js"
+      timeout: 10
   SubagentStart:
     - type: command
       command: "node hooks/subagent-audit.js"

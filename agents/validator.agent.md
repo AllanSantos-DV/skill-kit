@@ -12,6 +12,10 @@ handoffs:
     prompt: "Implement the validated plan above. Follow the key decisions, respect the constraints identified, and produce a task map documenting your implementation decisions."
     send: false
 hooks:
+  PreToolUse:
+    - type: command
+      command: "node hooks/pre-commit-guard.js"
+      timeout: 10
   Stop:
     - type: command
       command: "node hooks/output-format.js"
