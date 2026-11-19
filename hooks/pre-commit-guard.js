@@ -12,11 +12,16 @@
 // - git stash drop/clear: ask (loses stashed changes)
 // - Remove-Item -Recurse -Force: deny (PS equivalent of rm -rf)
 // - Destructive filesystem commands (rm -rf, etc.): deny
+// - git commit: deny when the staged changes add a credential or stage a credential file
+// - Write/Edit tools: deny content that carries a credential
 // - Most restrictive wins: deny > ask > allow
+// - Escape hatch (user-controlled): SKILL_KIT_ALLOW_SECRETS=1 in the environment, or the
+//   skill-kit:allow-secret marker on the line itself
 
 'use strict';
 const { readStdinJson, emitResponse } = require('./_lib/hook-io');
 const { spawnSync } = require('node:child_process');
+const credentials = require('./_lib/credential-scan');
 
 // Tool names that carry a shell command. `run_in_terminal`/`Bash` alone left PowerShell
 // and other terminal tools completely unguarded, so a destructive command issued through
@@ -25,6 +30,51 @@ const TERMINAL_TOOLS = new Set([
   'run_in_terminal', 'bash', 'shell', 'powershell', 'terminal',
   'execution_subagent', 'copilot-delegate_run_shell',
 ]);
+
+// Tools that write file content, and the input keys that carry the text being written.
+const WRITE_TOOLS = new Set([
+  'write', 'edit', 'multiedit', 'create_file', 'write_file', 'edit_file',
+  'replace_string_in_file', 'multi_replace_string_in_file', 'insert_edit_into_file',
+]);
+const WRITTEN_TEXT_KEYS = ['content', 'new_string', 'newString', 'file_text', 'text', 'new_str', 'insert_text'];
+
+/**
+ * Why a `git commit` must not go ahead because of what it records, or '' when it may.
+ * Findings name file, line and kind; the secret itself is never printed.
+ *
+ * @param {string} cwd - Repository directory.
+ * @returns {string}
+ */
+function stagedCredentialReason(cwd) {
+  if (credentials.guardDisabled()) return '';
+  const review = credentials.reviewStaged(cwd || process.cwd());
+  if (!review.ok) return '';
+  const parts = review.findings.slice(0, 5).map((f) => f.kind + ' at ' + f.file + ':' + f.line);
+  for (const f of review.files.slice(0, 5)) parts.push('credential file staged: ' + f);
+  if (!parts.length) return '';
+  return 'Staged changes contain credentials (' + parts.join('; ') + '). Unstage them and keep the value in the environment. ' +
+    'If it is not a secret, add `' + credentials.ALLOW_MARKER + '` to that line, or the user can set ' + credentials.ALLOW_ENV + '=1.';
+}
+
+/**
+ * Why a write tool call must be denied, or '' when it may go ahead.
+ *
+ * @param {object} toolInput - The tool's input payload.
+ * @returns {string}
+ */
+function writeCredentialReason(toolInput) {
+  if (credentials.guardDisabled() || !toolInput || typeof toolInput !== 'object') return '';
+  const texts = WRITTEN_TEXT_KEYS.map((k) => toolInput[k]).filter((v) => typeof v === 'string');
+  for (const e of Array.isArray(toolInput.edits) ? toolInput.edits : []) {
+    if (e && typeof e.new_string === 'string') texts.push(e.new_string);
+    if (e && typeof e.newString === 'string') texts.push(e.newString);
+  }
+  const findings = texts.flatMap((t) => credentials.scanText(t));
+  if (!findings.length) return '';
+  const where = findings.slice(0, 5).map((f) => f.kind + ' at line ' + f.line).join('; ');
+  return 'The content being written contains credentials (' + where + '). Keep the value in the environment. ' +
+    'If it is not a secret, add `' + credentials.ALLOW_MARKER + '` to that line, or the user can set ' + credentials.ALLOW_ENV + '=1.';
+}
 
 /**
  * Is the working tree dirty (uncommitted changes or untracked files)?
@@ -302,6 +352,12 @@ function evaluateCommand(cmd, cwd) {
       contexts.push('Commit must include -m with a conventional commit message');
       finalDecision = 'deny';
     }
+
+    const credentialReason = stagedCredentialReason(cwd);
+    if (credentialReason) {
+      contexts.push(credentialReason);
+      finalDecision = 'deny';
+    }
   }
 
   return { decision: finalDecision, reasons: contexts, matched: hasGitCommand, treeDirty };
@@ -341,8 +397,14 @@ function runCheck(argv) {
  */
 function runHook() {
   readStdinJson((inputJson) => {
-    const toolName = String(inputJson.tool_name || '');
-    if (!TERMINAL_TOOLS.has(toolName.toLowerCase())) {
+    const toolName = String(inputJson.tool_name || '').toLowerCase();
+    if (WRITE_TOOLS.has(toolName)) {
+      const reason = writeCredentialReason(inputJson.tool_input);
+      if (!reason) process.exit(0);
+      emitResponse({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } });
+      return;
+    }
+    if (!TERMINAL_TOOLS.has(toolName)) {
       process.exit(0);
     }
 
@@ -371,4 +433,4 @@ if (require.main === module) {
   runHook();
 }
 
-module.exports = { evaluateCommand, isTreeDirty };
+module.exports = { evaluateCommand, isTreeDirty, writeCredentialReason };

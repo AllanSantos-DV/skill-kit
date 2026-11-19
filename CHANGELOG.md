@@ -13,6 +13,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - **pre-commit-guard**: `--check "<comando>"` mostra a decisão sem executar.
 - **session-context**: após compactação aponta o último snapshot do `context-save` (menos de 24 h).
 - **skill-feedback**: avisa quando as reviews de uma skill ou de um agent atingem o `threshold` do `FEEDBACK.md` / `agents/.feedback/<agent>.md`.
+- **pre-commit-guard**: nega `git commit` cujo diff staged adiciona credencial (formatos de provedor com prefixo e tamanho fixos, cabeçalho de chave privada) ou prepara arquivo de credencial (`.env`, `*.pem`, `id_rsa`; `.env.example` passa), e nega escrita de agente (Write/Edit/MultiEdit/`create_file`…) com credencial no conteúdo. O motivo diz arquivo, linha e tipo, nunca o valor. Saída de emergência do usuário: `SKILL_KIT_ALLOW_SECRETS=1` ou o marcador `skill-kit:allow-secret` na linha.
+- **stop-alert**: alerta desktop (PowerShell oculto no Windows, bell no resto) quando uma execução longa termina; desligado por padrão, `SKILL_KIT_STOP_ALERT=<segundos>` liga, `SKILL_KIT_STOP_ALERT_CMD` troca o alerta; duração desconhecida fica em silêncio.
+- **post-edit-lint**: depois de uma edição roda o linter do projeto (`.skill-kit/lint.json`, opt-in) no arquivo e devolve a saída como contexto; nunca bloqueia, e config quebrada ou linter que não roda aparecem no contexto.
 - **agents**: os comandos de hook declaram `--hook-origin=skill-kit`.
 - **tests/hooks/doc-to-markdown-skill.test.js** — 6 testes que prendem a redação da skill ao que o markitdown converte de fato.
 - **guard**: staging escopado, dirty-check nos comandos destrutivos e cobertura de `tool_name`; normalização de caixa do comando sem afetar os flags (inclui o alias curto).

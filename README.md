@@ -70,12 +70,14 @@ Hooks que acessam APIs sensíveis (fs, child_process, net, etc.) declaram um hea
 
 | Hook | Evento | Escopo | Propósito |
 |------|--------|--------|-----------|
-| [pre-commit-guard](hooks/pre-commit-guard.js) | PreToolUse | Global | Garante conventional commits. Bloqueia commits sem formato adequado e operações destrutivas. `node hooks/pre-commit-guard.js --check "<comando>"` mostra a decisão (allow/ask/deny) e o motivo sem executar o comando. |
+| [pre-commit-guard](hooks/pre-commit-guard.js) | PreToolUse | Global | Garante conventional commits. Bloqueia commits sem formato adequado e operações destrutivas, commits cujo diff staged adiciona credencial (ou prepara `.env`, `*.pem`, chaves privadas) e escritas de agente com credencial no conteúdo. Saída de emergência controlada pelo usuário: `SKILL_KIT_ALLOW_SECRETS=1` no ambiente, ou o marcador `skill-kit:allow-secret` na própria linha. `node hooks/pre-commit-guard.js --check "<comando>"` mostra a decisão (allow/ask/deny) e o motivo sem executar o comando. |
 | [lesson-injector](hooks/lesson-injector.js) | PreToolUse | Global | Injeta lições aprendidas relevantes (do error-learning) no contexto. |
 | [verify-claims](hooks/verify-claims.js) | Stop | Global | Exige verificação de fatos antes de declarar afirmações. |
 | [context-confidence-check](hooks/context-confidence-check.js) | Stop | Global | Avalia confiança do contexto antes de agir — previne hallucination. |
 | [skill-feedback](hooks/skill-feedback.js) | Stop | Global | Captura feedback de skills usadas com Feedback Protocol e avisa quando as reviews em `.vscode/skill-reviews/<skill>/` atingem o `threshold` do `FEEDBACK.md`. |
 | [output-format](hooks/output-format.js) | Stop | Agent | Injeta regras de formatação de output (researcher/validator). |
+| [stop-alert](hooks/stop-alert.js) | Stop | Global | Alerta desktop quando uma execução longa termina. Desligado por padrão: `SKILL_KIT_STOP_ALERT=<segundos>` (ou `on` = 120) liga; `SKILL_KIT_STOP_ALERT_CMD` troca o alerta embutido por um comando seu. Duração desconhecida fica em silêncio; nunca bloqueia. |
+| [post-edit-lint](hooks/post-edit-lint.js) | PostToolUse | Global | Depois de uma edição, roda o linter do projeto no arquivo e devolve a saída ao agente. Opt-in por projeto em `.skill-kit/lint.json` (`{"commands":{"js":"npx eslint {file}"}}`); nunca bloqueia a edição. |
 | [stop-checklist](hooks/stop-checklist.js) | Stop | Agent | Checklist de qualidade antes de encerrar (implementor). |
 | [subagent-audit](hooks/subagent-audit.js) | SubagentStart | Agent | Audita delegações de sub-agentes (orchestrator) e grava cada uma no log JSONL do neural-link (`neural-link activity` as mostra). |
 | [session-context](hooks/session-context.js) | SessionStart | Global | Injeta contexto git/projeto no início de cada sessão (branch, HEAD, uncommitted, recent commits); após uma compactação (`source: compact`) aponta o último snapshot do `context-save`, se tiver menos de 24 h. |
