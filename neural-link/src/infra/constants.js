@@ -51,9 +51,6 @@ export const HANDLER_TIMEOUT_MS = 5000;
 // Persistence and I/O
 // ========================================
 
-/** Save weights to disk every N total activations (minimize I/O overhead) */
-export const SAVE_INTERVAL = 50;
-
 /** Maximum session history entries to retain (FIFO) */
 export const MAX_SESSION_HISTORY = 50;
 
@@ -128,6 +125,15 @@ export const GLOBAL_HOOK_EVENTS = [
   'SubagentStart',
   'PreCompact',
 ];
+
+/**
+ * Sufixo do arquivo de calibragem que viaja junto com um hook.
+ *
+ * Existe como constante porque dois lados dependem dele: quem LÊ a calibragem (descoberta) e
+ * quem a torna inerte para o host (selo). Duplicar a string faria os dois divergirem em
+ * silêncio na primeira renomeação.
+ */
+export const COMPANION_SUFFIX = '.neural-link.json';
 
 /** Script extensions per platform */
 export const PLATFORM_EXTENSIONS = {

@@ -12,10 +12,9 @@
 
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, resolve, normalize } from 'node:path';
-import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
-import { PATHS, FILES } from '../infra/paths.js';
+import { PATHS, FILES, COPILOT } from '../infra/paths.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = dirname(dirname(__dirname));
@@ -44,7 +43,7 @@ function resolveConfigFile() {
 
   const candidates = [
     join(normalizedCwd, '.neural-link.config.json'),
-    join(homedir(), '.copilot', 'neural-link.config.json'),
+    join(COPILOT.ROOT, 'neural-link.config.json'),
     join(projectRoot, 'neural-link.config.json'),
   ];
 

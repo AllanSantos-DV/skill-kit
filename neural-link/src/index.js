@@ -1,6 +1,8 @@
 import { dispatch } from './pipeline/dispatcher.js';
+import { espelharNoTopo } from './pipeline/compositor.js';
 import { loadConfig, getConfigRaw } from './infra/config.js';
 import { checkCalibration, buildCalibrationResponse } from './calibration.js';
+import { selarCompanions } from './companions.js';
 import { handleError, SEVERITY, EXIT_CODES } from './infra/error-handler.js';
 import { PATHS } from './infra/paths.js';
 import { tryLoadSnapshot, writeSnapshot } from './infra/snapshot.js';
@@ -122,6 +124,13 @@ async function main() {
   const eventName = stdinJson.event ?? stdinJson.hook_event_name ?? stdinJson.hookEventName;
   let calibrationNotice = null;
   if (eventName === 'SessionStart') {
+    // O Skill Manager regrava companions sem selo a cada atualização de pacote, depois do
+    // `install()`; selar só na instalação deixava o host rejeitando esses arquivos até a próxima.
+    try {
+      selarCompanions();
+    } catch (e) {
+      console.error(`[neural-link] selo dos companions falhou: ${e.message}`);
+    }
     const config = loadConfig();
     const calibrationResult = checkCalibration(config);
     if (calibrationResult) {
@@ -133,7 +142,10 @@ async function main() {
   }
 
   const { output, runPostResponse } = await dispatch(stdinJson, { earlyReturn: true });
-  if (calibrationNotice) mergeCalibration(output, calibrationNotice);
+  if (calibrationNotice) {
+    mergeCalibration(output, calibrationNotice);
+    espelharNoTopo(output);   // o aviso entrou depois da composição: o topo precisa refletir
+  }
   const json = JSON.stringify(output);
 
   if (debug) debugDump(json, 'out');
@@ -184,7 +196,7 @@ function mergeCalibration(output, notice) {
   }
 }
 
-main().catch((error) => {  // Fail-open: any unhandled error → silent exit
+main().catch((error) => {  // Nonzero means infrastructure failure; the installed supervisor warns and skips.
   handleError(error, SEVERITY.CRITICAL, { component: 'index', operation: 'main' });
   process.exit(EXIT_CODES.DISPATCH_ERROR);
 });
