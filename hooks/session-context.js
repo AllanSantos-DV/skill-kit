@@ -7,6 +7,35 @@ const path = require('path');
 const { execSync } = require('child_process');
 const { readStdinJson, emitResponse } = require('./_lib/hook-io');
 
+const MAX_CONTEXT = 800;
+const SNAPSHOT_MAX_AGE_MS = 24 * 3600 * 1000;
+
+/**
+ * One line pointing to the newest docs/maps/session-<id>-snapshot.md written by context-save.js.
+ *
+ * @param {string} cwd - Project root the snapshots live under.
+ * @returns {string} The line, or '' when there is no snapshot younger than 24 h (never throws).
+ */
+function snapshotPointer(cwd) {
+  try {
+    const dir = path.join(cwd, 'docs', 'maps');
+    let newest = null;
+    for (const name of fs.readdirSync(dir)) {
+      if (!/^session-.+-snapshot\.md$/.test(name)) continue;
+      const mtime = fs.statSync(path.join(dir, name)).mtimeMs;
+      if (!newest || mtime > newest.mtime) newest = { name, mtime };
+    }
+    if (!newest) return '';
+    const ageMs = Date.now() - newest.mtime;
+    if (ageMs >= SNAPSHOT_MAX_AGE_MS) return '';
+    const minutes = Math.max(0, Math.round(ageMs / 60000));
+    const age = minutes < 60 ? minutes + ' min' : Math.floor(minutes / 60) + ' h';
+    return 'Pre-compact snapshot: docs/maps/' + newest.name + ' (' + age + ' ago)';
+  } catch (_) {
+    return '';
+  }
+}
+
 readStdinJson((hookInput) => {
 
   const cwd = hookInput.cwd || process.cwd();
@@ -55,7 +84,9 @@ readStdinJson((hookInput) => {
     }
   }
 
-  if (parts.length === 0) process.exit(0);
+  const snapshotLine = hookInput.source === 'compact' ? snapshotPointer(cwd) : '';
+
+  if (parts.length === 0 && !snapshotLine) process.exit(0);
 
   let context = parts.join(' | ');
   // If the compact form (before recent commits) is fine, use pipe-separated
@@ -69,8 +100,9 @@ readStdinJson((hookInput) => {
   context = inlineParts.join(' | ');
   if (blockParts.length > 0) context += '\n' + blockParts.join('\n');
 
-  // Cap at 800 chars
-  if (context.length > 800) context = context.substring(0, 797) + '...';
+  const room = Math.max(0, MAX_CONTEXT - (snapshotLine ? snapshotLine.length + 1 : 0));
+  if (context.length > room) context = context.substring(0, Math.max(0, room - 3)) + '...';
+  if (snapshotLine) context = context ? context + '\n' + snapshotLine : snapshotLine;
 
   emitResponse({
     hookSpecificOutput: {
