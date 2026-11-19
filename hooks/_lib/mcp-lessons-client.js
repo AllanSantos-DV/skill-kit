@@ -338,23 +338,37 @@ async function withSession(daemon, fn, budget) {
  */
 async function searchLessons(query, opts) {
   const o = opts || {};
-  if (!query || !String(query).trim()) return [];
   const topK = typeof o.topK === 'number' ? o.topK : 5;
   const minScore = typeof o.minScore === 'number' ? o.minScore : 0.35;
-  const pool = Math.max(topK, 25);
+  const { pool } = await searchLessonPool(query, o);
+  return pool.filter((r) => r.score >= minScore).slice(0, topK);
+}
+
+/**
+ * Cosine-ranked candidate pool for a query, before any relevance cut. Never throws.
+ *
+ * `status` says why the pool may be empty: 'ok', 'empty-query', 'no-daemon' (nothing registered
+ * under the run dir), 'unhealthy' (registered but not answering) or 'session-failed'.
+ *
+ * @param {string} query
+ * @param {{topK?: number, deadlineMs?: number, env?: object}} [opts]
+ * @returns {Promise<{status: string, pool: object[]}>} pool sorted by score, highest first.
+ */
+async function searchLessonPool(query, opts) {
+  const o = opts || {};
+  if (!query || !String(query).trim()) return { status: 'empty-query', pool: [] };
+  const poolSize = Math.max(typeof o.topK === 'number' ? o.topK : 5, 25);
   const daemon = discoverDaemon(o.env);
-  if (!daemon) return [];
+  if (!daemon) return { status: 'no-daemon', pool: [] };
   const deadline = Date.now() + (typeof o.deadlineMs === 'number' ? o.deadlineMs : 4000);
-  if (!(await healthCheck(daemon.url, Math.min(700, deadline - Date.now())))) return [];
+  if (!(await healthCheck(daemon.url, Math.min(700, deadline - Date.now())))) return { status: 'unhealthy', pool: [] };
   const res = await withSession(daemon, async (call) => {
-    const msg = await call('search_memory', buildSearchArgs(query, { topK: pool }), 2500);
+    const msg = await call('search_memory', buildSearchArgs(query, { topK: poolSize }), 2500);
     return extractSearchResults(msg);
   }, { deadline, projectId: NAMESPACE });
-  const list = Array.isArray(res) ? res : [];
-  return list
-    .filter((r) => r && typeof r.score === 'number' && r.score >= minScore)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, topK);
+  if (!Array.isArray(res)) return { status: 'session-failed', pool: [] };
+  const pool = res.filter((r) => r && typeof r.score === 'number').sort((a, b) => b.score - a.score);
+  return { status: 'ok', pool };
 }
 
 /**
@@ -502,6 +516,7 @@ module.exports = {
   withSession,
   // public API
   searchLessons,
+  searchLessonPool,
   addLessons,
   deleteLessons,
   syncLessons,

@@ -77,3 +77,38 @@ test('invalid stdin: exit 0, no stdout, no record', () => {
     assert.ok(!fs.existsSync(path.join(home, 'logs')));
   } finally { fs.rmSync(home, { recursive: true, force: true }); }
 });
+
+test('SubagentStop: records the stop with agent, session, agent id and message size, never the text', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'sa-audit-'));
+  try {
+    const r = run({
+      hook_event_name: 'SubagentStop', session_id: 's-9', agent_id: 'def456', agent_type: 'Explore',
+      stop_hook_active: false, last_assistant_message: 'Analysis complete. Found 3 potential issues',
+    }, { NEURAL_LINK_HOME: home });
+    assert.strictEqual(r.status, 0);
+    assert.strictEqual(r.stdout, '{}', 'must not block the subagent from stopping');
+    assert.match(r.stderr, /Subagent stopped: Explore/);
+    const [rec] = readRecords(home);
+    assert.strictEqual(rec.event, 'SubagentStop');
+    assert.strictEqual(rec.handler, 'subagent-audit');
+    assert.strictEqual(rec.decision, 'allow');
+    assert.strictEqual(rec.agent, 'Explore');
+    assert.strictEqual(rec.sessionId, 's-9');
+    assert.strictEqual(rec.agentId, 'def456');
+    assert.strictEqual(rec.lastMessageChars, 'Analysis complete. Found 3 potential issues'.length);
+    assert.ok(!JSON.stringify(rec).includes('Analysis complete'));
+  } finally { fs.rmSync(home, { recursive: true, force: true }); }
+});
+
+test('SubagentStop without a final message omits the size; payload without event name stays SubagentStart', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'sa-audit-'));
+  try {
+    run({ hook_event_name: 'SubagentStop', agent_type: 'Plan' }, { NEURAL_LINK_HOME: home });
+    run({ agent_type: 'Plan' }, { NEURAL_LINK_HOME: home });
+    const [stop, start] = readRecords(home);
+    assert.strictEqual(stop.event, 'SubagentStop');
+    assert.ok(!('lastMessageChars' in stop));
+    assert.ok(!('agentId' in stop));
+    assert.strictEqual(start.event, 'SubagentStart');
+  } finally { fs.rmSync(home, { recursive: true, force: true }); }
+});

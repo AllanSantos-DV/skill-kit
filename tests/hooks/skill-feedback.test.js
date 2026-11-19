@@ -100,3 +100,19 @@ test('no skill used in the turn: silent, even with reviews over the threshold', 
   addReviews(p.cwd, 'task-map', 9);
   assert.strictEqual(run(p), null);
 });
+
+test('an agent that reached its threshold gets a line pointing at its feedback file', () => {
+  const p = makeProject(['task-map']);
+  addReviews(p.cwd, 'implementor', 5);
+  addReviews(p.cwd, 'validator', 4);
+  const reason = run(p).reason;
+  assert.match(reason, /implementor: 5 reviews \(threshold 5\)/);
+  assert.match(reason, /agents\/\.feedback\/implementor\.md/);
+  assert.doesNotMatch(reason, /validator: \d/);
+});
+
+test('agent reviews over the threshold stay silent when no skill was used in the turn', () => {
+  const p = makeProject([]);
+  addReviews(p.cwd, 'orchestrator', 9);
+  assert.strictEqual(run(p), null);
+});

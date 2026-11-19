@@ -66,10 +66,10 @@ test('readLogs reads every .jsonl in the dir and reports malformed lines; missin
 
 test('parseActivityArgs: defaults, flags and invalid --last fails loud', async () => {
   const { parseActivityArgs } = await import(MOD);
-  assert.deepStrictEqual(parseActivityArgs([]), { last: 20, event: undefined, handler: undefined, json: false });
+  assert.deepStrictEqual(parseActivityArgs([]), { last: 20, event: undefined, handler: undefined, session: undefined, json: false });
   assert.deepStrictEqual(
     parseActivityArgs(['--last', '5', '--event', 'X', '--handler', 'h', '--json']),
-    { last: 5, event: 'X', handler: 'h', json: true });
+    { last: 5, event: 'X', handler: 'h', session: undefined, json: true });
   assert.throws(() => parseActivityArgs(['--last', 'abc']), /--last/);
   assert.throws(() => parseActivityArgs(['--last', '0']), /--last/);
   assert.throws(() => parseActivityArgs(['--event']), /--event/);
@@ -107,4 +107,23 @@ test('CLI activity subcommand runs against NEURAL_LINK_HOME silently', () => {
     assert.match(help.stdout, /activity/);
     assert.match(help.stdout, /prune/);
   } finally { fs.rmSync(home, { recursive: true, force: true }); }
+});
+
+test('summarize filters by session id and combines with the other filters', async () => {
+  const { summarize } = await import(MOD);
+  const a = { ...A, sessionId: 's-1' };
+  const b = { ...B, sessionId: 's-2' };
+  const c = { ...C, sessionId: 's-1' };
+  assert.strictEqual(summarize([a, b, c], { session: 's-1' }).total, 2);
+  assert.strictEqual(summarize([a, b, c], { session: 's-1', event: 'SubagentStart' }).total, 1);
+  assert.strictEqual(summarize([a, b, c], { session: 'nope' }).total, 0);
+  assert.strictEqual(summarize([A, B], { session: 's-1' }).total, 0);
+});
+
+test('parseActivityArgs reads --session and rejects it without a value', async () => {
+  const { parseActivityArgs } = await import(MOD);
+  assert.strictEqual(parseActivityArgs(['--session', 's-1']).session, 's-1');
+  assert.strictEqual(parseActivityArgs([]).session, undefined);
+  assert.throws(() => parseActivityArgs(['--session']), /--session requires a value/);
+  assert.throws(() => parseActivityArgs(['--session', '--json']), /--session requires a value/);
 });

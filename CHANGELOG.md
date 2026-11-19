@@ -7,11 +7,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ### Adicionado
 - **doc-to-markdown**: `convert.py --ocr` agora usa o plugin `markitdown-ocr` com cliente LLM (novo `--llm-model`) e falha com mensagem clara se faltar o plugin, o `openai` ou o modelo.
-- **neural-link**: `neural-link activity` resume os logs de ativação (por evento, handler e decisão, com `--last`, `--event`, `--handler`, `--json`); `neural-link prune --days N [--dry-run]` apaga logs e debug antigos; a ajuda deixou de anunciar o `dashboard` inexistente.
-- **subagent-audit**: cada delegação também vai para o log JSONL do neural-link.
+- **neural-link**: `neural-link activity` resume os logs de ativação (por evento, handler e decisão, com `--last`, `--event`, `--handler`, `--session`, `--json`); `neural-link prune --days N [--dry-run]` apaga logs e debug antigos; a ajuda deixou de anunciar o `dashboard` inexistente.
+- **subagent-audit**: cada delegação e cada término de subagente (`SubagentStop`: agente, sessão, id do subagente e tamanho da mensagem final, sem o texto) vai para o log JSONL do neural-link; o `orchestrator` declara os dois eventos.
+- **lesson-injector**: `--check "<texto>"` mostra o pool de lições com score e o corte (0.68), sem injetar; falha alto se o daemon não responde.
 - **pre-commit-guard**: `--check "<comando>"` mostra a decisão sem executar.
 - **session-context**: após compactação aponta o último snapshot do `context-save` (menos de 24 h).
-- **skill-feedback**: avisa quando as reviews de uma skill atingem o `threshold` do `FEEDBACK.md`.
+- **skill-feedback**: avisa quando as reviews de uma skill ou de um agent atingem o `threshold` do `FEEDBACK.md` / `agents/.feedback/<agent>.md`.
 - **agents**: os comandos de hook declaram `--hook-origin=skill-kit`.
 - **tests/hooks/doc-to-markdown-skill.test.js** — 6 testes que prendem a redação da skill ao que o markitdown converte de fato.
 - **guard**: staging escopado, dirty-check nos comandos destrutivos e cobertura de `tool_name`; normalização de caixa do comando sem afetar os flags (inclui o alias curto).

@@ -62,12 +62,13 @@ function count(entries, key) {
 }
 
 /**
- * Filtra e agrega entradas por evento, handler e decisão; devolve as últimas N em ordem de `ts`.
+ * Filtra e agrega entradas por evento, handler e sessão (`sessionId`) e agrega por decisão; devolve as últimas N em ordem de `ts`.
  * @param {object[]} entries
- * @param {{last?: number, event?: string, handler?: string}} [opts]
+ * @param {{last?: number, event?: string, handler?: string, session?: string}} [opts]
  */
-export function summarize(entries, { last = DEFAULT_LAST, event, handler } = {}) {
-  const kept = entries.filter((e) => (!event || e.event === event) && (!handler || e.handler === handler));
+export function summarize(entries, { last = DEFAULT_LAST, event, handler, session } = {}) {
+  const kept = entries.filter((e) => (!event || e.event === event) && (!handler || e.handler === handler) &&
+    (!session || e.sessionId === session));
   const ordered = [...kept].sort((a, b) => String(a.ts ?? '').localeCompare(String(b.ts ?? '')));
   return {
     total: kept.length,
@@ -83,7 +84,7 @@ export function summarize(entries, { last = DEFAULT_LAST, event, handler } = {})
  * @param {string[]} args
  */
 export function parseActivityArgs(args) {
-  const out = { last: DEFAULT_LAST, event: undefined, handler: undefined, json: false };
+  const out = { last: DEFAULT_LAST, event: undefined, handler: undefined, session: undefined, json: false };
   const value = (i, flag) => {
     const v = args[i + 1];
     if (v === undefined || v.startsWith('--')) throw new Error(`${flag} requires a value`);
@@ -94,6 +95,7 @@ export function parseActivityArgs(args) {
       case '--json': out.json = true; break;
       case '--event': out.event = value(i, '--event'); i++; break;
       case '--handler': out.handler = value(i, '--handler'); i++; break;
+      case '--session': out.session = value(i, '--session'); i++; break;
       case '--last': {
         const raw = value(i, '--last');
         if (!/^\d+$/.test(raw) || Number(raw) < 1) throw new Error(`--last must be a positive integer, got "${raw}"`);

@@ -67,7 +67,45 @@ async function run(userPrompt) {
   // No process.exit: let the loop drain naturally so stdout is flushed.
 }
 
-readStdinJson((hookInput) => {
+/**
+ * Dry-run: prints the candidate pool for a text with its score and whether the cut would inject it.
+ * Unlike the hook, it fails loud so a broken recall is visible.
+ *
+ * @param {string[]} argv - Arguments after the script name.
+ * @returns {Promise<number>} 0 printed, 1 recall unavailable, 2 usage error.
+ */
+async function runCheck(argv) {
+  const text = argv[argv.indexOf('--check') + 1];
+  if (!text || text.startsWith('--')) {
+    process.stderr.write('usage: node lesson-injector.js --check "<text>" [--json]\n');
+    return 2;
+  }
+  const { status, pool } = await lessons.searchLessonPool(text, { topK: TOP_K, deadlineMs: DEADLINE_MS });
+  if (status !== 'ok') {
+    process.stderr.write('lesson recall unavailable: ' + status + (status === 'no-daemon' ? ' (no mcp-memory daemon registered)' : '') + '\n');
+    return 1;
+  }
+  let injected = 0;
+  const candidates = pool.map((r) => {
+    const inject = r.score >= MIN_SCORE && injected < TOP_K;
+    if (inject) injected++;
+    return { id: String(r.id || '').replace(/^lesson:/, ''), name: r.name || '', score: r.score, inject };
+  });
+  if (argv.includes('--json')) {
+    process.stdout.write(JSON.stringify({ minScore: MIN_SCORE, topK: TOP_K, candidates }) + '\n');
+    return 0;
+  }
+  const out = ['cut: ' + MIN_SCORE + ' (top ' + TOP_K + '), ' + candidates.length + ' candidate(s), ' + injected + ' would be injected'];
+  for (const c of candidates) {
+    out.push('  ' + c.score.toFixed(2) + '  ' + (c.id || '-') + '  ' + (c.inject ? 'inject' : 'below cut') + '  ' + c.name);
+  }
+  process.stdout.write(out.join('\n') + '\n');
+  return 0;
+}
+
+if (process.argv.includes('--check')) {
+  runCheck(process.argv.slice(2)).then((code) => { process.exitCode = code; });
+} else readStdinJson((hookInput) => {
   const userPrompt = extractPrompt(hookInput);
   if (!userPrompt) return; // nothing to match — exit 0 naturally
   run(userPrompt);

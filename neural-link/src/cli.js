@@ -10,7 +10,7 @@
  *   neural-link reset agent <n>   Reset weights for an agent  
  *   neural-link reset all         Factory reset all weights
  *   neural-link rollback          Restore weights from backup
- *   neural-link activity [opts]   Summarize activation logs (--last N, --event X, --handler X, --json)
+ *   neural-link activity [opts]   Summarize activation logs (--last N, --event X, --handler X, --session ID, --json)
  *   neural-link prune [opts]      Delete old logs/debug files (--days N, --dry-run)
  */
 
@@ -100,7 +100,7 @@ Commands:
   reset all          Factory reset — remove all learned weights
   rollback           Restore weights from backup
   install [--dry-run] Declare dispatcher hooks
-  activity [opts]    Summarize activation logs (--last N, --event X, --handler X, --json)
+  activity [opts]    Summarize activation logs (--last N, --event X, --handler X, --session ID, --json)
   prune [opts]       Delete logs/debug files older than --days N (default 14); --dry-run lists only`);
 }
 

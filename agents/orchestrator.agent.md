@@ -29,6 +29,10 @@ hooks:
     - type: command
       command: "node hooks/subagent-audit.js --hook-origin=skill-kit"
       timeout: 5
+  SubagentStop:
+    - type: command
+      command: "node hooks/subagent-audit.js --hook-origin=skill-kit"
+      timeout: 5
 ---
 
 # Orchestrator — Assess, Decide, Coordinate

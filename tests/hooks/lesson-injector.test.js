@@ -30,6 +30,22 @@ function runHook(stdin, extraEnv) {
   });
 }
 
+/** Spawn the hook in --check mode with the given argv. */
+function runCheck(args, extraEnv) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [HOOK, ...args], {
+      env: Object.assign({}, process.env, extraEnv || {}),
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (c) => { stdout += c; });
+    child.stderr.on('data', (c) => { stderr += c; });
+    child.on('close', (status) => resolve({ stdout, stderr, status }));
+  });
+}
+
 test('injects semantic recall envelope on a matching prompt', async () => {
   const captured = [];
   const mock = await startMock({ captured, results: [
@@ -179,4 +195,65 @@ test('reads prompt from nested data.prompt shape', async () => {
     const out = JSON.parse(r.stdout);
     assert.match(out.hookSpecificOutput.additionalContext, /Nested prompt/);
   } finally { mock.close(); fs.rmSync(runDir, { recursive: true, force: true }); }
+});
+
+const POOL = [
+  { id: 'lesson:L001', name: 'Low relevance', description: 'd', type: 'procedural', score: 0.55 },
+  { id: 'lesson:L018', name: 'Redesign before rewriting tests', description: 'd', type: 'procedural', score: 0.81 },
+  { id: 'lesson:L042', name: 'Edge of the cut', description: 'd', type: 'procedural', score: 0.68 },
+];
+
+test('--check lists the whole pool by score with the cut applied, without injecting', async () => {
+  const mock = await startMock({ results: POOL });
+  const runDir = tmpRunDir(mock.url);
+  try {
+    const c = await runCheck(['--check', 'redesenhar os testes'], { MCP_RUN_DIR: runDir });
+    assert.strictEqual(c.status, 0, c.stderr);
+    const lines = c.stdout.split('\n');
+    assert.match(lines[0], /cut: 0\.68/);
+    const rows = lines.filter((l) => /L0\d\d/.test(l));
+    assert.deepStrictEqual(rows.map((l) => l.match(/L0\d\d/)[0]), ['L018', 'L042', 'L001']);
+    assert.match(rows[0], /inject/);
+    assert.match(rows[1], /inject/);
+    assert.match(rows[2], /below cut/);
+    assert.doesNotMatch(c.stdout, /additionalContext/);
+  } finally { mock.close(); fs.rmSync(runDir, { recursive: true, force: true }); }
+});
+
+test('--check --json is one document with cut, inject flag and scores', async () => {
+  const mock = await startMock({ results: POOL });
+  const runDir = tmpRunDir(mock.url);
+  try {
+    const c = await runCheck(['--json', '--check', 'q'], { MCP_RUN_DIR: runDir });
+    const doc = JSON.parse(c.stdout);
+    assert.strictEqual(doc.minScore, 0.68);
+    assert.deepStrictEqual(doc.candidates.map((x) => [x.id, x.inject]), [['L018', true], ['L042', true], ['L001', false]]);
+  } finally { mock.close(); fs.rmSync(runDir, { recursive: true, force: true }); }
+});
+
+test('--check respects LESSON_INJECTOR_MINSCORE', async () => {
+  const mock = await startMock({ results: POOL });
+  const runDir = tmpRunDir(mock.url);
+  try {
+    const c = await runCheck(['--json', '--check', 'q'], { MCP_RUN_DIR: runDir, LESSON_INJECTOR_MINSCORE: '0.8' });
+    const doc = JSON.parse(c.stdout);
+    assert.strictEqual(doc.minScore, 0.8);
+    assert.deepStrictEqual(doc.candidates.filter((x) => x.inject).map((x) => x.id), ['L018']);
+  } finally { mock.close(); fs.rmSync(runDir, { recursive: true, force: true }); }
+});
+
+test('--check fails loud (exit 1, reason on stderr) when no daemon is registered', async () => {
+  const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lessons-empty-'));
+  try {
+    const c = await runCheck(['--check', 'q'], { MCP_RUN_DIR: runDir });
+    assert.strictEqual(c.status, 1);
+    assert.match(c.stderr, /daemon/i);
+    assert.strictEqual(c.stdout, '');
+  } finally { fs.rmSync(runDir, { recursive: true, force: true }); }
+});
+
+test('--check without text is a usage error (exit 2)', async () => {
+  const c = await runCheck(['--check'], {});
+  assert.strictEqual(c.status, 2);
+  assert.match(c.stderr, /usage/);
 });
