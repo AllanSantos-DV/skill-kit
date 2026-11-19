@@ -116,3 +116,18 @@ test('agent reviews over the threshold stay silent when no skill was used in the
   addReviews(p.cwd, 'orchestrator', 9);
   assert.strictEqual(run(p), null);
 });
+
+test('installed layout: thresholds come from ~/.copilot when the hook has no checkout beside it', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-fb-home-'));
+  temps.push(home);
+  fs.mkdirSync(path.join(home, '.copilot', 'agents', '.feedback'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.copilot', 'agents', '.feedback', 'zeta.md'), '---\nthreshold: 2\n---\n');
+  const p = makeProject(['task-map']);
+  addReviews(p.cwd, 'zeta', 2);
+  const r = spawnSync(process.execPath, [HOOK], {
+    input: JSON.stringify({ cwd: p.cwd, transcript_path: p.transcript }),
+    env: { ...process.env, USERPROFILE: home, HOME: home },
+    encoding: 'utf8', windowsHide: true, timeout: 15000,
+  });
+  assert.match(JSON.parse(r.stdout).reason, /zeta: 2 reviews \(threshold 2\)/);
+});

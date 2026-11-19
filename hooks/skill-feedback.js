@@ -3,31 +3,41 @@
 // @permissions: fs.read, fs.write
 'use strict';
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { readStdinJson, guardStopActive, readTranscript, lastUserMessageIdx, emitStopBlock } = require('./_lib/hook-io');
 
-const SKILLS_ROOT = path.join(__dirname, '..', 'skills');
-const AGENT_FEEDBACK_ROOT = path.join(__dirname, '..', 'agents', '.feedback');
+/**
+ * Directories holding skills/ and agents/.feedback/: the repository checkout (hook run in place)
+ * and ~/.copilot (hook installed under ~/.copilot/hooks/scripts, where the checkout layout is absent).
+ */
+function feedbackRoots() {
+  return [...new Set([path.join(__dirname, '..'), path.join(os.homedir(), '.copilot')])];
+}
 
 /**
  * Feedback sources whose reviews live under .vscode/skill-reviews/<name>/: one FEEDBACK.md per
- * skill and one agents/.feedback/<name>.md per agent.
+ * skill and one agents/.feedback/<name>.md per agent. The first root that has a name wins.
  *
  * @returns {{name: string, file: string, guide: string}[]}
  */
 function feedbackSources() {
-  const sources = [];
-  try {
-    for (const skill of fs.readdirSync(SKILLS_ROOT)) {
-      sources.push({ name: skill, file: path.join(SKILLS_ROOT, skill, 'FEEDBACK.md'), guide: 'skills/' + skill + '/FEEDBACK.md' });
-    }
-  } catch (_) { /* no skills directory */ }
-  try {
-    for (const f of fs.readdirSync(AGENT_FEEDBACK_ROOT).filter((n) => n.endsWith('.md'))) {
-      sources.push({ name: f.slice(0, -3), file: path.join(AGENT_FEEDBACK_ROOT, f), guide: 'agents/.feedback/' + f });
-    }
-  } catch (_) { /* no agent feedback directory */ }
-  return sources;
+  const sources = new Map();
+  const add = (name, file, guide) => { if (!sources.has(name)) sources.set(name, { name, file, guide }); };
+  for (const root of feedbackRoots()) {
+    try {
+      for (const skill of fs.readdirSync(path.join(root, 'skills'))) {
+        add(skill, path.join(root, 'skills', skill, 'FEEDBACK.md'), 'skills/' + skill + '/FEEDBACK.md');
+      }
+    } catch (_) { /* no skills directory under this root */ }
+    try {
+      const dir = path.join(root, 'agents', '.feedback');
+      for (const f of fs.readdirSync(dir).filter((n) => n.endsWith('.md'))) {
+        add(f.slice(0, -3), path.join(dir, f), 'agents/.feedback/' + f);
+      }
+    } catch (_) { /* no agent feedback directory under this root */ }
+  }
+  return [...sources.values()];
 }
 
 /**
