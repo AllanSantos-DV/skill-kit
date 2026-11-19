@@ -93,7 +93,7 @@ function Extract-HookScripts {
         if ($trimmed -match '^command:\s*"?(.+)"?\s*$') {
             $cmd = $Matches[1].Trim('"')
             # Node.js hook: node hooks/X.js
-            if ($cmd -match '^node\s+(.+\.js)$') {
+            if ($cmd -match '^node\s+(\S+\.js)(\s+--\S+)*$') {
                 $scripts += @{ Type = 'node'; Path = $Matches[1].Trim() }
             }
             # Legacy: bash ~/.copilot/hooks/scripts/X.sh

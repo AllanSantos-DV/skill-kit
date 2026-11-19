@@ -17,11 +17,11 @@ handoffs:
 hooks:
   PreToolUse:
     - type: command
-      command: "node hooks/pre-commit-guard.js"
+      command: "node hooks/pre-commit-guard.js --hook-origin=skill-kit"
       timeout: 10
   Stop:
     - type: command
-      command: "node hooks/stop-checklist.js"
+      command: "node hooks/stop-checklist.js --hook-origin=skill-kit"
       timeout: 10
 ---
 

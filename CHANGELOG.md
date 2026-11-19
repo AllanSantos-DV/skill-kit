@@ -7,6 +7,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ### Adicionado
 - **doc-to-markdown**: `convert.py --ocr` agora usa o plugin `markitdown-ocr` com cliente LLM (novo `--llm-model`) e falha com mensagem clara se faltar o plugin, o `openai` ou o modelo.
+- **neural-link**: `neural-link activity` resume os logs de ativação (por evento, handler e decisão, com `--last`, `--event`, `--handler`, `--json`); `neural-link prune --days N [--dry-run]` apaga logs e debug antigos; a ajuda deixou de anunciar o `dashboard` inexistente.
+- **subagent-audit**: cada delegação também vai para o log JSONL do neural-link.
+- **pre-commit-guard**: `--check "<comando>"` mostra a decisão sem executar.
+- **session-context**: após compactação aponta o último snapshot do `context-save` (menos de 24 h).
+- **skill-feedback**: avisa quando as reviews de uma skill atingem o `threshold` do `FEEDBACK.md`.
+- **agents**: os comandos de hook declaram `--hook-origin=skill-kit`.
 - **tests/hooks/doc-to-markdown-skill.test.js** — 6 testes que prendem a redação da skill ao que o markitdown converte de fato.
 - **guard**: staging escopado, dirty-check nos comandos destrutivos e cobertura de `tool_name`; normalização de caixa do comando sem afetar os flags (inclui o alias curto).
 - **hooks**: dispatcher único do neural-link com a calibragem viajando em cada hook (`<hook>.neural-link.json`); descoberta de companions em `hooks/scripts`; publicação no engine-registry.

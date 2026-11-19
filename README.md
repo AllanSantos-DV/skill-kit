@@ -70,15 +70,15 @@ Hooks que acessam APIs sensíveis (fs, child_process, net, etc.) declaram um hea
 
 | Hook | Evento | Escopo | Propósito |
 |------|--------|--------|-----------|
-| [pre-commit-guard](hooks/pre-commit-guard.js) | PreToolUse | Global | Garante conventional commits. Bloqueia commits sem formato adequado e operações destrutivas. |
+| [pre-commit-guard](hooks/pre-commit-guard.js) | PreToolUse | Global | Garante conventional commits. Bloqueia commits sem formato adequado e operações destrutivas. `node hooks/pre-commit-guard.js --check "<comando>"` mostra a decisão (allow/ask/deny) e o motivo sem executar o comando. |
 | [lesson-injector](hooks/lesson-injector.js) | PreToolUse | Global | Injeta lições aprendidas relevantes (do error-learning) no contexto. |
 | [verify-claims](hooks/verify-claims.js) | Stop | Global | Exige verificação de fatos antes de declarar afirmações. |
 | [context-confidence-check](hooks/context-confidence-check.js) | Stop | Global | Avalia confiança do contexto antes de agir — previne hallucination. |
-| [skill-feedback](hooks/skill-feedback.js) | Stop | Global | Captura feedback de skills usadas com Feedback Protocol. |
+| [skill-feedback](hooks/skill-feedback.js) | Stop | Global | Captura feedback de skills usadas com Feedback Protocol e avisa quando as reviews em `.vscode/skill-reviews/<skill>/` atingem o `threshold` do `FEEDBACK.md`. |
 | [output-format](hooks/output-format.js) | Stop | Agent | Injeta regras de formatação de output (researcher/validator). |
 | [stop-checklist](hooks/stop-checklist.js) | Stop | Agent | Checklist de qualidade antes de encerrar (implementor). |
-| [subagent-audit](hooks/subagent-audit.js) | SubagentStart | Agent | Audita delegações de sub-agentes (orchestrator). |
-| [session-context](hooks/session-context.js) | SessionStart | Global | Injeta contexto git/projeto no início de cada sessão (branch, HEAD, uncommitted, recent commits). |
+| [subagent-audit](hooks/subagent-audit.js) | SubagentStart | Agent | Audita delegações de sub-agentes (orchestrator) e grava cada uma no log JSONL do neural-link (`neural-link activity` as mostra). |
+| [session-context](hooks/session-context.js) | SessionStart | Global | Injeta contexto git/projeto no início de cada sessão (branch, HEAD, uncommitted, recent commits); após uma compactação (`source: compact`) aponta o último snapshot do `context-save`, se tiver menos de 24 h. |
 | [context-save](hooks/context-save.js) | PreCompact | Global | Salva snapshot do estado da sessão antes da compactação de contexto. |
 
 ---
