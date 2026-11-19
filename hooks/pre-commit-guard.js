@@ -44,17 +44,19 @@ function isTreeDirty(cwd) {
   return res.stdout.trim().length > 0;
 }
 
-readStdinJson((inputJson) => {
-
-  // Only intercept terminal commands
-  const toolName = String(inputJson.tool_name || '');
-  if (!TERMINAL_TOOLS.has(toolName.toLowerCase())) {
-    process.exit(0);
-  }
-
-  const cmd = (inputJson.tool_input && inputJson.tool_input.command) || '';
-  if (!cmd) process.exit(0);
-
+/**
+ * Decide allow/ask/deny for a shell command; the most restrictive sub-command wins.
+ *
+ * Nothing is executed. The only side effect is a `git status` in `cwd`, and only when a
+ * work-loss rule matches.
+ *
+ * @param {string} cmd - Full command line, possibly chained with ; && ||.
+ * @param {string} [cwd] - Directory whose git state decides the work-loss rules.
+ * @returns {{decision: string, reasons: string[], matched: boolean, treeDirty: (boolean|null|undefined)}}
+ *   `matched` is false when no rule applies (the hook then stays silent).
+ *   `treeDirty` is undefined when no rule needed the tree state.
+ */
+function evaluateCommand(cmd, cwd) {
   // Split chained commands by ; && || (respecting quoted strings)
   const subCommands = [];
   let current = '';
@@ -92,7 +94,7 @@ readStdinJson((inputJson) => {
   let hasGitCommand = false;
   // Resolved lazily and reused: one `git status` per tool call, not one per sub-command.
   let treeDirty;
-  const dirty = () => (treeDirty === undefined ? (treeDirty = isTreeDirty(inputJson.cwd)) : treeDirty);
+  const dirty = () => (treeDirty === undefined ? (treeDirty = isTreeDirty(cwd)) : treeDirty);
 
   /**
    * Escalate a work-destroying command: DENY when the tree is dirty (or when git could not
@@ -302,24 +304,71 @@ readStdinJson((inputJson) => {
     }
   }
 
-  // No git commands found — passthrough
-  if (!hasGitCommand) process.exit(0);
+  return { decision: finalDecision, reasons: contexts, matched: hasGitCommand, treeDirty };
+}
 
-  // PreToolUse output schema:
-  //   hookSpecificOutput.hookEventName: 'PreToolUse'           (REQUIRED)
-  //   hookSpecificOutput.permissionDecision: allow|deny|ask    (REQUIRED)
-  //   hookSpecificOutput.permissionDecisionReason: string      (optional, shown to user)
-  //   hookSpecificOutput.updatedInput: object                  (optional, rewrites tool input)
-  // `additionalContext` is NOT valid here (it belongs to UserPromptSubmit/SessionStart).
-  const result = {
-    hookSpecificOutput: {
-      hookEventName: 'PreToolUse',
-      permissionDecision: finalDecision
-    }
-  };
-  if (contexts.length > 0) {
-    result.hookSpecificOutput.permissionDecisionReason = contexts.join('; ');
+/**
+ * Dry-run of the guard: prints the decision for a command without executing it.
+ *
+ * @param {string[]} argv - Arguments after the script name.
+ * @returns {number} Exit code: 0 whenever a decision was printed (even deny), 2 on usage error.
+ */
+function runCheck(argv) {
+  const command = argv[argv.indexOf('--check') + 1];
+  if (!command || command.startsWith('--')) {
+    process.stderr.write('usage: node pre-commit-guard.js --check "<command>" [--json]\n');
+    return 2;
   }
+  const cwd = process.cwd();
+  const res = evaluateCommand(command, cwd);
+  const tree = res.treeDirty === undefined ? 'not consulted'
+    : res.treeDirty === null ? 'unknown' : (res.treeDirty ? 'dirty' : 'clean');
+  const reason = res.matched && res.reasons.length ? res.reasons.join('; ') : 'no guard rule matched';
+  if (argv.includes('--json')) {
+    process.stdout.write(JSON.stringify({ command, cwd, decision: res.decision, reason, tree }) + '\n');
+  } else {
+    process.stdout.write('decision: ' + res.decision + '\ncwd: ' + cwd + '\ntree: ' + tree + '\nreason: ' + reason + '\n');
+  }
+  return 0;
+}
 
-  emitResponse(result);
-});
+/**
+ * PreToolUse entry point: reads the hook payload from stdin and emits the permission decision.
+ *
+ * Output schema: hookSpecificOutput.{hookEventName: 'PreToolUse', permissionDecision: allow|deny|ask,
+ * permissionDecisionReason?: string, updatedInput?: object}. `additionalContext` is not valid
+ * here (it belongs to UserPromptSubmit/SessionStart).
+ */
+function runHook() {
+  readStdinJson((inputJson) => {
+    const toolName = String(inputJson.tool_name || '');
+    if (!TERMINAL_TOOLS.has(toolName.toLowerCase())) {
+      process.exit(0);
+    }
+
+    const cmd = (inputJson.tool_input && inputJson.tool_input.command) || '';
+    if (!cmd) process.exit(0);
+
+    const { decision, reasons, matched } = evaluateCommand(cmd, inputJson.cwd);
+    if (!matched) process.exit(0);
+
+    const result = {
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: decision
+      }
+    };
+    if (reasons.length > 0) {
+      result.hookSpecificOutput.permissionDecisionReason = reasons.join('; ');
+    }
+
+    emitResponse(result);
+  });
+}
+
+if (require.main === module) {
+  if (process.argv.includes('--check')) process.exit(runCheck(process.argv.slice(2)));
+  runHook();
+}
+
+module.exports = { evaluateCommand, isTreeDirty };
