@@ -6,6 +6,41 @@ const fs = require('fs');
 const path = require('path');
 const { readStdinJson, guardStopActive, readTranscript, lastUserMessageIdx, emitStopBlock } = require('./_lib/hook-io');
 
+const SKILLS_ROOT = path.join(__dirname, '..', 'skills');
+
+/**
+ * Skills whose accumulated reviews reached the `threshold:` declared in their FEEDBACK.md.
+ *
+ * Reviews are the *.json files in <cwd>/.vscode/skill-reviews/<skill>/. A missing or
+ * unreadable directory counts as zero, and a skill without a numeric threshold is skipped.
+ *
+ * @param {string} cwd - Project root holding .vscode/skill-reviews.
+ * @returns {{skill: string, count: number, threshold: number}[]}
+ */
+function skillsAtThreshold(cwd) {
+  const reached = [];
+  let skills = [];
+  try { skills = fs.readdirSync(SKILLS_ROOT); } catch (_) { return reached; }
+  for (const skill of skills) {
+    let threshold;
+    try {
+      const feedback = fs.readFileSync(path.join(SKILLS_ROOT, skill, 'FEEDBACK.md'), 'utf8');
+      const front = feedback.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+      const m = front && front[1].match(/^threshold:\s*(\d+)\s*$/m);
+      threshold = m ? Number(m[1]) : NaN;
+    } catch (_) { continue; }
+    if (!(threshold > 0)) continue;
+
+    let count = 0;
+    try {
+      count = fs.readdirSync(path.join(cwd, '.vscode', 'skill-reviews', skill))
+        .filter((f) => f.endsWith('.json')).length;
+    } catch (_) { /* missing dir: zero reviews */ }
+    if (count >= threshold) reached.push({ skill, count, threshold });
+  }
+  return reached;
+}
+
 readStdinJson((hookInput) => {
   guardStopActive(hookInput);
 
@@ -50,13 +85,17 @@ readStdinJson((hookInput) => {
   if (feedbackSkills.length === 0) process.exit(0);
 
   const skillList = feedbackSkills.map(s => '  - ' + s).join('\n');
+  const thresholdLines = skillsAtThreshold(hookInput.cwd || process.cwd()).map((r) =>
+    '\nREVIEW THRESHOLD REACHED - ' + r.skill + ': ' + r.count + ' reviews (threshold ' + r.threshold +
+    '); the maintainer should consolidate them (see skills/' + r.skill + '/FEEDBACK.md).');
   const message = 'SKILL FEEDBACK CHECK: Skills with Feedback Protocol were used in this session:\n' +
     skillList + '\n\n' +
     'If the user expressed dissatisfaction or corrections were needed:\n' +
     '1. Ask the user what specifically didn\'t work well\n' +
     '2. Follow the Feedback Protocol in the skill\'s SKILL.md to create a structured review\n' +
     '3. Create the review directory if it doesn\'t exist\n\n' +
-    'If the session went well and the user didn\'t complain, skip this entirely.';
+    'If the session went well and the user didn\'t complain, skip this entirely.' +
+    thresholdLines.join('');
 
   emitStopBlock(message);
 });
