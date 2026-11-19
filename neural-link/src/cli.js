@@ -10,7 +10,8 @@
  *   neural-link reset agent <n>   Reset weights for an agent  
  *   neural-link reset all         Factory reset all weights
  *   neural-link rollback          Restore weights from backup
- *   neural-link dashboard [opts]  Full dashboard (delegates to tools/dashboard.mjs)
+ *   neural-link activity [opts]   Summarize activation logs (--last N, --event X, --handler X, --json)
+ *   neural-link prune [opts]      Delete old logs/debug files (--days N, --dry-run)
  */
 
 import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
@@ -18,9 +19,36 @@ import { sense } from './pipeline/sensor.js';
 import { scoreHandlers, filterByThreshold } from './pipeline/scoring.js';
 import { loadConfig } from './infra/config.js';
 import { _resetLearner } from './learning/learner.js';
-import { FILES } from './infra/paths.js';
+import { FILES, PATHS } from './infra/paths.js';
 import { MIN_ACTIVATIONS } from './infra/constants.js';
 import { install } from './install.js';
+import { readLogs, summarize, parseActivityArgs, renderActivity } from './activity.js';
+import { prune, parseDays } from './prune.js';
+
+function commandActivity(args) {
+  const opts = parseActivityArgs(args);
+  const logs = readLogs(PATHS.LOGS);
+  const summary = summarize(logs.entries, opts);
+  console.log(renderActivity(summary, logs, opts));
+}
+
+function commandPrune(args) {
+  const days = parseDays(args);
+  const r = prune({ dirs: [PATHS.LOGS, PATHS.DEBUG], days, dryRun: args.includes('--dry-run') });
+  const verb = r.dryRun ? 'would delete' : 'deleted';
+  if (r.dryRun) for (const f of r.files) console.log(`  ${f}`);
+  console.log(`${verb} ${r.deleted} file(s) older than ${days} day(s), ${r.bytes} bytes${r.dryRun ? '' : ' freed'}`);
+  if (r.dryRun) console.log('(dry-run: nothing was deleted)');
+}
+
+function runOrExit(fn) {
+  try {
+    fn();
+  } catch (err) {
+    console.error(`neural-link: ${err.message}`);
+    process.exit(1);
+  }
+}
 
 function commandInstall(dryRun) {
   const r = install({ dryRun });
@@ -56,6 +84,12 @@ switch (cmd) {
   case 'install':
     commandInstall(rest.includes('--dry-run'));
     break;
+  case 'activity':
+    runOrExit(() => commandActivity(rest));
+    break;
+  case 'prune':
+    runOrExit(() => commandPrune(rest));
+    break;
   default:
     console.log(`Neural Link CLI
 
@@ -65,7 +99,9 @@ Commands:
   reset handler <n>  Reset weights for a specific handler
   reset all          Factory reset — remove all learned weights
   rollback           Restore weights from backup
-  dashboard [opts]   Full dashboard (use: node tools/dashboard.mjs)`);
+  install [--dry-run] Declare dispatcher hooks
+  activity [opts]    Summarize activation logs (--last N, --event X, --handler X, --json)
+  prune [opts]       Delete logs/debug files older than --days N (default 14); --dry-run lists only`);
 }
 
 function commandStats() {
